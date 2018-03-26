@@ -44,7 +44,7 @@ class MedicalImageCropSegDataset3d(MedicalImageSegDataset3d):
     def __init__(self, dirname, **kwargs):
         super().__init__(dirname, **kwargs)
         mask_filepaths = self._get_filepaths_with_pattern(self.mask_pattern)
-        assert len(source_filepaths) == len(mask_filepaths)
+        assert len(self.sources) == len(mask_filepaths)
         self.masks = [MedicalImage3d(f, **kwargs) for f in mask_filepaths]
 
     def __getitem__(self, index):
@@ -66,7 +66,7 @@ class MedicalImage3d:
 
         if filepath.endswith('.npy'):
             self._load_func = load_npy
-        elif filepath.endswith('.nii') of filepath.endswith('.nii.gz'):
+        elif filepath.endswith('.nii') or filepath.endswith('.nii.gz'):
             self._load_func = load_nii
 
         self._data = None
@@ -98,7 +98,8 @@ class MedicalImage3d:
             if self._transpose:
                 data = np.transpose(data, [3, 0, 1, 2])
         else:
-            data = data[None, ...]
+            # data = data[None, ...]
+            data = data
         return data
 
 
