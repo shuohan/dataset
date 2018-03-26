@@ -19,14 +19,12 @@ class DecoratedMedicalImageDataset3d:
 
 class TransformedMedicalImageDataset3d(DecoratedMedicalImageDataset3d):
 
-    def __init__(self, medical_image_dataset, transforms):
+    def __init__(self, medical_image_dataset, transform):
         super().__init__(medical_image_dataset)
-        self.transforms = transforms
+        self.transform = transform
 
     def __getitem__(self, index):
-        data = [transform(data) for data, transform 
-                in zip(self.dataset[index], self.transforms)]
-        return data
+        return self.transform(self.dataset[index])
 
 
 class CroppedMedicalImageDataset3d(DecoratedMedicalImageDataset3d):

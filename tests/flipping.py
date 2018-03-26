@@ -19,13 +19,14 @@ label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 fliplr3d_label_image = partial(fliplr3d_label_image, label_pairs=label_pairs)
 
-image_trans = Compose([fliplr3d])
-label_trans = Compose([fliplr3d_label_image])
-mask_trans = Compose([fliplr3d])
-transforms = [image_trans, label_trans, mask_trans]
+def flip(images):
+    image = fliplr3d(images[0])
+    label = fliplr3d_label_image(images[1])
+    mask = fliplr3d(images[2])
+    return image, label, mask
 
 dataset = MedicalImageCropSegDataset3d('data')
-t_dataset = TransformedMedicalImageDataset3d(dataset, transforms)
+t_dataset = TransformedMedicalImageDataset3d(dataset, flip)
 dataset = CroppedMedicalImageDataset3d(dataset, (128, 96, 96))
 t_dataset = CroppedMedicalImageDataset3d(t_dataset, (128, 96, 96))
 
@@ -71,5 +72,7 @@ for (image, label), (t_image, t_label) in zip(dataset, t_dataset):
     plt.subplot(2, 6, 12)
     sliceid = image.shape[2] // 2
     plt.imshow(t_label[:, :, sliceid])
+
+    break
 
 plt.show()
