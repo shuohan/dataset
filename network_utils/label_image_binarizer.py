@@ -63,16 +63,3 @@ class LabelImageBinarizer(LabelBinarizer):
         tmp = super().inverse_transform(binarized_label_image.flatten())
         label_image = tmp.reshape(binarized_label_image.shape[:-1])
         return label_image
-
-
-class Binarize:
-
-    def __init__(self, label_image_binarizer):
-        self.binarizer = label_image_binarizer
-
-    def __call__(self, label_image):
-        if not hasattr(self.binarizer, 'classes_'):
-            self.binarizer.fit(np.unique(label_image))
-        result = self.binarizer.transform(label_image)
-        result = np.rollaxis(result, -1) # channels first
-        return result
