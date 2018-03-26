@@ -16,22 +16,19 @@ class MedicalImageDataset3d(Dataset):
     source_pattern = '*source*'
     target_pattern = '*target*'
 
-    def __init__(self, dirname, load_on_the_fly=False, transpose4d=True):
+    def __init__(self, dirname, **kwargs):
         self.dirname = dirname
-        self.load_on_the_fly = load_on_the_fly
         source_filepaths = self._get_filepaths_with_pattern(self.source_pattern)
         target_filepaths = self._get_filepaths_with_pattern(self.target_pattern)
         assert len(source_filepaths) == len(target_filepaths)
-        self.source_data = [MedicalImage3d(fp, load_on_the_fly, transpose4d)
-                            for fp in source_filepaths]
-        self.target_data = [MedicalImage3d(fp, load_on_the_fly, transpose4d)
-                            for fp in target_filepaths]
+        self.sources = [MedicalImage3d(f, **kwargs) for f in source_filepaths]
+        self.targets = [MedicalImage3d(f, **kwargs) for f in target_filepaths]
 
     def __getitem__(self, index):
-        return self.source_data[index].data, self.target_data[index].data
+        return self.sources[index].data, self.targets[index].data
 
     def __len__(self):
-        return len(self.source_data)
+        return len(self.sources)
 
     def _get_filepaths_with_pattern(self, pattern):
         return sorted(glob(os.path.join(self.dirname, pattern)))
@@ -44,18 +41,17 @@ class MedicalImageSegDataset3d(MedicalImageDataset3d):
 
 class MedicalImageCropSegDataset3d(MedicalImageSegDataset3d):
     mask_pattern = '*mask*'
-    def __init__(self, dirname, load_on_the_fly=False, transpose4d=True):
-        super().__init__(dirname, load_on_the_fly=False, transpose4d=True)
+    def __init__(self, dirname, **kwargs):
+        super().__init__(dirname, **kwargs)
         mask_filepaths = self._get_filepaths_with_pattern(self.mask_pattern)
         assert len(source_filepaths) == len(mask_filepaths)
-        self.mask_data = [MedicalImage3d(fp, load_on_the_fly, transpose4d)
-                          for fp in mask_filepaths]
+        self.masks = [MedicalImage3d(f, **kwargs) for f in mask_filepaths]
 
     def __getitem__(self, index):
-        source_data = self.source_data[index].data
-        target_data = self.target_data[index].data
-        mask_data = self.mask_data[index].data
-        return source_data, target_data, mask_data
+        source = self.sources[index].data
+        target = self.targets[index].data
+        mask = self.masks[index].data
+        return source, target, mask
 
 
 class MedicalImage3d:
