@@ -7,13 +7,14 @@ from scipy.ndimage.measurements import center_of_mass
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
 
 
-def random_rotate3d(images, orders, max_angle=5, point=None):
-    min_angle = -max_angle
+def random_rotate3d(images, max_angle=5):
+    orders = [1, 0, 0]
+    point = None
     rand_state = np.random.RandomState()
-    x_angle = rand_state.rand(1)
-    y_angle = rand_state.rand(1)
-    z_angle = rand_state.rand(1)
-    results = [rotate3d(im, x_angle, y_angle, z_angle, piont=point, order=o)
+    x_angle = float(rand_state.rand(1) * 2 * max_angle - max_angle)
+    y_angle = float(rand_state.rand(1) * 2 * max_angle - max_angle)
+    z_angle = float(rand_state.rand(1) * 2 * max_angle - max_angle)
+    results = [rotate3d(im, x_angle, y_angle, z_angle, point=point, order=o)
                for im, o in zip(images, orders)]
     return results
 
