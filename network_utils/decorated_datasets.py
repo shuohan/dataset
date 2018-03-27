@@ -52,7 +52,7 @@ class BinarizedMedicalImageDataset3d(DecoratedMedicalImageDataset3d):
 
     def __getitem__(self, index):
         data = self.dataset[index]
-        source_data = data[0]
+        source_data = data[0][None, ...]
         target_data = self._binarize(data[1])
         return source_data, target_data
 

@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='network-utils',
-      version='0.1.0',
+      version='0.1.2',
       description='PyTorch utility classes and functions',
       author='Shuo Han',
       author_email='shan50@jhu.edu',
