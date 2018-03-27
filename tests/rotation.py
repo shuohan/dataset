@@ -11,11 +11,11 @@ from functools import partial
 from network_utils import MedicalImageCropSegDataset3d
 from network_utils import CroppedMedicalImageDataset3d
 from network_utils import TransformedMedicalImageDataset3d
-from network_utils import random_rotate3d
+from network_utils import rotate_tripple_3d
 
 from torchvision.transforms import Compose
 
-rotate = partial(random_rotate3d, max_angle=20)
+rotate = partial(rotate_tripple_3d, max_angle=20)
 
 dataset = MedicalImageCropSegDataset3d('data')
 t_dataset = TransformedMedicalImageDataset3d(dataset, rotate)

@@ -11,19 +11,11 @@ from functools import partial
 from network_utils import MedicalImageCropSegDataset3d
 from network_utils import CroppedMedicalImageDataset3d
 from network_utils import TransformedMedicalImageDataset3d
-from network_utils import fliplr3d, fliplr3d_label_image
-
-from torchvision.transforms import Compose
+from network_utils import flip_tripple_3d
 
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
-fliplr3d_label_image = partial(fliplr3d_label_image, label_pairs=label_pairs)
-
-def flip(images):
-    image = fliplr3d(images[0])
-    label = fliplr3d_label_image(images[1])
-    mask = fliplr3d(images[2])
-    return image, label, mask
+flip = partial(flip_tripple_3d, label_pairs=label_pairs)
 
 dataset = MedicalImageCropSegDataset3d('data')
 t_dataset = TransformedMedicalImageDataset3d(dataset, flip)
