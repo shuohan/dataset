@@ -54,6 +54,69 @@ class MedicalImageCropSegDataset3d(MedicalImageSegDataset3d):
         return source, target, mask
 
 
+class DummyDataset(Dataset):
+
+    def __init__(self, sources, targets):
+        assert len(sources) == len(targets)
+        self.sources = sources
+        self.targets = targets
+
+    def __len__(self):
+        return len(self.sources)
+
+    def __getitem__(self, index):
+        return self.sources[index].data, self.targets[index].data
+
+
+class DummyDatasetCrop(Dataset):
+
+    def __init__(self, sources, targets, masks):
+        assert len(sources) == len(targets)
+        assert len(sources) == len(masks)
+        self.sources = sources
+        self.targets = targets
+        self.masks = masks
+
+    def __len__(self):
+        return len(self.sources)
+
+    def __getitem__(self, index):
+        source = self.sources[index].data
+        target = self.targets[index].data
+        mask = self.masks[index].data
+        return source, target, mask
+
+
+def split_dataset(dataset, ids):
+    all_indices = set(range(len(dataset)))
+    other_indices = all_indices - set(ids)
+    ids1 = sorted(list(ids))
+    ids2 = sorted(list(other_indices))
+    sources1 = [dataset.sources[id] for id in ids1]
+    targets1 = [dataset.targets[id] for id in ids1]
+    sources2 = [dataset.sources[id] for id in ids2]
+    targets2 = [dataset.targets[id] for id in ids2]
+    dummy1 = DummyDataset(sources1, targets1)
+    dummy2 = DummyDataset(sources2, targets2)
+    return dummy1, dummy2
+
+
+def split_dataset_crop(dataset, ids):
+    all_indices = set(range(len(dataset)))
+    other_indices = all_indices - set(ids)
+    ids1 = sorted(list(ids))
+    ids2 = sorted(list(other_indices))
+    sources1 = [dataset.sources[id] for id in ids1]
+    targets1 = [dataset.targets[id] for id in ids1]
+    masks1 = [dataset.masks[id] for id in ids1]
+    sources2 = [dataset.sources[id] for id in ids2]
+    targets2 = [dataset.targets[id] for id in ids2]
+    masks2 = [dataset.masks[id] for id in ids2]
+    dummy1 = DummyDatasetCrop(sources1, targets1, masks1)
+    dummy2 = DummyDatasetCrop(sources2, targets2, masks2)
+    return dummy1, dummy2
+
+
 class MedicalImage3d:
     """Object handling a 3D medical image
 
