@@ -1,72 +1,75 @@
 # -*- coding: utf-8 -*-
 
+import os
 from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d
 
-from .data import Data3d
+from .data import Data, Data3d
 
-class DataDecorator:
 
-    def __init__(self, data):
+class DataDecorator(Data):
+
+    def __init__(self, data, get_data_on_the_fly=True):
+        super().__init__(get_data_on_the_fly)
         self.data = data
-
-    def get_data(self):
-        return self.data.get_data()
 
 
 class Cropping3d(DataDecorator):
 
-    def __init__(self, data3d, cropping_shape, load_on_the_fly=True):
-        super().__init__(data3d)
+    def __init__(self, data, cropping_shape, get_data_on_the_fly=True):
+        super().__init__(data, get_data_on_the_fly)
         self.cropping_shape = cropping_shape
-        self.load_on_the_fly = load_on_the_fly
-        mask_filepath = self.data.filepath.replace('image', 'mask')
-        self.mask = Data3d(mask_filepath, self.data.load_on_the_fly,
+        self.mask = Data3d(self._get_mask_filepath(), self.get_data_on_the_fly,
                            self.data.transpose4d)
 
         self._source_bbox = None
         self._target_bbox = None
-        self._cropped_data = None
 
-    def get_data(self):
-        if self.load_on_the_fly:
-            cropped_data, self._source_bbox, self._target_bbox = self._crop()
-            return cropped_data
+    def _get_mask_filepath(self):
+        if self.data.filepath.endswith('.nii.gz'):
+            filename, ext = self.data.filepath.replace('.nii.gz', ''), '.nii.gz'
         else:
-            if self._cropped_data is None:
-                self._cropped_data self._source_bbox, self._target_bbox = \
-                        self._crop()
-            return self._cropped_data
+            filename, ext = os.path.splitext(self.data.filepath)
+        tmp = filename.split('_')
+        tmp[-1] = 'mask'
+        mask_filepath = '_'.join(tmp) + ext
+        return mask_filepath
 
-    def _crop(self):
+    def _get_data(self):
+        """Crop the data using the corresponding mask
+
+        Returns:
+            cropped (num_channels x num_i x ... numpy.array): The cropped data
+
+        """
         data = self.data.get_data()
         mask = self.mask.get_data()
         bbox = calc_bbox3d(mask)
-        resized_bbox = resize_bbox3d(bbox, self.cropping_shape)
-        cropped, source_bbox, target_bbox = crop3d(data, resized_bbox)
-        return cropped, source_bbox, target_bbox
+        bbox = resize_bbox3d(bbox, self.cropping_shape)
+        cropped, self._source_bbox, self._target_bbox = crop3d(data, bbox)
+        return cropped
 
 
 class Binarizing3d(Dataset3dDecorator):
 
-    def __init__(self, data, binarizer, load_on_the_fly=True):
-        super().__init__(self, data)
+    def __init__(self, data, binarizer, get_data_on_the_fly=True):
+        super().__init__(self, data, get_data_on_the_fly)
         self.binarizer = binarizer
-        self.load_on_the_fly = load_on_the_fly
 
-        self._binarized_data = None
+    def _get_data(self):
+        """Binarize the label image
 
-    def get_data(self):
-        if self.load_on_the_fly:
-            return self._binarize()
-        else:
-            if self._binarized_data is None:
-                self._binarized_data = self._binarize()
-            return self._binarized_data
+        Fit the binarizer if not fitted before, and transform the label image.
+        Since binarizer returns result with channels last, move the channels
+        first.
 
-    def _binarize(self):
+        Returns:
+            binarized (num_channels x num_i ... numpy.array): The binarized
+                label image
+
+        """
         data = self.data.get_data()
         if not hasattr(self.binarizer, 'classes_'):
             self.binarizer.fit(np.unique(data))
-        result = self.binarizer.transform(data)
-        result = np.rollaxis(result, -1) # channels first
-        return result
+        binarized = self.binarizer.transform(data)
+        binarized = np.rollaxis(binarized, -1) # channels first
+        return binarized
