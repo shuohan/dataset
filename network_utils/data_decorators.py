@@ -49,7 +49,7 @@ class Cropping3d(DataDecorator):
         return cropped
 
 
-class Binarizing3d(Dataset3dDecorator):
+class Binarizing3d(DatasetDecorator):
 
     def __init__(self, data, binarizer, get_data_on_the_fly=True):
         super().__init__(self, data, get_data_on_the_fly)
@@ -73,3 +73,21 @@ class Binarizing3d(Dataset3dDecorator):
         binarized = self.binarizer.transform(data)
         binarized = np.rollaxis(binarized, -1) # channels first
         return binarized
+
+
+class Transforming3d(DataDecorator):
+
+    def __init__(self, data, transform, get_data_on_the_fly=True):
+        super().__init__(get_data_on_the_fly)
+        self.transform = transform
+    
+    def _get_data(self):
+        """Transform data
+
+        Returns:
+            transformed (num_channels x num_i x ... numpy.array): The
+                transformed data
+
+        """
+        transformed = self.transform(self.data.get_data())
+        return transformed
