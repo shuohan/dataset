@@ -15,9 +15,8 @@ class Data3d:
 
         self._data = None
 
-    @property
-    def data(self):
-        """Access the loaded data
+    def get_data(self):
+        """Get the data
         
         Returns:
             data (num_channels x num_i ... numpj.array): The loaded data
