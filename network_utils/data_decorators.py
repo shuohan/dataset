@@ -289,13 +289,16 @@ class Deformer(Transformer):
         self.order = order
 
         self._rand_state = np.random.RandomState()
+        self._x_deform = [None]
+        self._y_deform = [None]
+        self._z_deform = [None]
         self.update()
 
     def update(self):
         """Resample the deformation field"""
-        self._x_deform = self._calc_random_deform()
-        self._y_deform = self._calc_random_deform()
-        self._z_deform = self._calc_random_deform()
+        self._x_deform[0] = self._calc_random_deform()
+        self._y_deform[0] = self._calc_random_deform()
+        self._z_deform[0] = self._calc_random_deform()
 
     def transform(self, data):
         """Deform the data
@@ -307,8 +310,8 @@ class Deformer(Transformer):
             deformed (numpy.array): The deformed data
 
         """
-        deformed = deform3d(data, self._x_deform, self._y_deform, self.z_deform,
-                            self.order)
+        deformed = deform3d(data, self._x_deform[0], self._y_deform[0],
+                            self._z_deform[0], self.order)
         return deformed
 
     def _calc_random_deform(self):
