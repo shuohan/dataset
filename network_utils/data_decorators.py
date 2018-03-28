@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import numpy as np
 from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
 
@@ -185,8 +186,9 @@ class Rotator(Transformer):
             interpolation. Higher orders are not recommended since scipy'
             incorrect implementation (?).
         _rand_state (numpy.random.RandomState): Random sampling
-        _x_angle, _y_angle, _z_angle (float): Rotation angles aroung x, y, and z
-            axes
+        _x_angle, _y_angle, _z_angle ((1,) list of float): Rotation angles
+            aroung x, y, and z axes. Use list so we can copy the vairable by
+            refernce.
 
     """
     def __init__(self, max_angle=5, point=None, order=1):
@@ -195,15 +197,18 @@ class Rotator(Transformer):
         self.order = order
 
         self._rand_state = np.random.RandomState()
+        self._x_angle = [0]
+        self._y_angle = [0]
+        self._z_angle = [0]
         self.update()
 
     def update(self):
         """Resample the rotation angles
 
         """
-        self._x_angle = self._calc_rand_angle()
-        self._y_angle = self._calc_rand_angle()
-        self._z_angle = self._calc_rand_angle()
+        self._x_angle[0] = self._calc_rand_angle()
+        self._y_angle[0] = self._calc_rand_angle()
+        self._z_angle[0] = self._calc_rand_angle()
 
     def transform(self, data):
         """Rotate the data
@@ -215,8 +220,8 @@ class Rotator(Transformer):
             rotated (numpy.array): The rotated data
         
         """
-        rotated = rotate3d(data, self._x_angle, self._y_angle, self._z_angle,
-                           point=self.point, order=self.order)
+        rotated = rotate3d(data, self._x_angle[0], self._y_angle[0],
+                           self._z_angle[0], point=self.point, order=self.order)
         return rotated
 
     def _calc_rand_angle(self):
