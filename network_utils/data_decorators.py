@@ -19,6 +19,10 @@ class DataDecorator(Data):
         super().__init__(get_data_on_the_fly)
         self.data = data
 
+    def update(self):
+        """Update the state/parameters"""
+        self.data.update()
+
 
 class Cropping3d(DataDecorator):
     """Crop data using mask
@@ -105,13 +109,14 @@ class Transforming3d(DataDecorator):
         super().__init__(data, get_data_on_the_fly)
         self.transformer = transformer
 
-    def update(self):
-        """Update the parameters of `self.transformer`""" 
-        self.transformer.update()
-    
     def _get_data(self):
         """Transform the data"""
         return self.transformer.transform(self.data.get_data())
+
+    def update(self):
+        """Update the state/parameters"""
+        super().update()
+        self.transformer.update()
 
 
 class Transformer:
@@ -121,6 +126,7 @@ class Transformer:
     def update(self):
         """Abstract method to update parameters"""
         raise NotImplementedError
+
     def transform(self, data):
         """Abstract method to transform the data
         

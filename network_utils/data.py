@@ -37,6 +37,14 @@ class Data:
         """
         raise NotImplementedError
 
+    def update(self):
+        """Provide interface for decorator to update parameters
+        
+        Check .data_decorators for more details.
+
+        """
+        pass
+
 
 class Data3d(Data):
     """Object handling a 3D data
