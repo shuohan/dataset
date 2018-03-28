@@ -49,7 +49,7 @@ class Cropping3d(DataDecorator):
         return cropped
 
 
-class Binarizing3d(DatasetDecorator):
+class Binarizing3d(DataDecorator):
 
     def __init__(self, data, binarizer, get_data_on_the_fly=True):
         super().__init__(self, data, get_data_on_the_fly)

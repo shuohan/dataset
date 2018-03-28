@@ -64,7 +64,7 @@ class Data3d(Data):
         if len(data.shape) == 4:
             if self._transpose:
                 data = np.transpose(data, [3, 0, 1, 2])
-        elif len(data.shape == 3):
+        elif len(data.shape) == 3:
             data = data[None, ...]
         else:
             raise TypeError('The data should be 3D or 4D (muli-channel 3D).')
