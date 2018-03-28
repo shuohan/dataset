@@ -15,24 +15,13 @@ class DataDecorator(Data):
 
 class Cropping3d(DataDecorator):
 
-    def __init__(self, data, cropping_shape, get_data_on_the_fly=True):
+    def __init__(self, data, mask, cropping_shape, get_data_on_the_fly=True):
         super().__init__(data, get_data_on_the_fly)
+        self.mask = mask
         self.cropping_shape = cropping_shape
-        self.mask = Data3d(self._get_mask_filepath(), self.get_data_on_the_fly,
-                           self.data.transpose4d)
 
         self._source_bbox = None
         self._target_bbox = None
-
-    def _get_mask_filepath(self):
-        if self.data.filepath.endswith('.nii.gz'):
-            filename, ext = self.data.filepath.replace('.nii.gz', ''), '.nii.gz'
-        else:
-            filename, ext = os.path.splitext(self.data.filepath)
-        tmp = filename.split('_')
-        tmp[-1] = 'mask'
-        mask_filepath = '_'.join(tmp) + ext
-        return mask_filepath
 
     def _get_data(self):
         """Crop the data using the corresponding mask

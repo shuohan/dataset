@@ -12,8 +12,9 @@ from network_utils.data_decorators import Cropping3d
 
 filepath = 'data/AT1000_image.nii.gz'
 data = Data3d(filepath, get_data_on_the_fly=False)
-print(data.filepath)
-data = Cropping3d(data, (128, 96, 96), get_data_on_the_fly=False)
+filepath = 'data/AT1000_mask.nii.gz'
+mask = Data3d(filepath, get_data_on_the_fly=False)
+data = Cropping3d(data, mask, (128, 96, 96), get_data_on_the_fly=False)
 
 start_time = time()
 data.get_data()
