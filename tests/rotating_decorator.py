@@ -24,12 +24,7 @@ rotation_point = np.array(center_of_mass(mask.get_data()))
 data_rotator = Rotator(max_angle=20, point=rotation_point, order=1)
 mask_rotator = Rotator(max_angle=20, point=rotation_point, order=0)
 label_rotator = Rotator(max_angle=20, point=rotation_point, order=0)
-mask_rotator._x_angle = data_rotator._x_angle
-mask_rotator._y_angle = data_rotator._y_angle
-mask_rotator._z_angle = data_rotator._z_angle
-label_rotator._x_angle = data_rotator._x_angle
-label_rotator._y_angle = data_rotator._y_angle
-label_rotator._z_angle = data_rotator._z_angle
+data_rotator.share(label_rotator, mask_rotator)
 
 print(data_rotator._x_angle, mask_rotator._x_angle, data_rotator.order,
       mask_rotator.order)
@@ -82,6 +77,7 @@ plt.figure()
 data_rotator.update()
 rotated_data = data.get_data() 
 rotated_label = label.get_data()
+print(np.unique(rotated_label))
 print('get data')
 shape = rotated_data.shape
 plt.subplot(2, 3, 1)

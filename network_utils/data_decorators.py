@@ -129,6 +129,15 @@ class Transformer:
 
         """
         raise NotImplementedError
+    def share(self, *transformers):
+        """Abstract to share parameters with other transformers
+        
+        Args:
+            transformer (Transformer): The transformer to share parameteres
+                with.
+
+        """
+        raise NotImplementedError
 
 
 class Flipper(Transformer):
@@ -235,6 +244,18 @@ class Rotator(Transformer):
         angle = float(angle * 2 * self.max_angle - self.max_angle)
         return angle
 
+    def share(self, *transformers):
+        """Share rotation angles with other rotators
+
+        Args:
+            transformer (Rotator): The rotater to share parameters with
+
+        """
+        for transformer in transformers:
+            transformer._x_angle = self._x_angle
+            transformer._y_angle = self._y_angle
+            transformer._z_angle = self._z_angle
+
 
 class Deformer(Transformer):
     """Deform the data using elastic deformation
@@ -300,6 +321,18 @@ class Deformer(Transformer):
         scale = self._rand_state.rand(1) * self.scale
         deform = calc_random_deformation3d(self.shape, self.sigma, scale)
         return deform
+
+    def share(self, *transformers):
+        """Share deformation with other deformers
+
+        Args:
+            transformer (Deformer): The deformer to share parameters with
+
+        """
+        for transformer in transformers:
+            transformer._x_deform = self._x_deform
+            transformer._y_deform = self._y_deform
+            transformer._z_deform = self._z_deform
 
 
 class Composer(Transformer):
