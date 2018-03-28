@@ -172,10 +172,12 @@ class Flipper(Transformer):
             flipped (numpy.array): The flipped data
 
         """
-        flipped = np.flip(data, self.dim)
+        flipped = np.flip(data, self.dim).copy()
         for (pair1, pair2) in self.label_pairs:
-            flipped[flipped==pair1] = pair2
-            flipped[flipped==pair2] = pair1
+            mask1 = flipped==pair1
+            mask2 = flipped==pair2
+            flipped[mask1] = pair2
+            flipped[mask2] = pair1
         return flipped
 
 
