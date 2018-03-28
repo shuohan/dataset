@@ -75,7 +75,7 @@ class Binarizing3d(DataDecorator):
 
     """
     def __init__(self, data, binarizer, get_data_on_the_fly=True):
-        super().__init__(self, data, get_data_on_the_fly)
+        super().__init__(data, get_data_on_the_fly)
         self.binarizer = binarizer
 
     def _get_data(self):
