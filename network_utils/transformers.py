@@ -102,7 +102,6 @@ class Rotator(Transformer):
         self._x_angle = [0]
         self._y_angle = [0]
         self._z_angle = [0]
-        self.update()
 
     def update(self):
         """Resample the rotation angles
@@ -185,7 +184,6 @@ class Deformer(Transformer):
         self._x_deform = [None]
         self._y_deform = [None]
         self._z_deform = [None]
-        self.update()
 
     def update(self):
         """Resample the deformation field"""
