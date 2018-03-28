@@ -9,9 +9,11 @@ import matplotlib.pyplot as plt
 from time import time
 
 from network_utils.data import Data3d
-from network_utils.data_decorators import Binarizing3d, Deformer, Transforming3d
+from network_utils.data_decorators import Binarizing3d, Transforming3d
 from network_utils.data_decorators import Cropping3d
 from network_utils.label_image_binarizer import LabelImageBinarizer
+from network_utils.transformers import Deformer
+
 
 filepath = 'data/AT1000_image.nii.gz'
 data = Data3d(filepath, get_data_on_the_fly=False)
@@ -62,11 +64,11 @@ plt.imshow(deformed_data[:, shape[1]//2, :], cmap='gray')
 plt.subplot(2, 3, 3)
 plt.imshow(deformed_data[:, :, shape[2]//2], cmap='gray')
 plt.subplot(2, 3, 4)
-plt.imshow(deformed_label[0, shape[0]//2, :, :])
+plt.imshow(deformed_label[1, shape[0]//2, :, :])
 plt.subplot(2, 3, 5)
-plt.imshow(deformed_label[0, :, shape[1]//2, :])
+plt.imshow(deformed_label[1, :, shape[1]//2, :])
 plt.subplot(2, 3, 6)
-plt.imshow(deformed_label[0, :, :, shape[2]//2])
+plt.imshow(deformed_label[1, :, :, shape[2]//2])
 print('show')
 
 plt.figure()
@@ -83,9 +85,9 @@ plt.imshow(deformed_data[:, shape[1]//2, :], cmap='gray')
 plt.subplot(2, 3, 3)
 plt.imshow(deformed_data[:, :, shape[2]//2], cmap='gray')
 plt.subplot(2, 3, 4)
-plt.imshow(deformed_label[0, shape[0]//2, :, :])
+plt.imshow(deformed_label[1, shape[0]//2, :, :])
 plt.subplot(2, 3, 5)
-plt.imshow(deformed_label[0, :, shape[1]//2, :])
+plt.imshow(deformed_label[1, :, shape[1]//2, :])
 plt.subplot(2, 3, 6)
-plt.imshow(deformed_label[0, :, :, shape[2]//2])
+plt.imshow(deformed_label[1, :, :, shape[2]//2])
 plt.show()

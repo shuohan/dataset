@@ -11,7 +11,8 @@ from scipy.ndimage.measurements import center_of_mass
 
 from network_utils.data import Data3d
 from network_utils.data_decorators import Cropping3d, Transforming3d
-from network_utils.data_decorators import Rotator
+from network_utils.transformers import Rotator
+
 
 filepath = 'data/AT1000_image.nii.gz'
 data = Data3d(filepath, get_data_on_the_fly=False)

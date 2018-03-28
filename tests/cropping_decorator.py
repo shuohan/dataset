@@ -10,6 +10,7 @@ from time import time
 from network_utils.data import Data3d
 from network_utils.data_decorators import Cropping3d
 
+
 filepath = 'data/AT1000_image.nii.gz'
 data = Data3d(filepath, get_data_on_the_fly=False)
 filepath = 'data/AT1000_mask.nii.gz'
