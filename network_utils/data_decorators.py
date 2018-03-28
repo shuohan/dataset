@@ -344,36 +344,3 @@ class Deformer(Transformer):
             transformer._x_deform = self._x_deform
             transformer._y_deform = self._y_deform
             transformer._z_deform = self._z_deform
-
-
-class Composer(Transformer):
-    """Compose transformers
-
-    Compose transformers so they act like a single transformer. The transforms
-    are applied in the order of input transformers.
-    
-    Attributes:
-        transformers (list of Transformer): The transformers to compose
-
-    """
-    def __init__(self, *transformers):
-        self.transformers = transformers
-
-    def update(self):
-        """Update all transformers"""
-        for transformer in self.transformers:
-            transformer.update()
-
-    def transform(self, data):
-        """Transform the data using all transformers
-        
-        Args:
-            data (numpy.array): The data to transform
-
-        Returns:
-            data (numpy.array): The transformed data
-
-        """
-        for transform in self.transformers:
-            data = transform(data)
-        return data
