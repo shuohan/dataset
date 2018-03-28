@@ -153,3 +153,18 @@ class Deformer(Transformer):
         scale = self._rand_state.rand(1) * self.scale
         deform = calc_random_deformation3d(self.shape, self.sigma, scale)
         return deform
+
+
+class Composer(Transformer):
+
+    def __init__(self, *transformers):
+        self.transformers = transformers
+
+    def update(self):
+        for transformer in self.transformers:
+            transformer.update()
+
+    def transform(self, data):
+        for transform in self.transformers:
+            data = transform(data)
+        return data
