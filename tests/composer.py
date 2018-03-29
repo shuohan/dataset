@@ -10,7 +10,8 @@ from time import time
 from scipy.ndimage.measurements import center_of_mass
 
 from network_utils.data import Data3d
-from network_utils.data_decorators import Cropping3d, Transforming3d
+from network_utils.data_decorators import Cropping3d, Interpolating3d
+from network_utils.data_decorators import Flipping3d
 from network_utils.transformers import Deformer, Flipper
 
 
@@ -23,25 +24,21 @@ label1 = Data3d(filepath, get_data_on_the_fly=False)
 
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
-data_flipper = Flipper(dim=0)
-mask_flipper = Flipper(dim=0)
-label_flipper = Flipper(dim=0, label_pairs=label_pairs)
+flipper = Flipper(dim=1)
 
-shape = data1.get_data().shape
-data_deformer = Deformer(shape, sigma=3, scale=8, order=1)
-mask_deformer = Deformer(shape, sigma=3, scale=8, order=0)
-label_deformer = Deformer(shape, sigma=3, scale=8, order=0)
-data_deformer.share(label_deformer, mask_deformer)
+shape = data1.get_data().shape[-3:]
+deformer = Deformer(shape, sigma=3, scale=8)
 
-data2 = Transforming3d(data1, data_flipper, get_data_on_the_fly=False)
-data2 = Transforming3d(data2, data_deformer, get_data_on_the_fly=True)
-mask2 = Transforming3d(mask1, mask_flipper, get_data_on_the_fly=False)
-mask2 = Transforming3d(mask2, mask_deformer, get_data_on_the_fly=True)
+data2 = Flipping3d(data1, flipper, get_data_on_the_fly=False)
+data2 = Interpolating3d(data2, deformer, get_data_on_the_fly=True, order=1)
+mask2 = Flipping3d(mask1, flipper, get_data_on_the_fly=False)
+mask2 = Interpolating3d(mask2, deformer, get_data_on_the_fly=True, order=0)
 data1 = Cropping3d(data1, mask1, (128, 96, 96), get_data_on_the_fly=False)
 data2 = Cropping3d(data2, mask2, (128, 96, 96), get_data_on_the_fly=True)
 
-label2 = Transforming3d(label1, label_flipper, get_data_on_the_fly=False)
-label2 = Transforming3d(label2, label_deformer, get_data_on_the_fly=True)
+label2 = Flipping3d(label1, flipper, get_data_on_the_fly=False,
+                    label_pairs=label_pairs)
+label2 = Interpolating3d(label2, deformer, get_data_on_the_fly=True, order=0)
 label1 = Cropping3d(label1, mask1, (128, 96, 96), get_data_on_the_fly=False)
 label2 = Cropping3d(label2, mask2, (128, 96, 96), get_data_on_the_fly=True)
 
@@ -65,43 +62,42 @@ print('third load', end_time - start_time)
 
 alpha = 0.7
 plt.figure()
-print(np.sum(data_deformer._x_deform), np.sum(label_deformer._x_deform))
-transformed_data1 = data1.get_data()
-transformed_label1 = label1.get_data()
-transformed_data2 = data2.get_data() 
-transformed_label2 = label2.get_data()
+transformed_data1 = data1.get_data()[0, ...]
+transformed_label1 = label1.get_data()[0, ...]
+transformed_data2 = data2.get_data() [0, ...]
+transformed_label2 = label2.get_data()[0, ...]
 print('get data')
 shape = transformed_data1.shape
 plt.subplot(2, 3, 1)
 image = transformed_data1[shape[0]//2, :, :]
 label = transformed_label1[shape[0]//2, :, :]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 plt.subplot(2, 3, 2)
 image = transformed_data1[:, shape[1]//2, :]
 label = transformed_label1[:, shape[1]//2, :]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 plt.subplot(2, 3, 3)
 image = transformed_data1[:, :, shape[2]//2]
 label = transformed_label1[:, :, shape[2]//2]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 
 plt.subplot(2, 3, 4)
 image = transformed_data2[shape[0]//2, :, :]
 label = transformed_label2[shape[0]//2, :, :]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 plt.subplot(2, 3, 5)
 image = transformed_data2[:, shape[1]//2, :]
 label = transformed_label2[:, shape[1]//2, :]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 plt.subplot(2, 3, 6)
 image = transformed_data2[:, :, shape[2]//2]
 label = transformed_label2[:, :, shape[2]//2]
-plt.imshow(image, cmap='gray', alpha=alpha)
+# plt.imshow(image, cmap='gray', alpha=alpha)
 plt.imshow(label, alpha=1-alpha)
 
 plt.show()
