@@ -29,61 +29,72 @@ class TrainingDataFactory(Data3dFactory):
         data = dict() 
 
         if 'none' in types:
-            image = Data3d(filepaths[0], self.get_data_on_the_fly,
-                           self.transpose4d)
-            label = Data3d(filepaths[1], self.get_data_on_the_fly,
-                           self.transpose4d)
-            data['none'] = (image, label)
+            none_data = self._create_none(filepaths)
+            data['none'] = none_data
 
             if 'rotation' in types:
-                self.rotator = Rotator(max_angle=self.max_angle)
-                rotated_image = Interpolating3d(image, self.rotator, order=1,
-                                                get_data_on_the_fly=True)
-                rotated_label = Interpolating3d(label, self.rotator, order=0,
-                                                get_data_on_the_fly=True)
-                data['rotation'] = (rotated_image, rotated_label)
+                rotated = self._create_rotated(none_data)
+                data['rotation'] = rotated
 
             if 'deformation' in types:
-                shape = image.get_data().shape[-3:]
-                self.deformer = Deformer(shape, self.sigma, self.scale)
-                deformed_image = Interpolating3d(image, self.deformer, order=1,
-                                                 get_data_on_the_fly=True)
-                deformed_label = Interpolating3d(label, self.deformer, order=0,
-                                                 get_data_on_the_fly=True)
-                data['deformation'] = (deformed_image, deformed_label)
+                deformed = self._create_deformed(none_data)
+                data['deformation'] = deformed
 
             if 'flipping' in types:
-                self.flipper = Flipper(dim=self.dim)
-                flipped_image = Flipping3d(image, self.flipper, [],
-                                           self.get_data_on_the_fly)
-                flipped_label = Flipping3d(label, self.flipper, self.label_pairs,
-                                           self.get_data_on_the_fly)
-                data['flipping'] = (flipped_image, flipped_label)
+                flipped = self._create_flipped(none_data)
+                data['flipping'] = flipped
 
                 if 'rotation' in types:
-                    self.flipped_rotator = Rotator(max_angle=self.max_angle)
-                    flipped_rotated_image = Interpolating3d(flipped_image,
-                                                            self.flipped_rotator,
-                                                            1, True)
-                    flipped_rotated_label = Interpolating3d(flipped_label,
-                                                            self.flipped_rotator,
-                                                            0, True)
-                    data['flipping_rotation'] = (flipped_rotated_image,
-                                                 flipped_rotated_label)
+                    rotated_flipped = self._create_rotated_flipped(flipped)
+                    data['flipping_rotation'] = rotated_flipped
 
                 if 'deformation' in types:
-                    shape = image.get_data().shape[-3:]
-                    self.flipped_deformer = Deformer(shape, self.sigma, self.scale)
-                    flipped_deformed_image = Interpolating3d(flipped_image,
-                                                             self.flipped_deformer,
-                                                             1, True)
-                    flipped_deformed_label = Interpolating3d(flipped_label,
-                                                             self.flipped_deformer,
-                                                             0, True)
-                    data['flipping_deformation'] = (flipped_deformed_image,
-                                                    flipped_deformed_label)
+                    deformed_flipped = self._create_deformed_flipped(flipped)
+                    data['flipping_deformation'] = deformed_flipped
 
         return data
+
+    def _create_none(self, filepaths):
+        image = Data3d(filepaths[0], self.get_data_on_the_fly, self.transpose4d)
+        label = Data3d(filepaths[1], self.get_data_on_the_fly, self.transpose4d)
+        return image, label
+
+    def _create_rotated(self, data):
+        self.rotator = Rotator(max_angle=self.max_angle)
+        image = Interpolating3d(data[0], self.rotator, order=1,
+                                get_data_on_the_fly=True)
+        label = Interpolating3d(data[1], self.rotator, order=0,
+                                get_data_on_the_fly=True)
+        return image, label
+
+    def _create_deformed(self, data):
+        shape = data[0].get_data().shape[-3:]
+        self.deformer = Deformer(shape, self.sigma, self.scale)
+        image = Interpolating3d(data[0], self.deformer, order=1,
+                                get_data_on_the_fly=True)
+        label = Interpolating3d(data[1], self.deformer, order=0,
+                                get_data_on_the_fly=True)
+        return image, label
+
+    def _create_flipped(self, data):
+        self.flipper = Flipper(dim=self.dim)
+        image = Flipping3d(data[0], self.flipper, [], self.get_data_on_the_fly)
+        label = Flipping3d(data[1], self.flipper, self.label_pairs,
+                           self.get_data_on_the_fly)
+        return image, label
+
+    def _create_rotated_flipped(self, data):
+        self.flipped_rotator = Rotator(max_angle=self.max_angle)
+        image = Interpolating3d(data[0], self.flipped_rotator, 1, True)
+        label = Interpolating3d(data[1], self.flipped_rotator, 0, True)
+        return image, label
+    
+    def _create_deformed_flipped(self, data):
+        shape = data[0].get_data().shape[-3:]
+        self.flipped_deformer = Deformer(shape, self.sigma, self.scale)
+        image = Interpolating3d(data[0], self.flipped_deformer, 1, True)
+        label = Interpolating3d(data[1], self.flipped_deformer, 0, True)
+        return image, label
 
 
 class DecoratedData3dFactory(Data3dFactory):
