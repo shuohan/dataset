@@ -31,7 +31,7 @@ for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     d = factory.create_data(ip, lp, mp, types=types)
     data.append(d)
     counter += 1
-    if counter == 1:
+    if counter == 2:
         break
 
 data = list(zip(*data))
@@ -49,15 +49,15 @@ for i, d in enumerate(data):
 
         plt.subplot(1, 3, 1)
         sliceid = image.shape[0] // 2
-        # plt.imshow(image[sliceid, :, :], cmap='gray', alpha=0.7)
+        plt.imshow(image[sliceid, :, :], cmap='gray', alpha=0.7)
         plt.imshow(label[sliceid, :, :], alpha=0.3)
         plt.subplot(1, 3, 2)
         sliceid = image.shape[1] // 2
-        # plt.imshow(image[:, sliceid, :], cmap='gray', alpha=0.7)
+        plt.imshow(image[:, sliceid, :], cmap='gray', alpha=0.7)
         plt.imshow(label[:, sliceid, :], alpha=0.3)
         plt.subplot(1, 3, 3)
         sliceid = image.shape[2] // 2
-        # plt.imshow(image[:, :, sliceid], cmap='gray', alpha=0.7)
+        plt.imshow(image[:, :, sliceid], cmap='gray', alpha=0.7)
         plt.imshow(label[:, :, sliceid], alpha=0.3)
 
 plt.show()
