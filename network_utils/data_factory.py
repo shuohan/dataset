@@ -8,7 +8,7 @@ from .transformers import Flipper, Rotator, Deformer
 class Data3dFactory:
 
     def __init__(self, dim=1, label_pairs=[], max_angle=10, sigma=5, scale=8,
-                 get_data_on_the_fly=False, transpose4d=True):
+                 get_data_on_the_fly=False, transpose4d=True, types=['none']):
 
         self.dim = dim
         self.label_pairs = label_pairs
@@ -17,22 +17,23 @@ class Data3dFactory:
         self.scale = scale
         self.get_data_on_the_fly = get_data_on_the_fly
         self.transpose4d = transpose4d
+        self.types = types
 
         self.data = dict()
 
-    def create_data(self, *filepaths, types=['none']):
+    def create_data(self, *filepaths):
         self.data = dict() 
-        if 'none' in types:
+        if 'none' in self.types:
             self._create_none(filepaths)
-            if 'rotation' in types:
+            if 'rotation' in self.types:
                 self._create_rotated()
-            if 'deformation' in types:
+            if 'deformation' in self.types:
                 self._create_deformed()
-            if 'flipping' in types:
+            if 'flipping' in self.types:
                 self._create_flipped()
-                if 'rotation' in types:
+                if 'rotation' in self.types:
                     self._create_rotated_flipped()
-                if 'deformation' in types:
+                if 'deformation' in self.types:
                     self._create_deformed_flipped()
 
     def _create_one(self, filepaths):
@@ -104,10 +105,11 @@ class Data3dFactoryDecorator(Data3dFactory):
 
     def __init__(self, data3d_factory):
         self.factory = data3d_factory
+        self.types = self.factory.types
 
-    def create_data(self, *filepaths, types=['none']):
-        self.factory.create_data(*filepaths[:-1], types=types)
-        super().create_data(*filepaths, types=types)
+    def create_data(self, *filepaths):
+        self.factory.create_data(*filepaths[:-1])
+        super().create_data(*filepaths)
 
 
 class Data3dFactoryCropper(Data3dFactoryDecorator):
@@ -117,9 +119,9 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         self.uncropped_data = dict()
         self.cropping_shape = cropping_shape
 
-    def create_data(self, *filepaths, types=['none']):
+    def create_data(self, *filepaths):
         self.uncropped_data = dict()
-        super().create_data(*filepaths, types=types)
+        super().create_data(*filepaths)
 
     def _create_none(self, filepaths):
         mask = Data3d(filepaths[-1], self.factory.get_data_on_the_fly,
