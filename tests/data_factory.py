@@ -19,7 +19,7 @@ mask_paths = sorted(glob('data/*mask.nii.gz'))
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 
-factory = TrainingDataFactory(dim=0, label_pairs=label_pairs, max_angle=20,
+factory = TrainingDataFactory(dim=1, label_pairs=label_pairs, max_angle=20,
                               get_data_on_the_fly=False)
 factory = CroppedData3dFactory(factory, (128, 96, 96))
 
@@ -44,6 +44,8 @@ for i, d in enumerate(data):
     dataset = Dataset3d(d)
 
     for image, label in dataset:
+        image = image[0, ...]
+        label = label[0, ...]
 
         plt.figure()
 

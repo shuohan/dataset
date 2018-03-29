@@ -60,7 +60,7 @@ class Cropping3d(DataDecorator):
 
         """
         data = self.data.get_data()
-        mask = self.mask.get_data()
+        mask = self.mask.get_data()[0, ...]
         bbox = calc_bbox3d(mask)
         bbox = resize_bbox3d(bbox, self.cropping_shape)
         cropped, self._source_bbox, self._target_bbox = crop3d(data, bbox)
