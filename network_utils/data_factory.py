@@ -118,30 +118,33 @@ class CroppedData3dFactory(DecoratedData3dFactory):
             masks['none'] = mask
 
             if 'rotation' in types:
-                rotated_mask = Interpolating3d(mask, self.factory.rotator, True)
+                rotator = data['rotation'][0].transformer
+                rotated_mask = Interpolating3d(mask, rotator, True)
                 masks['rotation'] = rotated_mask
 
             if 'deformation' in types:
                 shape = mask.get_data().shape[-3:]
-                deformed_mask = Interpolating3d(mask, self.factory.deformer, True)
+                deformer = data['deformation'][0].transformer
+                deformed_mask = Interpolating3d(mask, deformer, True)
                 masks['deformation'] = deformed_mask
 
             if 'flipping' in types:
-                flipped_mask = Flipping3d(mask, self.factory.flipper, [],
+                flipper = data['flipping'][0].transformer
+                flipped_mask = Flipping3d(mask, flipper, [],
                                           self.factory.get_data_on_the_fly)
                 masks['flipping'] = flipped_mask
 
                 if 'rotation' in types:
+                    rotator = data['flipping_rotation'][0].transformer
                     flipped_rotated_mask = Interpolating3d(flipped_mask,
-                                                           self.factory.flipped_rotator,
-                                                           0, True)
+                                                           rotator, 0, True)
                     masks['flipping_rotation'] = flipped_rotated_mask
 
                 if 'deformation' in types:
                     shape = mask.get_data().shape[-3:]
+                    deformer = data['flipping_deformation'][0].transformer
                     flipped_deformed_mask = Interpolating3d(flipped_mask,
-                                                            self.factory.flipped_deformer,
-                                                            1, True)
+                                                            deformer, 0, True)
                     masks['flipping_deformation'] = flipped_deformed_mask
 
         cropped_data = list()
