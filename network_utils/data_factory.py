@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from .data import Data3d
-from .data_decorators import Cropping3d, Transforming3d
+from .data_decorators import Cropping3d, Interpolating3d, Flipping3d
 from .transformers import Flipper, Rotator, Deformer
 
 
 class Data3dFactory:
 
-    def __init__(self, dim=1, label_pairs=[], max_angle=10, sigma = 5, scale=8,
+    def __init__(self, dim=1, label_pairs=[], max_angle=10, sigma=5, scale=8,
                  get_data_on_the_fly=False, transpose4d=True):
 
         self.dim = dim
@@ -36,62 +36,51 @@ class TrainingDataFactory(Data3dFactory):
             data.append((image, label))
 
             if 'rotation' in types:
-                self.image_rotator1 = Rotator(max_angle=self.max_angle, order=1)
-                self.label_rotator1 = Rotator(max_angle=self.max_angle, order=0)
-                self.image_rotator1.share(self.label_rotator1)
-                rotated_image1 = Transforming3d(image, self.image_rotator1,
-                                                True)
-                rotated_label1 = Transforming3d(label, self.label_rotator1,
-                                                True)
-                data.append((rotated_image1, rotated_label1))
+                self.rotator = Rotator(max_angle=self.max_angle)
+                rotated_image = Interpolating3d(image, self.rotator, order=1,
+                                                get_data_on_the_fly=True)
+                rotated_label = Interpolating3d(label, self.rotator, order=0,
+                                                get_data_on_the_fly=True)
+                data.append((rotated_image, rotated_label))
 
             if 'deformation' in types:
-                shape = image.get_data().shape
-                self.image_deformer1 = Deformer(shape, self.sigma, self.scale,
-                                                order=1)
-                self.label_deformer1 = Deformer(shape, self.sigma, self.scale,
-                                                order=0)
-                self.image_deformer1.share(self.label_deformer1)
-                deformed_image1 = Transforming3d(image, self.image_deformer1,
-                                                 True)
-                deformed_label1 = Transforming3d(label, self.label_deformer1,
-                                                 True)
-                data.append((deformed_image1, deformed_label1))
+                shape = image.get_data().shape[-3:]
+                self.deformer = Deformer(shape, self.sigma, self.scale)
+                deformed_image = Interpolating3d(image, self.deformer, order=1,
+                                                 get_data_on_the_fly=True)
+                deformed_label = Interpolating3d(label, self.deformer, order=0,
+                                                 get_data_on_the_fly=True)
+                data.append((deformed_image, deformed_label))
 
             if 'flipping' in types:
-                image_flipper = Flipper(dim=self.dim)
-                label_flipper = Flipper(dim=self.dim,
-                                        label_pairs=self.label_pairs)
-                flipped_image = Transforming3d(image, image_flipper,
-                                               self.get_data_on_the_fly)
-                flipped_label = Transforming3d(label, label_flipper,
-                                               self.get_data_on_the_fly)
+                self.flipper = Flipper(dim=self.dim)
+                flipped_image = Flipping3d(image, self.flipper, [],
+                                           self.get_data_on_the_fly)
+                flipped_label = Flipping3d(label, self.flipper, self.label_pairs,
+                                           self.get_data_on_the_fly)
                 data.append((flipped_image, flipped_label))
 
                 if 'rotation' in types:
-                    self.image_rotator2 = Rotator(max_angle=self.max_angle,
-                                                  order=1)
-                    self.label_rotator2 = Rotator(max_angle=self.max_angle,
-                                                  order=0)
-                    self.image_rotator2.share(self.label_rotator2)
-                    rotated_image2 = Transforming3d(flipped_image,
-                                                    self.image_rotator2, True)
-                    rotated_label2 = Transforming3d(flipped_label,
-                                                    self.label_rotator2, True)
-                    data.append((rotated_image2, rotated_label2))
+                    self.flipped_rotator = Rotator(max_angle=self.max_angle)
+                    flipped_rotated_image = Interpolating3d(flipped_image,
+                                                            self.flipped_rotator,
+                                                            1, True)
+                    flipped_rotated_label = Interpolating3d(flipped_label,
+                                                            self.flipped_rotator,
+                                                            0, True)
+                    data.append((flipped_rotated_image, flipped_rotated_label))
 
                 if 'deformation' in types:
-                    shape = image.get_data().shape
-                    self.image_deformer2 = Deformer(shape, self.sigma,
-                                                    self.scale, order=1)
-                    self.label_deformer2 = Deformer(shape, self.sigma,
-                                                    self.scale, order=0)
-                    self.image_deformer2.share(self.label_deformer2)
-                    deformed_image2 = Transforming3d(flipped_image,
-                                                     self.image_deformer2, True)
-                    deformed_label2 = Transforming3d(flipped_label,
-                                                     self.label_deformer2, True)
-                    data.append((deformed_image2, deformed_label2))
+                    shape = image.get_data().shape[-3:]
+                    self.flipped_deformer = Deformer(shape, self.sigma, self.scale)
+                    flipped_deformed_image = Interpolating3d(flipped_image,
+                                                             self.flipped_deformer,
+                                                             1, True)
+                    flipped_deformed_label = Interpolating3d(flipped_label,
+                                                             self.flipped_deformer,
+                                                             0, True)
+                    data.append((flipped_deformed_image,
+                                 flipped_deformed_label))
 
         return data
 
@@ -117,42 +106,31 @@ class CroppedData3dFactory(DecoratedData3dFactory):
             masks.append(mask)
 
             if 'rotation' in types:
-                mask_rotator1 = Rotator(max_angle=self.factory.max_angle,
-                                        order=0)
-                self.factory.image_rotator1.share(mask_rotator1)
-                rotated_mask1 = Transforming3d(mask, mask_rotator1, True)
-                masks.append(rotated_mask1)
+                rotated_mask = Interpolating3d(mask, self.factory.rotator, True)
+                masks.append(rotated_mask)
 
             if 'deformation' in types:
-                shape = mask.get_data().shape
-                mask_deformer1 = Deformer(shape, self.factory.sigma,
-                                          self.factory.scale, order=0)
-                self.factory.image_deformer1.share(mask_deformer1)
-                deformed_mask1 = Transforming3d(mask, mask_deformer1, True)
-                masks.append(deformed_mask1)
+                shape = mask.get_data().shape[-3:]
+                deformed_mask = Interpolating3d(mask, self.factory.deformer, True)
+                masks.append(deformed_mask)
 
             if 'flipping' in types:
-                mask_flipper = Flipper(dim=self.factory.dim)
-                flipped_mask = Transforming3d(mask, mask_flipper,
-                                              self.factory.get_data_on_the_fly)
+                flipped_mask = Flipping3d(mask, self.factory.flipper, [],
+                                          self.factory.get_data_on_the_fly)
                 masks.append(flipped_mask)
 
                 if 'rotation' in types:
-                    mask_rotator2 = Rotator(max_angle=self.factory.max_angle,
-                                            order=0)
-                    self.factory.image_rotator2.share(mask_rotator2)
-                    rotated_mask2 = Transforming3d(flipped_mask, mask_rotator2,
-                                                   True)
-                    masks.append(rotated_mask2)
+                    flipped_rotated_mask = Interpolating3d(flipped_mask,
+                                                           self.factory.flipped_rotator,
+                                                           0, True)
+                    masks.append(flipped_rotated_mask)
 
                 if 'deformation' in types:
-                    shape = mask.get_data().shape
-                    mask_deformer2 = Deformer(shape, self.factory.sigma,
-                                              self.factory.scale, order=0)
-                    self.factory.image_deformer2.share(mask_deformer2)
-                    deformed_mask2 = Transforming3d(flipped_mask,
-                                                    mask_deformer2, True)
-                    masks.append(deformed_mask2)
+                    shape = mask.get_data().shape[-3:]
+                    flipped_deformed_mask = Interpolating3d(flipped_mask,
+                                                            self.factory.flipped_deformer,
+                                                            1, True)
+                    masks.append(flipped_deformed_mask)
 
         cropped_data = list()
         for dd, mask in zip(data, masks):        
