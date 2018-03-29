@@ -31,7 +31,7 @@ for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     d = factory.create_data(ip, lp, mp, types=types)
     data.append(d)
     counter += 1
-    if counter == 2:
+    if counter == 1:
         break
 
 data = list(zip(*data))
