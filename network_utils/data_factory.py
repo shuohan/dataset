@@ -18,6 +18,8 @@ class Data3dFactory:
         self.get_data_on_the_fly = get_data_on_the_fly
         self.transpose4d = transpose4d
 
+        self.data = dict()
+
     def create_data(self, *filepaths, types=['none']):
         raise NotImplementedError
 
@@ -26,40 +28,44 @@ class TrainingDataFactory(Data3dFactory):
 
     def create_data(self, *filepaths, types=['none']):
 
-        data = dict() 
+        self.data = dict() 
 
         if 'none' in types:
-            none_data = self._create_none(filepaths)
-            data['none'] = none_data
-
+            self._create_none(filepaths)
             if 'rotation' in types:
-                rotated = self._create_rotated(none_data)
-                data['rotation'] = rotated
-
+                self._create_rotated()
             if 'deformation' in types:
-                deformed = self._create_deformed(none_data)
-                data['deformation'] = deformed
-
+                self._create_deformed()
             if 'flipping' in types:
-                flipped = self._create_flipped(none_data)
-                data['flipping'] = flipped
-
+                self._create_flipped()
                 if 'rotation' in types:
-                    rotated_flipped = self._create_rotated(flipped)
-                    data['flipping_rotation'] = rotated_flipped
-
+                    self._create_rotated_flipped()
                 if 'deformation' in types:
-                    deformed_flipped = self._create_deformed(flipped)
-                    data['flipping_deformation'] = deformed_flipped
+                    self._create_deformed_flipped()
 
-        return data
+        return self.data
 
     def _create_none(self, filepaths):
         image = Data3d(filepaths[0], self.get_data_on_the_fly, self.transpose4d)
         label = Data3d(filepaths[1], self.get_data_on_the_fly, self.transpose4d)
-        return image, label
+        self.data['none'] = (image, label)
 
-    def _create_rotated(self, data):
+    def _create_flipped(self):
+        flipper = Flipper(dim=self.dim)
+        image = Flipping3d(self.data['none'][0], flipper, label_pairs=[],
+                           get_data_on_the_fly=self.get_data_on_the_fly)
+        label = Flipping3d(self.data['none'][1], flipper,
+                           label_pairs=self.label_pairs,
+                           get_data_on_the_fly=self.get_data_on_the_fly)
+        self.data['flipped'] = (image, label)
+    
+    def _create_rotated(self):
+        self.data['rotated'] = self._rotate(self.data['none'])
+
+    def _create_rotated_flipped(self):
+        self.data['rotated_flipped'] = self._rotate(self.data['flipped'])
+
+    def _rotate(self, data):
         rotator = Rotator(max_angle=self.max_angle)
         image = Interpolating3d(data[0], rotator, order=1,
                                 get_data_on_the_fly=True)
@@ -67,7 +73,13 @@ class TrainingDataFactory(Data3dFactory):
                                 get_data_on_the_fly=True)
         return image, label
 
-    def _create_deformed(self, data):
+    def _create_deformed(self):
+        self.data['deformed'] = self._deform(self.data['none'])
+
+    def _create_deformed_flipped(self):
+        self.data['deformed_flipped'] = self._deform(self.data['flipped'])
+
+    def _deform(self, data):
         shape = data[0].get_data().shape[-3:]
         deformer = Deformer(shape, self.sigma, self.scale)
         image = Interpolating3d(data[0], deformer, order=1,
@@ -76,14 +88,6 @@ class TrainingDataFactory(Data3dFactory):
                                 get_data_on_the_fly=True)
         return image, label
 
-    def _create_flipped(self, data):
-        flipper = Flipper(dim=self.dim)
-        image = Flipping3d(data[0], flipper, label_pairs=[],
-                           get_data_on_the_fly=self.get_data_on_the_fly)
-        label = Flipping3d(data[1], flipper, label_pairs=self.label_pairs,
-                           get_data_on_the_fly=self.get_data_on_the_fly)
-        return image, label
-    
 
 class DecoratedData3dFactory(Data3dFactory):
 
@@ -104,26 +108,26 @@ class CroppedData3dFactory(DecoratedData3dFactory):
             mask = self._create_none(filepaths)
             masks['none'] = mask
             if 'rotation' in types:
-                rotated_mask = self._create_rotated(mask, data['rotation'][0])
-                masks['rotation'] = rotated_mask
+                rotated_mask = self._create_rotated(mask, data['rotated'][0])
+                masks['rotated'] = rotated_mask
 
             if 'deformation' in types:
-                deformed_mask = self._create_deformed(mask, data['deformation'][0])
-                masks['deformation'] = deformed_mask
+                deformed_mask = self._create_deformed(mask, data['deformed'][0])
+                masks['deformed'] = deformed_mask
 
             if 'flipping' in types:
-                flipped_mask = self._create_flipped(mask, data['flipping'][0])
-                masks['flipping'] = flipped_mask
+                flipped_mask = self._create_flipped(mask, data['flipped'][0])
+                masks['flipped'] = flipped_mask
 
                 if 'rotation' in types:
                     rotated_flipped_mask = self._create_rotated(flipped_mask,
-                                                                data['flipping_rotation'][0])
-                    masks['flipping_rotation'] = rotated_flipped_mask
+                                                                data['rotated_flipped'][0])
+                    masks['rotated_flipped'] = rotated_flipped_mask
 
                 if 'deformation' in types:
                     deformed_flipped_mask = self._create_deformed(flipped_mask,
-                                                                  data['flipping_deformation'][0])
-                    masks['flipping_deformation'] = deformed_flipped_mask
+                                                                  data['deformed_flipped'][0])
+                    masks['deformed_flipped'] = deformed_flipped_mask
 
         cropped_data = list()
         for key in sorted(data.keys()):
