@@ -100,13 +100,17 @@ class TrainingDataFactory(Data3dFactory):
         return image, label
 
 
-class DecoratedData3dFactory(Data3dFactory):
+class Data3dFactoryDecorator(Data3dFactory):
 
     def __init__(self, data3d_factory):
         self.factory = data3d_factory
 
+    def create_data(self, *filepaths, types=['none']):
+        self.factory.create_data(*filepaths[:-1], types=types)
+        super().create_data(*filepaths, types=types)
 
-class CroppedData3dFactory(DecoratedData3dFactory):
+
+class Data3dFactoryCropper(Data3dFactoryDecorator):
 
     def __init__(self, data3d_factory, cropping_shape):
         super().__init__(data3d_factory)
@@ -114,56 +118,43 @@ class CroppedData3dFactory(DecoratedData3dFactory):
         self.cropping_shape = cropping_shape
 
     def create_data(self, *filepaths, types=['none']):
-        self.factory.create_data(*filepaths[:-1], types=types)
+        self.uncropped_data = dict()
         super().create_data(*filepaths, types=types)
 
     def _create_none(self, filepaths):
         mask = Data3d(filepaths[-1], self.factory.get_data_on_the_fly,
                       self.factory.transpose4d)
-        self.uncropped_data['none'] = (*self.factory.data['none'], mask)
-        self.data['none'] = self._crop(self.factory.data['none'], mask)
+        self._crop('none', mask)
 
     def _create_flipped(self):
-        flipper = self.factory.data['flipped'][0].transformer
-        get_data_on_the_fly = self.factory.get_data_on_the_fly
-        mask = Flipping3d(self.uncropped_data['none'][-1], flipper,
-                          label_pairs=[],
-                          get_data_on_the_fly=get_data_on_the_fly)
-        self.uncropped_data['flipped'] = (*self.factory.data['flipped'], mask)
-        self.data['flipped'] = self._crop(self.factory.data['flipped'], mask)
+        mask = self._transform('none', 'flipped', Flipping3d)
+        self._crop('flipped', mask)
 
     def _create_rotated(self):
-        rotator = self.factory.data['rotated'][0].transformer
-        mask = Interpolating3d(self.uncropped_data['none'][-1], rotator, True)
-        self.uncropped_data['rotated'] = (*self.factory.data['rotated'], mask)
-        self.data['rotated'] = self._crop(self.factory.data['rotated'], mask)
+        mask = self._transform('none', 'rotated', Interpolating3d)
+        self._crop('rotated', mask)
 
     def _create_rotated_flipped(self):
-        rotator = self.factory.data['rotated_flipped'][0].transformer
-        mask = Interpolating3d(self.uncropped_data['flipped'][-1], rotator,
-                               get_data_on_the_fly=True)
-        uncropped_data = (*self.factory.data['rotated_flipped'], mask)
-        self.uncropped_data['rotated_flipped'] = uncropped_data
-        cropped = self._crop(self.factory.data['rotated_flipped'], mask)
-        self.data['rotated_flipped'] = cropped
+        mask = self._transform('flipped', 'rotated_flipped', Interpolating3d)
+        self._crop('rotated_flipped', mask)
 
     def _create_deformed(self):
-        shape = self.data['none'][-1].get_data().shape[-3:]
-        deformer = self.factory.data['deformed'][0].transformer
-        mask = Interpolating3d(self.uncropped_data['none'][-1], deformer, True)
-        self.uncropped_data['deformed'] = (*self.factory.data['deformed'], mask)
-        self.data['deformed'] = self._crop(self.factory.data['deformed'], mask)
+        mask = self._transform('none', 'deformed', Interpolating3d)
+        self._crop('deformed', mask)
 
     def _create_deformed_flipped(self):
-        shape = self.data['flipped'][-1].get_data().shape[-3:]
-        deformer = self.factory.data['deformed_flipped'][0].transformer
-        mask = Interpolating3d(self.uncropped_data['flipped'][-1], deformer, True)
-        uncropped_data = (*self.factory.data['deformed_flipped'], mask)
-        self.uncropped_data['deformed_flipped'] = uncropped_data
-        cropped = self._crop(self.factory.data['deformed_flipped'], mask)
-        self.data['deformed_flipped'] = cropped
+        mask = self._transform('flipped', 'deformed_flipped', Interpolating3d)
+        self._crop('deformed_flipped', mask)
 
-    def _crop(self, data, mask):
-        cropped = tuple([Cropping3d(d, mask, self.cropping_shape,
-                                    d.get_data_on_the_fly) for d in data])
-        return cropped
+    def _transform(self, source_key, target_key, Transforming):
+        data = self.factory.data[target_key][0]
+        mask = Transforming(self.uncropped_data[source_key][-1],
+                            data.transformer,
+                            get_data_on_the_fly=data.get_data_on_the_fly)
+        return mask
+
+    def _crop(self, key, mask):
+        self.uncropped_data[key] = (*self.factory.data[key], mask)
+        self.data[key] = tuple([Cropping3d(d, mask, self.cropping_shape,
+                                           d.get_data_on_the_fly)
+                                for d in self.factory.data[key]])

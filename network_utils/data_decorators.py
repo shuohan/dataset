@@ -134,7 +134,7 @@ class Interpolating3d(Transforming3d):
         order (int): Interpolation order; 0: nearest neighbor; 1: linear
 
     """
-    def __init__(self, data, transformer, order=1, get_data_on_the_fly=True):
+    def __init__(self, data, transformer, order=0, get_data_on_the_fly=True):
         super().__init__(data, transformer, get_data_on_the_fly)
         self.order = order
 

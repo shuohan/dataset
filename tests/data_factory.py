@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 
-from network_utils.data_factory import TrainingDataFactory, CroppedData3dFactory
+from network_utils.data_factory import TrainingDataFactory, Data3dFactoryCropper
 from network_utils.datasets import Dataset3d
 
 image_paths = sorted(glob('data/*image.nii.gz'))
@@ -21,7 +21,7 @@ label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
 
 factory = TrainingDataFactory(dim=1, label_pairs=label_pairs, max_angle=20,
                               get_data_on_the_fly=False)
-factory = CroppedData3dFactory(factory, (128, 96, 96))
+factory = Data3dFactoryCropper(factory, (128, 96, 96))
 
 types = ['none', 'flipping', 'rotation', 'deformation']
 data = list()
