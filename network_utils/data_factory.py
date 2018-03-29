@@ -183,6 +183,8 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
     data and the code explicitly selects whether the last processing should be
     done to the original data or flipped data.
 
+    Update: It should work with more transformations. But it is not tested.
+
     Attributes:
         cropping_shape ((3,) tuple of int): The result shape of the cropped data
         uncropped_data (dict of tuple of .data.Data): Store the uncropped data
@@ -205,26 +207,26 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         self._crop('none', mask)
 
     def _create_flipped(self):
-        mask = self._transform('none', 'flipped', Flipping3d)
+        mask = self._transform('none', 'flipped', [Flipping3d])
         self._crop('flipped', mask)
 
     def _create_rotated(self):
-        mask = self._transform('none', 'rotated', Interpolating3d)
+        mask = self._transform('none', 'rotated', [Interpolating3d])
         self._crop('rotated', mask)
 
     def _create_rotated_flipped(self):
-        mask = self._transform('flipped', 'rotated_flipped', Interpolating3d)
+        mask = self._transform('flipped', 'rotated_flipped', [Interpolating3d])
         self._crop('rotated_flipped', mask)
 
     def _create_deformed(self):
-        mask = self._transform('none', 'deformed', Interpolating3d)
+        mask = self._transform('none', 'deformed', [Interpolating3d])
         self._crop('deformed', mask)
 
     def _create_deformed_flipped(self):
-        mask = self._transform('flipped', 'deformed_flipped', Interpolating3d)
+        mask = self._transform('flipped', 'deformed_flipped', [Interpolating3d])
         self._crop('deformed_flipped', mask)
 
-    def _transform(self, source_key, target_key, Transforming):
+    def _transform(self, source_key, target_key, Transformings):
         """Transform the corresponding mask
         
         Args:
@@ -232,16 +234,23 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
                 transformation on
             target_key: The key of transformed result in `self.data` and
                 `self.uncropped_data`
-            Transforming (.data.DataDecorator): The transformation to apply
+            Transformings (list of .data.DataDecorator): The transformation to
+                apply. The applying order is the same with the order of items in
+                Transformings.
 
         Returns:
             mask (.data.Data): The transformed mask
 
         """
         data = self.factory.data[target_key][0]
-        mask = Transforming(self.uncropped_data[source_key][-1],
-                            data.transformer,
-                            get_data_on_the_fly=data.get_data_on_the_fly)
+        datas = list()
+        for i in range(len(Transformings)):
+            datas.insert(0, data)
+            data = data.data
+        mask = self.uncropped_data[source_key][-1]
+        for Transforming, data in zip(Transformings, datas):
+            mask = Transforming(mask, data.transformer,
+                                get_data_on_the_fly=data.get_data_on_the_fly)
         return mask
 
     def _crop(self, key, mask):

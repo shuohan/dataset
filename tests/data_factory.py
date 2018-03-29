@@ -30,7 +30,7 @@ for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     factory.create_data(ip, lp, mp)
     data.append(factory.data)
     counter += 1
-    if counter == 1:
+    if counter == 2:
         break
 
 data= {key:[d[key] for d in data] for key in data[0].keys()}
