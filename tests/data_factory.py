@@ -28,8 +28,8 @@ data = list()
 counter = 0
 for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     print(ip, lp, mp)
-    d = factory.create_data(ip, lp, mp, types=types)
-    data.append(d)
+    factory.create_data(ip, lp, mp, types=types)
+    data.append(factory.data)
     counter += 1
     if counter == 1:
         break
