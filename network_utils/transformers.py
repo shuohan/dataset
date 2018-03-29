@@ -41,37 +41,37 @@ class Interpolater(Transformer):
 class Flipper(Transformer):
     """Flip the data along an dimension (axis)
 
-    If `self.label_pairs` is empty, the class just flip the data; if not, the
-    class which swap the corresponding labels after the flipping. For example,
-    suppose 23 is a label on the left side of brain, while 26 on the right.
-    After flipping the image, the labels 23 and 26 should be swapped to enforce
-    they are at the correct sides.
-
     Attributes:
         dim (int): The dimension/axis that the data is flipped along
-        label_pairs (list of list of int): Each element is a two-item list which
-            contains the correspondence of the label to swap after flipping
 
     """
-    def __init__(self, dim=1, label_pairs=[]):
+    def __init__(self, dim=1):
         self.dim = dim
-        self.label_pairs = label_pairs
 
     def update(self):
         pass
 
-    def transform(self, data):
+    def transform(self, data, label_pairs=[]):
         """Flip the data
+
+        If `label_pairs` is empty, the class just flip the data; if not, the
+        class which swap the corresponding labels after the flipping. For
+        example, suppose 23 is a label on the left side of brain, while 26 on
+        the right.  After flipping the image, the labels 23 and 26 should be
+        swapped to enforce they are at the correct sides.
 
         Args:
             data (numpy.array): The data to flip
+            label_pairs (list of list of int): Each element is a two-item list
+                which contains the correspondence of the label to swap after
+                flipping
 
         Returns:
             flipped (numpy.array): The flipped data
 
         """
         flipped = np.flip(data, self.dim).copy()
-        for (pair1, pair2) in self.label_pairs:
+        for (pair1, pair2) in label_pairs:
             mask1 = flipped==pair1
             mask2 = flipped==pair2
             flipped[mask1] = pair2

@@ -146,3 +146,33 @@ class Interpolating3d(Transforming3d):
 
         """
         return self.transformer.transform(self.data.get_data(), self.order)
+
+
+class Flipping3d(Transforming3d):
+    """Flip data
+
+    See .transformers.Flipper for more details. Flipping is also treated as a
+    transform here, so additional Flipper is implemented to use the same API as
+    Transforming3d.
+
+    Attributes:
+        
+        label_pairs (list of list of int): Each element is a two-item list which
+            contains the correspondence of the label to swap after flipping
+
+    """
+    def __init__(self, data, transformer, label_pairs=[],
+                 get_data_on_the_fly=True):
+        super().__init__(data, transformer, get_data_on_the_fly)
+        self.label_pairs = label_pairs
+
+    def _get_data(self):
+        """Flip the data
+        
+        Returns:
+            flipped (numpy.array): The flipped data
+
+        """
+        transformed = self.transformer.transform(self.data.get_data(),
+                                                 self.label_pairs)
+        return transformed
