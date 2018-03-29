@@ -6,10 +6,44 @@ from .transformers import Flipper, Rotator, Deformer
 
 
 class Data3dFactory:
+    """Create Data3d instance
 
+    Call `create_data` to create Data3d/decorated Data3d instance. It supports
+    untouched, flipped, rotated, and deformed processing.
+
+    Attributes:
+        dim (int): The flipping dimension. Assume channel first, i.e. dim=0 is
+            the channel axis
+        label_pairs (list of list of int): The pairs of labels to swap after
+            flipping. These are usually corresponding left and right labels. So
+            the left labels are still left after flipping.
+            Example: [[11, 21], [12, 22], [13, 23]] will swap 11 and 21, 12 and
+            22, and 13 and 23.
+        max_angel (float): The rotation angles are randomly drawn from uniform
+            distribution [-max_angle, max_angle]
+        sigma (float): Control smoothness of the random generated deformation
+            field. The larget the value is, the smoother the deformation
+        scale (float): Draw a value randomly from uniform distribution
+            [0, `scale`] to limit the maximum magnitude of the deformation
+            pixel-wise displacement.
+        get_data_on_the_fly (bool): Get original data and flipped data on the
+            fly. The rotated and deformed data are always generated on the fly.
+        transpose4d (bool): (Future): Move the last dimension to the first
+        types (list of str): {'none', 'flipping', 'rotation', 'deformation'}.
+            'none': get original data; 'flipping': flip the data; 'rotation':
+            randomly rotate the data; 'deformation': randomly deform the data.
+            Note that when flipping and rotation/deformation present at the same
+            time, it rotates/deforms the flipped data as well.
+
+        data (dict of tuple .data.Data): The loaded/processed data by current
+            call of `self.create_data`. Each call of `self.create_data` will
+            empty `self.data` first. Key is the processing performed {'none',
+            'flipped', 'rotated', 'deformed', 'rotated_flipped',
+            'deformed_flipped'}
+        
+    """
     def __init__(self, dim=1, label_pairs=[], max_angle=10, sigma=5, scale=8,
                  get_data_on_the_fly=False, transpose4d=True, types=['none']):
-
         self.dim = dim
         self.label_pairs = label_pairs
         self.max_angle = max_angle
@@ -18,10 +52,17 @@ class Data3dFactory:
         self.get_data_on_the_fly = get_data_on_the_fly
         self.transpose4d = transpose4d
         self.types = types
-
         self.data = dict()
 
     def create_data(self, *filepaths):
+        """Create data
+
+        Call this method and access `self.data` to get the created data
+
+        Args:
+            filepath (str): The filepath of the data to load
+
+        """
         self.data = dict() 
         if 'none' in self.types:
             self._create_none(filepaths)
@@ -36,27 +77,42 @@ class Data3dFactory:
                 if 'deformation' in self.types:
                     self._create_deformed_flipped()
 
-    def _create_one(self, filepaths):
+    def _create_none(self, filepaths):
+        """Abstract method to create untouched data"""
         raise NotImplementedError
 
     def _create_flipped(self):
+        """Abstract method to create flipped data"""
         raise NotImplementedError
 
     def _create_rotated(self):
+        """Abstract method to create rotated data"""
         raise NotImplementedError
 
     def _create_rotated_flipped(self):
+        """Abstract method to create rotated flipped data"""
         raise NotImplementedError
 
     def _create_deformed(self):
+        """Abstract method to create deformed data"""
         raise NotImplementedError
 
     def _create_deformed_flipped(self):
+        """Abstract method to create deformed flipped data"""
         raise NotImplementedError
 
 
 class TrainingDataFactory(Data3dFactory):
+    """Create tranining data
 
+    Call `self.create_data` and `self.data` contains a list of pairs of (image,
+    label).
+
+    Attributes:
+        data (dict of tuple of .data.Data): Each item is a pair of (image,
+            label)
+
+    """
     def _create_none(self, filepaths):
         image = Data3d(filepaths[0], self.get_data_on_the_fly, self.transpose4d)
         label = Data3d(filepaths[1], self.get_data_on_the_fly, self.transpose4d)
@@ -102,7 +158,13 @@ class TrainingDataFactory(Data3dFactory):
 
 
 class Data3dFactoryDecorator(Data3dFactory):
+    """Decorate Data3dFactory
+    
+    Attributes:
+        factory (Data3dFactory): The factory to decorate
+        types (list of int): Same with `self.factory.types`
 
+    """
     def __init__(self, data3d_factory):
         self.factory = data3d_factory
         self.types = self.factory.types
@@ -113,7 +175,21 @@ class Data3dFactoryDecorator(Data3dFactory):
 
 
 class Data3dFactoryCropper(Data3dFactoryDecorator):
+    """Crop Data3dFactory using corresponding mask
 
+    The mask should be processed in the same way with the data to crop. The
+    current implementation only applies the last processing of the data, which
+    is correct for now, since only one or two kinds of processing is done to the
+    data and the code explicitly selects whether the last processing should be
+    done to the original data or flipped data.
+
+    Attributes:
+        cropping_shape ((3,) tuple of int): The result shape of the cropped data
+        uncropped_data (dict of tuple of .data.Data): Store the uncropped data
+            (image, label, mask). Calling `self.create_data` will emtpy this
+            first.
+
+    """
     def __init__(self, data3d_factory, cropping_shape):
         super().__init__(data3d_factory)
         self.uncropped_data = dict()
@@ -149,6 +225,19 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         self._crop('deformed_flipped', mask)
 
     def _transform(self, source_key, target_key, Transforming):
+        """Transform the corresponding mask
+        
+        Args:
+            source_key: The key of `self.uncropped_data` to perform the
+                transformation on
+            target_key: The key of transformed result in `self.data` and
+                `self.uncropped_data`
+            Transforming (.data.DataDecorator): The transformation to apply
+
+        Returns:
+            mask (.data.Data): The transformed mask
+
+        """
         data = self.factory.data[target_key][0]
         mask = Transforming(self.uncropped_data[source_key][-1],
                             data.transformer,
@@ -156,6 +245,13 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         return mask
 
     def _crop(self, key, mask):
+        """Crop the mask
+
+        Args:
+            key (str): The key of the data to crop in `self.factory.data`
+            mask (.data.Data): The mask used to crop the data
+
+        """
         self.uncropped_data[key] = (*self.factory.data[key], mask)
         self.data[key] = tuple([Cropping3d(d, mask, self.cropping_shape,
                                            d.get_data_on_the_fly)
