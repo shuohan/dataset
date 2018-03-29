@@ -127,7 +127,7 @@ class CroppedData3dFactory(DecoratedData3dFactory):
                 shape = mask.get_data().shape
                 mask_deformer1 = Deformer(shape, self.factory.sigma,
                                           self.factory.scale, order=0)
-                self.factory.image_deformer1.share(mask_rotator1)
+                self.factory.image_deformer1.share(mask_deformer1)
                 deformed_mask1 = Transforming3d(mask, mask_deformer1, True)
                 masks.append(deformed_mask1)
 

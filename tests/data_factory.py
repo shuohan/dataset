@@ -21,15 +21,15 @@ label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
 
 factory = TrainingDataFactory(dim=0, label_pairs=label_pairs, max_angle=20,
                               get_data_on_the_fly=False)
-# factory = CroppedData3dFactory(factory, (128, 96, 96))
+factory = CroppedData3dFactory(factory, (128, 96, 96))
 
-types = ['none', 'flipping']#, 'rotation', 'deformation']
+types = ['none', 'flipping', 'rotation', 'deformation']
 data = list()
 counter = 0
 for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     print(ip, lp, mp)
-    # d = factory.create_data(ip, lp, mp, types=types)
-    d = factory.create_data(ip, lp, types=types)
+    d = factory.create_data(ip, lp, mp, types=types)
+    # d = factory.create_data(ip, lp, types=types)
     data.append(d)
     counter += 1
     if counter == 1:
