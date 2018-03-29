@@ -34,12 +34,11 @@ for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     if counter == 1:
         break
 
-data = list(zip(*data))
+data= {key:[d[key] for d in data] for key in data[0].keys()}
 
-
-for i, d in enumerate(data):
-    print(i)
-    dataset = Dataset3d(d)
+for k, v in data.items():
+    print(k)
+    dataset = Dataset3d(v)
 
     for image, label in dataset:
         image = image[0, ...]

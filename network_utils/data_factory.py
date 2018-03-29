@@ -21,9 +21,7 @@ class Data3dFactory:
         self.data = dict()
 
     def create_data(self, *filepaths, types=['none']):
-
         self.data = dict() 
-
         if 'none' in types:
             self._create_none(filepaths)
             if 'rotation' in types:
@@ -36,8 +34,25 @@ class Data3dFactory:
                     self._create_rotated_flipped()
                 if 'deformation' in types:
                     self._create_deformed_flipped()
-
         return self.data
+
+    def _create_one(self, filepaths):
+        raise NotImplementedError
+
+    def _create_flipped(self):
+        raise NotImplementedError
+
+    def _create_rotated(self):
+        raise NotImplementedError
+
+    def _create_rotated_flipped(self):
+        raise NotImplementedError
+
+    def _create_deformed(self):
+        raise NotImplementedError
+
+    def _create_deformed_flipped(self):
+        raise NotImplementedError
 
 
 class TrainingDataFactory(Data3dFactory):
@@ -99,17 +114,15 @@ class CroppedData3dFactory(DecoratedData3dFactory):
         self.cropping_shape = cropping_shape
 
     def create_data(self, *filepaths, types=['none']):
-        self.data = dict()
         data = self.factory.create_data(*filepaths[:-1], types=types)
         super().create_data(*filepaths, types=types)
-        cropped_data = list()
-        for key in sorted(self.data.keys()):
+        for key in self.data.keys():
             cropped = [Cropping3d(d, self.data[key][-1], self.cropping_shape,
                                   d.get_data_on_the_fly)
                        for d in self.data[key][:-1]]
-            cropped_data.append(cropped)
+            self.data[key] = cropped
 
-        return cropped_data
+        return self.data
 
     def _create_none(self, filepaths):
         mask = Data3d(filepaths[-1], self.factory.get_data_on_the_fly,
