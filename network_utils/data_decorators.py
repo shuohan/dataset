@@ -112,10 +112,37 @@ class Transforming3d(DataDecorator):
         self.transformer = transformer
 
     def _get_data(self):
-        """Transform the data"""
+        """Transform the data
+        
+        Returns:
+            transformed (numpy.array): The transformed data
+
+        """
         return self.transformer.transform(self.data.get_data())
 
     def update(self):
         """Update the state/parameters"""
         super().update()
         self.transformer.update()
+
+
+class Interpolating3d(Transforming3d):
+    """Transform data using interpolation
+    
+    Attributes:
+        transformer (Transformer): Transform the data
+        order (int): Interpolation order; 0: nearest neighbor; 1: linear
+
+    """
+    def __init__(self, data, transformer, order=1, get_data_on_the_fly=True):
+        super().__init__(data, transformer, get_data_on_the_fly)
+        self.order = order
+
+    def _get_data(self):
+        """Transform the data
+        
+        Returns:
+            transformed (numpy.array): The transformed data
+
+        """
+        return self.transformer.transform(self.data.get_data(), self.order)
