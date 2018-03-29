@@ -269,7 +269,14 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
 
 
 class Data3dFactoryBinarizer(Data3dFactoryDecorator):
+    """Binarize label image
 
+    Args:
+        binarizer (.label_image_binarizer.LabelImageBinarizer): Check
+            LabelImageBinarizer for more details
+        binarizing_indices (list of int): The indices of data tuple to binarize
+
+    """
     def __init__(self, data3d_factory, binarizer, binarizing_indices=[1]):
         super().__init__(data3d_factory)
         self.binarizer = binarizer
@@ -300,6 +307,15 @@ class Data3dFactoryBinarizer(Data3dFactoryDecorator):
         self.data['deformed_flipped'] = result
 
     def _binarize(self, data):
+        """Binarize data
+
+        Args:
+            data (tuple of .data.Data): The data to binarize
+
+        Returns:
+            data (tuple of .data.Data): Binarized data
+
+        """
         data = list(data)
         for idx in self.binarizing_indices:
             data[idx] = Binarizing3d(data[idx], self.binarizer,
