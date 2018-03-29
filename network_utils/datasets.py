@@ -17,26 +17,27 @@ class Dataset3d:
             data (list of list of data.Data): The data to handle
 
         """
-        assert all([len(d) == len(data[0]) for d in data[1:]])
         self.data = data
 
     def __len__(self):
-        return len(self.data[0])
+        return len(self.data)
 
     def __getitem__(self, index):
         self.data[index][0].update()
         return [d.get_data() for d in self.data[index]]
 
-    def combine(self, dataset):
+    def __add__(self, dataset):
         """Combine with other dataset
 
         Args:
             dataset (Dataset3d): The dataset to combine
+        
+        Returns:
+            combined_dataset (Dataset3d): The combined datasets
 
         """
-        combined_data = [data + other_data
-                         for data, other_data in zip(self.data, dataset.data)]
-        return self.__init__(combined_data)
+        combined_data = self.data + dataset.data
+        return Dataset3d(combined_data)
 
     def split(self, indices):
         """Split self to two datasets
@@ -51,4 +52,4 @@ class Dataset3d:
         indices2 = indices_all - indices1
         data1 = [self.data[i] for i in sorted(list(indices1))]
         data2 = [self.data[i] for i in sorted(list(indices2))]
-        return self.__init__(data1), self.__init__(data2)
+        return Dataset3d(data1), Dataset3d(data2)
