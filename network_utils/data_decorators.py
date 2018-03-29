@@ -85,14 +85,14 @@ class Binarizing3d(DataDecorator):
 
         Fit the binarizer if not fitted before, and transform the label image.
         Since binarizer returns result with channels last, move the channels
-        first.
+        first. Only support single channel image (1 x num_i x num_j x num_k).
 
         Returns:
             binarized (num_channels x num_i ... numpy.array): The binarized
                 label image
 
         """
-        data = self.data.get_data()
+        data = self.data.get_data()[0, ...]
         if not hasattr(self.binarizer, 'classes_'):
             self.binarizer.fit(np.unique(data))
         binarized = self.binarizer.transform(data)

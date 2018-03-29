@@ -2,6 +2,7 @@
 
 from .data import Data3d
 from .data_decorators import Cropping3d, Interpolating3d, Flipping3d
+from .data_decorators import Binarizing3d
 from .transformers import Flipper, Rotator, Deformer
 
 
@@ -170,7 +171,7 @@ class Data3dFactoryDecorator(Data3dFactory):
         self.types = self.factory.types
 
     def create_data(self, *filepaths):
-        self.factory.create_data(*filepaths[:-1])
+        self.factory.create_data(*filepaths)
         super().create_data(*filepaths)
 
 
@@ -265,3 +266,42 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         self.data[key] = tuple([Cropping3d(d, mask, self.cropping_shape,
                                            d.get_data_on_the_fly)
                                 for d in self.factory.data[key]])
+
+
+class Data3dFactoryBinarizer(Data3dFactoryDecorator):
+
+    def __init__(self, data3d_factory, binarizer, binarizing_indices=[1]):
+        super().__init__(data3d_factory)
+        self.binarizer = binarizer
+        self.binarizing_indices = binarizing_indices
+
+    def _create_none(self, filepaths):
+        result = self._binarize(self.factory.data['none'])
+        self.data['none'] = result
+
+    def _create_flipped(self):
+        result = self._binarize(self.factory.data['flipped'])
+        self.data['flipped'] = result
+
+    def _create_rotated(self):
+        result = self._binarize(self.factory.data['rotated'])
+        self.data['rotated'] = result
+
+    def _create_deformed(self):
+        result = self._binarize(self.factory.data['deformed'])
+        self.data['deformed'] = result
+
+    def _create_rotated_flipped(self):
+        result = self._binarize(self.factory.data['rotated_flipped'])
+        self.data['rotated_flipped'] = result
+
+    def _create_deformed_flipped(self):
+        result = self._binarize(self.factory.data['deformed_flipped'])
+        self.data['deformed_flipped'] = result
+
+    def _binarize(self, data):
+        data = list(data)
+        for idx in self.binarizing_indices:
+            data[idx] = Binarizing3d(data[idx], self.binarizer,
+                                     data[idx].get_data_on_the_fly)
+        return tuple(data)
