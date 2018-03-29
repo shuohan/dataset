@@ -28,9 +28,9 @@ mask_flipper = Flipper(dim=0)
 label_flipper = Flipper(dim=0, label_pairs=label_pairs)
 
 shape = data1.get_data().shape
-data_deformer = Deformer(shape, sigma=3, scale=5, order=1)
-mask_deformer = Deformer(shape, sigma=3, scale=5, order=0)
-label_deformer = Deformer(shape, sigma=3, scale=5, order=0)
+data_deformer = Deformer(shape, sigma=3, scale=8, order=1)
+mask_deformer = Deformer(shape, sigma=3, scale=8, order=0)
+label_deformer = Deformer(shape, sigma=3, scale=8, order=0)
 data_deformer.share(label_deformer, mask_deformer)
 
 data2 = Transforming3d(data1, data_flipper, get_data_on_the_fly=False)
@@ -44,6 +44,9 @@ label2 = Transforming3d(label1, label_flipper, get_data_on_the_fly=False)
 label2 = Transforming3d(label2, label_deformer, get_data_on_the_fly=True)
 label1 = Cropping3d(label1, mask1, (128, 96, 96), get_data_on_the_fly=False)
 label2 = Cropping3d(label2, mask2, (128, 96, 96), get_data_on_the_fly=True)
+
+data1.update()
+data2.update()
 
 start_time = time()
 data2.get_data()
@@ -60,58 +63,45 @@ data2.get_data()
 end_time = time()
 print('third load', end_time - start_time)
 
+alpha = 0.7
 plt.figure()
 print(np.sum(data_deformer._x_deform), np.sum(label_deformer._x_deform))
 transformed_data1 = data1.get_data()
-transformed_data1 = transformed_data1 / np.max(transformed_data1) * 100
 transformed_label1 = label1.get_data()
 transformed_data2 = data2.get_data() 
-transformed_data2 = transformed_data2 / np.max(transformed_data2) * 100
 transformed_label2 = label2.get_data()
 print('get data')
 shape = transformed_data1.shape
-plt.subplot(3, 3, 1)
-image = np.hstack([transformed_data1[shape[0]//2, :, :],
-                   transformed_label1[shape[0]//2, :, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 2)
-image = np.hstack([transformed_data1[:, shape[1]//2, :],
-                   transformed_label1[:, shape[1]//2, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 3)
-image = np.hstack([transformed_data1[:, :, shape[2]//2],
-                   transformed_label1[:, :, shape[2]//2]])
-plt.imshow(image, cmap='gray')
+plt.subplot(2, 3, 1)
+image = transformed_data1[shape[0]//2, :, :]
+label = transformed_label1[shape[0]//2, :, :]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
+plt.subplot(2, 3, 2)
+image = transformed_data1[:, shape[1]//2, :]
+label = transformed_label1[:, shape[1]//2, :]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
+plt.subplot(2, 3, 3)
+image = transformed_data1[:, :, shape[2]//2]
+label = transformed_label1[:, :, shape[2]//2]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
 
-plt.subplot(3, 3, 4)
-image = np.hstack([transformed_data2[shape[0]//2, :, :],
-                   transformed_label2[shape[0]//2, :, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 5)
-image = np.hstack([transformed_data2[:, shape[1]//2, :],
-                   transformed_label2[:, shape[1]//2, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 6)
-image = np.hstack([transformed_data2[:, :, shape[2]//2],
-                   transformed_label2[:, :, shape[2]//2]])
-plt.imshow(image, cmap='gray')
-
-data2.update()
-print(np.sum(data_deformer._x_deform), np.sum(label_deformer._x_deform))
-transformed_data2 = data2.get_data()
-transformed_data2 = transformed_data2 / np.max(transformed_data2) * 100
-transformed_label2 = label2.get_data()
-plt.subplot(3, 3, 7)
-image = np.hstack([transformed_data2[shape[0]//2, :, :],
-                   transformed_label2[shape[0]//2, :, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 8)
-image = np.hstack([transformed_data2[:, shape[1]//2, :],
-                   transformed_label2[:, shape[1]//2, :]])
-plt.imshow(image, cmap='gray')
-plt.subplot(3, 3, 9)
-image = np.hstack([transformed_data2[:, :, shape[2]//2],
-                   transformed_label2[:, :, shape[2]//2]])
-plt.imshow(image, cmap='gray')
+plt.subplot(2, 3, 4)
+image = transformed_data2[shape[0]//2, :, :]
+label = transformed_label2[shape[0]//2, :, :]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
+plt.subplot(2, 3, 5)
+image = transformed_data2[:, shape[1]//2, :]
+label = transformed_label2[:, shape[1]//2, :]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
+plt.subplot(2, 3, 6)
+image = transformed_data2[:, :, shape[2]//2]
+label = transformed_label2[:, :, shape[2]//2]
+plt.imshow(image, cmap='gray', alpha=alpha)
+plt.imshow(label, alpha=1-alpha)
 
 plt.show()

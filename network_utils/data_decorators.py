@@ -17,6 +17,10 @@ class DataDecorator(Data):
         super().__init__(get_data_on_the_fly)
         self.data = data
 
+    @property
+    def filepath(self):
+        return self.data.filepath
+
     def update(self):
         """Update the state/parameters"""
         self.data.update()

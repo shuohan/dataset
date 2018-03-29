@@ -26,16 +26,14 @@ class TrainingDataFactory(Data3dFactory):
 
     def create_data(self, *filepaths, types=['none']):
 
-        images = list()
-        labels = list()
+        data = list()
 
         if 'none' in types:
             image = Data3d(filepaths[0], self.get_data_on_the_fly,
                            self.transpose4d)
             label = Data3d(filepaths[1], self.get_data_on_the_fly,
                            self.transpose4d)
-            images.append(image)
-            labels.append(label)
+            data.append((image, label))
 
             if 'rotation' in types:
                 self.image_rotator1 = Rotator(max_angle=self.max_angle, order=1)
@@ -45,8 +43,7 @@ class TrainingDataFactory(Data3dFactory):
                                                 True)
                 rotated_label1 = Transforming3d(label, self.label_rotator1,
                                                 True)
-                images.append(rotated_image1)
-                labels.append(rotated_label1)
+                data.append((rotated_image1, rotated_label1))
 
             if 'deformation' in types:
                 shape = image.get_data().shape
@@ -59,8 +56,7 @@ class TrainingDataFactory(Data3dFactory):
                                                  True)
                 deformed_label1 = Transforming3d(label, self.label_deformer1,
                                                  True)
-                images.append(deformed_image1)
-                labels.append(deformed_label1)
+                data.append((deformed_image1, deformed_label1))
 
             if 'flipping' in types:
                 image_flipper = Flipper(dim=self.dim)
@@ -70,8 +66,7 @@ class TrainingDataFactory(Data3dFactory):
                                                self.get_data_on_the_fly)
                 flipped_label = Transforming3d(label, label_flipper,
                                                self.get_data_on_the_fly)
-                images.append(flipped_image)
-                labels.append(flipped_label)
+                data.append((flipped_image, flipped_label))
 
                 if 'rotation' in types:
                     self.image_rotator2 = Rotator(max_angle=self.max_angle,
@@ -83,8 +78,7 @@ class TrainingDataFactory(Data3dFactory):
                                                     self.image_rotator2, True)
                     rotated_label2 = Transforming3d(flipped_label,
                                                     self.label_rotator2, True)
-                    images.append(rotated_image2)
-                    labels.append(rotated_label2)
+                    data.append((rotated_image2, rotated_label2))
 
                 if 'deformation' in types:
                     shape = image.get_data().shape
@@ -97,10 +91,9 @@ class TrainingDataFactory(Data3dFactory):
                                                      self.image_deformer2, True)
                     deformed_label2 = Transforming3d(flipped_label,
                                                      self.label_deformer2, True)
-                    images.append(deformed_image2)
-                    labels.append(deformed_label2)
+                    data.append((deformed_image2, deformed_label2))
 
-        return images, labels
+        return data
 
 
 class DecoratedData3dFactory(Data3dFactory):
@@ -166,6 +159,5 @@ class CroppedData3dFactory(DecoratedData3dFactory):
             cropped = [Cropping3d(d, mask, self.cropping_shape,
                                   d.get_data_on_the_fly) for d in dd]
             cropped_data.append(cropped)
-        cropped_data = list(zip(*cropped_data))
 
         return cropped_data

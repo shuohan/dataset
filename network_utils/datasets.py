@@ -14,34 +14,18 @@ class Dataset3d:
         """Default initialize
 
         Args:
-            data (list of list of data.Data3d): The data to handle
+            data (list of list of data.Data): The data to handle
 
         """
         assert all([len(d) == len(data[0]) for d in data[1:]])
         self.data = data
 
-    @classmethod
-    def from_directory(cls, dirname, patterns, **kwargs):
-        """Initialize from directory
-
-        Args:
-            dirname (str): The the name of the directory containing data
-            patterns (list of str): The filename patterns of the data to load
-            kwargs (dict): The settings to pass to data.Data3d
-
-        """
-        data = list()
-        for p in patterns:
-            filepaths = _get_filepaths_with_pattern(dirname, p)
-            data.append([Data3d(fp, **kwargs) for fp in filepaths])
-        return cls.__init__(data)
-
     def __len__(self):
-        return len(self.data)
+        return len(self.data[0])
 
     def __getitem__(self, index):
-        return [data[index] for data in self.data]
-
+        self.data[index][0].update()
+        return [d.get_data() for d in self.data[index]]
 
     def combine(self, dataset):
         """Combine with other dataset
@@ -68,7 +52,3 @@ class Dataset3d:
         data1 = [self.data[i] for i in sorted(list(indices1))]
         data2 = [self.data[i] for i in sorted(list(indices2))]
         return self.__init__(data1), self.__init__(data2)
-        
-
-def _get_filepaths_with_pattern(self, dirname, pattern):
-    return sorted(glob(os.path.join(dirname, pattern)))
