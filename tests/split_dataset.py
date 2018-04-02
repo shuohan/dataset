@@ -9,7 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 
-from network_utils.data_factory import TrainingDataFactory, Data3dFactoryCropper
+from network_utils.data_factories import TrainingDataFactory
+from network_utils.data_factories import Data3dFactoryCropper
 from network_utils.datasets import Dataset3d
 
 image_paths = sorted(glob('data/*image.nii.gz'))
@@ -27,7 +28,7 @@ data = list()
 counter = 0
 for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     print(ip, lp, mp)
-    factory.create_data(ip, lp, mp)
+    factory.create(ip, lp, mp)
     data.append(factory.data)
     counter += 1
     if counter == 3:

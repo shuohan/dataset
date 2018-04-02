@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 from time import time
 
 from network_utils.label_image_binarizer import LabelImageBinarizer
-from network_utils.data_factory import TrainingDataFactory, Data3dFactoryCropper
-from network_utils.data_factory import Data3dFactoryBinarizer
+from network_utils.data_factories import TrainingDataFactory
+from network_utils.data_factories import Data3dFactoryCropper
+from network_utils.data_factories import Data3dFactoryBinarizer
 from network_utils.datasets import Dataset3d
 
 
@@ -33,7 +34,7 @@ data = list()
 counter = 0
 for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
     print(ip, lp, mp)
-    factory.create_data(ip, lp, mp)
+    factory.create(ip, lp, mp)
     data.append(factory.data)
     counter += 1
     if counter == 2:
