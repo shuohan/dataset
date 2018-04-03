@@ -3,8 +3,8 @@
 from distutils.core import setup
 
 setup(name='network-utils',
-      version='0.2.2',
-      description='PyTorch utility classes and functions',
+      version='0.2.3',
+      description='Deep network utility',
       author='Shuo Han',
       author_email='shan50@jhu.edu',
       packages=['network_utils'])

@@ -92,7 +92,7 @@ class Dataset3dFactory:
                 data.append(data_factory.data)
         else:
             for ip, lp in zip(image_paths, label_paths):
-                data_factory.create_data(ip, lp)
+                data_factory.create(ip, lp)
                 data.append(data_factory.data)
         
         datasets = {key: Dataset3d([d[key] for d in data])
