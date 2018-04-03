@@ -3,6 +3,9 @@
 import os
 from glob import glob
 
+from .data_factories import Data3dFactoryCropper, Data3dFactoryBinarizer
+from .label_image_binarizer import LabelImageBinarizer
+
 
 class Dataset3d:
     """Dataset of 3D or 4D (multi-channel 3D) images
@@ -53,3 +56,54 @@ class Dataset3d:
         data1 = [self.data[i] for i in sorted(list(indices1))]
         data2 = [self.data[i] for i in sorted(list(indices2))]
         return Dataset3d(data1), Dataset3d(data2)
+
+
+class Dataset3dFactory:
+    """Create Dataset3d instance
+
+    """
+    @classmethod
+    def create(cls, data_factory, validation_indices, image_paths, label_paths,
+               mask_paths=[], cropping_shape=[]):
+        """Create Dataset3d instance
+
+        Args:
+            data_factory (.data_factories.Data3dFactory): Factory to create
+                Data3d instances
+            validation_indices (list of int): The indices of the data from paths
+                to treat as validation
+            image_paths (list of str): The paths to the training images
+            label_paths (list of str): The paths to the label images
+            mask_paths (list of str): The paths to the cropping masks. A
+                bounding box surrounding the mask will be used to crop the
+                images and label images
+            cropping_shape ((3,) tuple of int): The shape of the bounding box
+        
+        """
+        if len(mask_paths) > 0 and len(cropping_shape) > 0:
+            data_factory = Data3dFactoryCropper(data_factory, cropping_shape)
+        binarizer = LabelImageBinarizer()
+        data_factory = Data3dFactoryBinarizer(data_factory, binarizer)
+
+        data = list()
+        if len(mask_paths) > 0:
+            for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
+                data_factory.create(ip, lp, mp)
+                data.append(data_factory.data)
+        else:
+            for ip, lp in zip(image_paths, label_paths):
+                data_factory.create_data(ip, lp)
+                data.append(data_factory.data)
+        
+        datasets = {key: Dataset3d([d[key] for d in data])
+                    for key in data[0].keys()}
+
+        if len(datasets) == 0:
+            return None
+        
+        val_dataset, train_dataset = datasets['none'].split(validation_indices)
+        datasets.pop('none')
+        for key, dataset in datasets.items():
+            vd, td = dataset.split(validation_indices)
+            train_dataset = train_dataset + td
+        return train_dataset, val_dataset
