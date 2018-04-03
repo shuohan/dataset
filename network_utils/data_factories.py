@@ -9,7 +9,7 @@ from .transformers import Flipper, Rotator, Deformer
 class Data3dFactory:
     """Create Data3d instance
 
-    Call `create_data` to create Data3d/decorated Data3d instance. It supports
+    Call `create` to create Data3d/decorated Data3d instance. It supports
     untouched, flipped, rotated, and deformed processing.
 
     Attributes:
@@ -37,7 +37,7 @@ class Data3dFactory:
             time, it rotates/deforms the flipped data as well.
 
         data (dict of tuple .data.Data): The loaded/processed data by current
-            call of `self.create_data`. Each call of `self.create_data` will
+            call of `self.create`. Each call of `self.create` will
             empty `self.data` first. Key is the processing performed {'none',
             'flipped', 'rotated', 'deformed', 'rotated_flipped',
             'deformed_flipped'}
@@ -55,7 +55,7 @@ class Data3dFactory:
         self.types = types
         self.data = dict()
 
-    def create_data(self, *filepaths):
+    def create(self, *filepaths):
         """Create data
 
         Call this method and access `self.data` to get the created data
@@ -106,7 +106,7 @@ class Data3dFactory:
 class TrainingDataFactory(Data3dFactory):
     """Create tranining data
 
-    Call `self.create_data` and `self.data` contains a list of pairs of (image,
+    Call `self.create` and `self.data` contains a list of pairs of (image,
     label).
 
     Attributes:
@@ -170,9 +170,9 @@ class Data3dFactoryDecorator(Data3dFactory):
         self.factory = data3d_factory
         self.types = self.factory.types
 
-    def create_data(self, *filepaths):
-        self.factory.create_data(*filepaths)
-        super().create_data(*filepaths)
+    def create(self, *filepaths):
+        self.factory.create(*filepaths)
+        super().create(*filepaths)
 
 
 class Data3dFactoryCropper(Data3dFactoryDecorator):
@@ -189,7 +189,7 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
     Attributes:
         cropping_shape ((3,) tuple of int): The result shape of the cropped data
         uncropped_data (dict of tuple of .data.Data): Store the uncropped data
-            (image, label, mask). Calling `self.create_data` will emtpy this
+            (image, label, mask). Calling `self.create` will emtpy this
             first.
 
     """
@@ -198,9 +198,9 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         self.uncropped_data = dict()
         self.cropping_shape = cropping_shape
 
-    def create_data(self, *filepaths):
+    def create(self, *filepaths):
         self.uncropped_data = dict()
-        super().create_data(*filepaths)
+        super().create(*filepaths)
 
     def _create_none(self, filepaths):
         mask = Data3d(filepaths[-1], self.factory.get_data_on_the_fly,

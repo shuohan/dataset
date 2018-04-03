@@ -36,11 +36,11 @@ end_time = time()
 print('get data once, second load', end_time - start_time)
 
 plt.figure()
-shape = data.get_data().shape
+shape = data.get_data().shape[1:]
 plt.subplot(1, 3, 1)
-plt.imshow(data.get_data()[shape[0]//2, :, :], cmap='gray')
+plt.imshow(data.get_data()[0, shape[0]//2, :, :], cmap='gray')
 plt.subplot(1, 3, 2)
-plt.imshow(data.get_data()[:, shape[1]//2, :], cmap='gray')
+plt.imshow(data.get_data()[0, :, shape[1]//2, :], cmap='gray')
 plt.subplot(1, 3, 3)
-plt.imshow(data.get_data()[:, :, shape[2]//2], cmap='gray')
+plt.imshow(data.get_data()[0, :, :, shape[2]//2], cmap='gray')
 plt.show()
