@@ -64,7 +64,7 @@ class Dataset3dFactory:
     """
     @classmethod
     def create(cls, data_factory, validation_indices, image_paths, label_paths,
-               mask_paths=[], cropping_shape=[]):
+               mask_paths=[], cropping_shape=[], binarizer=None):
         """Create Dataset3d instance
 
         Args:
@@ -82,8 +82,8 @@ class Dataset3dFactory:
         """
         if len(mask_paths) > 0 and len(cropping_shape) > 0:
             data_factory = Data3dFactoryCropper(data_factory, cropping_shape)
-        binarizer = LabelImageBinarizer()
-        data_factory = Data3dFactoryBinarizer(data_factory, binarizer)
+        if binarizer is not None:
+            data_factory = Data3dFactoryBinarizer(data_factory, binarizer)
 
         data = list()
         if len(mask_paths) > 0:
