@@ -6,7 +6,8 @@ import numpy as np
 import csv
 import os
 import matplotlib.pyplot as plt
-from plotting_funcs import get_colors
+from plotting_utils import get_colors
+
 
 parser = argparse.ArgumentParser(description='Show the convergence')
 parser.add_argument('logs', nargs='+',
