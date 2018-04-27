@@ -12,6 +12,10 @@ class Transformer:
         """Abstract method to update parameters"""
         raise NotImplementedError
 
+    def cleanup(self):
+        """Abstract method to cleanup transformer's attributes to save memory"""
+        raise NotImplementedError
+
     def transform(self, data):
         """Abstract method to transform the data
         
@@ -49,6 +53,9 @@ class Flipper(Transformer):
         self.dim = dim
 
     def update(self):
+        pass
+
+    def cleanup(self):
         pass
 
     def transform(self, data, label_pairs=[]):
@@ -110,6 +117,9 @@ class Rotator(Interpolater):
         self._x_angle = self._calc_rand_angle()
         self._y_angle = self._calc_rand_angle()
         self._z_angle = self._calc_rand_angle()
+
+    def cleanup(self):
+        pass
 
     def transform(self, data, order):
         """Rotate the data
@@ -173,6 +183,12 @@ class Deformer(Interpolater):
         self._x_deform = self._calc_random_deform()
         self._y_deform = self._calc_random_deform()
         self._z_deform = self._calc_random_deform()
+
+    def cleanup(self):
+        """Set _deform to None to save memory"""
+        self._x_deform = None
+        self._y_deform = None
+        self._z_deform = None
 
     def transform(self, data, order):
         """Deform the data

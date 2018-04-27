@@ -25,6 +25,10 @@ class DataDecorator(Data):
         """Update the state/parameters"""
         self.data.update()
 
+    def cleanup(self):
+        """Clean up attributes to save memory"""
+        self.data.cleanup()
+
 
 class Cropping3d(DataDecorator):
     """Crop data using mask
@@ -118,12 +122,18 @@ class Transforming3d(DataDecorator):
             transformed (numpy.array): The transformed data
 
         """
-        return self.transformer.transform(self.data.get_data())
+        data = self.transformer.transform(self.data.get_data())
+        return data
 
     def update(self):
         """Update the state/parameters"""
         super().update()
         self.transformer.update()
+
+    def cleanup(self):
+        """Cleanup attributes to save memory"""
+        super().cleanup()
+        self.transformer.cleanup()
 
 
 class Interpolating3d(Transforming3d):
@@ -145,7 +155,8 @@ class Interpolating3d(Transforming3d):
             transformed (numpy.array): The transformed data
 
         """
-        return self.transformer.transform(self.data.get_data(), self.order)
+        data = self.transformer.transform(self.data.get_data(), self.order)
+        return data
 
 
 class Flipping3d(Transforming3d):

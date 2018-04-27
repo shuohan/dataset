@@ -45,6 +45,14 @@ class Data:
         """
         pass
 
+    def cleanup(self):
+        """Provide interface for decorator to clean up attributes
+        
+        Check .data_decorators for more details.
+
+        """
+        pass
+
 
 class Data3d(Data):
     """Object handling a 3D data
