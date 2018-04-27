@@ -27,7 +27,9 @@ class Dataset3d:
 
     def __getitem__(self, index):
         self.data[index][0].update()
-        return [d.get_data() for d in self.data[index]]
+        data = [d.get_data() for d in self.data[index]]
+        self.data[index][0].cleanup()
+        return data
 
     def __add__(self, dataset):
         """Combine with other dataset
