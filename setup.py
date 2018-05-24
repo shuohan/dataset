@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='network-utils',
-      version='0.3.0',
+      version='0.4.0',
       description='Deep network utility',
       author='Shuo Han',
       author_email='shan50@jhu.edu',

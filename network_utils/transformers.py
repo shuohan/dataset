@@ -26,6 +26,85 @@ class Transformer:
         raise NotImplementedError
 
 
+class Translater(Transformer):
+    """Translate the data randomly along x, y, and z axes
+
+    The translation is integer for simplicity
+    
+    Attributes:
+        max_trans (int): The translation will be uniformly sampled from
+            [-self.max_trans, self.max_trans]
+        _rand_state (numpy.random.RandomState): Random sampling
+        _x_trans, _y_trans, _z_trans (int): The translation along x, y, z axes
+
+    """
+    def __init__(self, max_trans):
+        self.max_trans = max_trans
+        self._rand_state = np.random.RandomState()
+
+    def update(self):
+        """Resample the translation"""
+        self._x_trans = self._calc_random_trans()
+        self._y_trans = self._calc_random_trans()
+        self._z_trans = self._calc_random_trans()
+
+    def cleanup(self):
+        """Set translations to None"""
+        self._x_trans = None
+        self._y_trans = None
+        self._z_trans = None
+
+    def transform(self, data):
+        """Translate the data using integer translation
+        
+        Args:
+            data (numpy.array): The data to translate
+
+        Returns:
+            translated (numpy.array): The translated data
+
+        """
+        xsize, ysize, zsize = data.shape[1:]
+        x_source_slice, x_target_slice = self._calc_index(self._x_trans, xsize)
+        y_source_slice, y_target_slice = self._calc_index(self._y_trans, ysize)
+        z_source_slice, z_target_slice = self._calc_index(self._z_trans, zsize)
+        translated = np.zeros(data.shape, dtype=data.dtype)
+        translated[..., x_target_slice, y_target_slice, z_target_slice] = \
+                data[..., x_source_slice, y_source_slice, z_source_slice]
+        return translated
+
+    def _calc_index(self, trans, size):
+        """Calculate target and source indexing slices from translation
+
+        Args:
+            trans (int): The translation of the data
+            size (int): The size of the data
+
+        Returns:
+            source (slice): The indexing slice in the source data
+            target (slice): The indexing slice in the target data
+
+        """
+        if trans > 0:
+            source = slice(0, size-1-trans, None)
+            target = slice(trans, size-1, None)
+        elif trans <= 0:
+            source = slice(-trans, size-1, None)
+            target = slice(0, size-1+trans, None)
+        return source, target
+
+    def _calc_random_trans(self):
+        """Randomly sample translation along an axis
+        
+        Returns:
+            trans (int): The translation along an axis
+
+        """
+        trans = self._rand_state.rand(1)
+        trans = int(np.round(trans * 2 * self.max_trans - self.max_trans))
+        return trans
+
+
 class Interpolater(Transformer):
     """Abstract class to transform data using interpolation
 
