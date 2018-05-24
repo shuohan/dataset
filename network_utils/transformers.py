@@ -64,13 +64,13 @@ class Translater(Transformer):
             translated (numpy.array): The translated data
 
         """
-        xsize, ysize, zsize = data.shape
+        xsize, ysize, zsize = data.shape[1:]
         x_source_slice, x_target_slice = self._calc_index(self._x_trans, xsize)
         y_source_slice, y_target_slice = self._calc_index(self._y_trans, ysize)
         z_source_slice, z_target_slice = self._calc_index(self._z_trans, zsize)
         translated = np.zeros(data.shape, dtype=data.dtype)
-        translated[x_target_slice, y_target_slice, z_target_slice] = \
-                data[x_source_slice, y_source_slice, z_source_slice] = \
+        translated[..., x_target_slice, y_target_slice, z_target_slice] = \
+                data[..., x_source_slice, y_source_slice, z_source_slice]
         return translated
 
     def _calc_index(self, trans, size):
@@ -101,7 +101,7 @@ class Translater(Transformer):
 
         """
         trans = self._rand_state.rand(1)
-        trans = int(round(trans * 2 * self.max_trans - self.max_trans))
+        trans = int(np.round(trans * 2 * self.max_trans - self.max_trans))
         return trans
 
 

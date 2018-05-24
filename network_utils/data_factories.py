@@ -43,11 +43,13 @@ class Data3dFactory:
             'deformed_flipped'}
         
     """
-    def __init__(self, dim=1, label_pairs=[], max_angle=10, sigma=5, scale=8,
-                 get_data_on_the_fly=False, transpose4d=True, types=['none']):
+    def __init__(self, dim=1, label_pairs=[], max_angle=10, max_trans=10,
+                 sigma=5, scale=8, get_data_on_the_fly=False,
+                 transpose4d=True, types=['none']):
         self.dim = dim
         self.label_pairs = label_pairs
         self.max_angle = max_angle
+        self.max_trans = max_trans
         self.sigma = sigma
         self.scale = scale
         self.get_data_on_the_fly = get_data_on_the_fly
@@ -175,12 +177,10 @@ class TrainingDataFactory(Data3dFactory):
     def _create_translated_flipped(self):
         self.data['translated_flipped'] = self._translate(self.data['flipped'])
 
-    def _translate(self):
+    def _translate(self, data):
         translater = Translater(max_trans=self.max_trans)
-        image = Transforming3d(self.data['none'][0], translater,
-                           get_data_on_the_fly=self.get_data_on_the_fly)
-        label = Transforming3d(self.data['none'][1], translater,
-                           get_data_on_the_fly=self.get_data_on_the_fly)
+        image = Transforming3d(data[0], translater, get_data_on_the_fly=True)
+        label = Transforming3d(data[1], translater, get_data_on_the_fly=True)
         return image, label
 
 
