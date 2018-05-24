@@ -167,7 +167,6 @@ class Flipping3d(Transforming3d):
     Transforming3d.
 
     Attributes:
-        
         label_pairs (list of list of int): Each element is a two-item list which
             contains the correspondence of the label to swap after flipping
 

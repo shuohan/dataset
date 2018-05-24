@@ -2,8 +2,8 @@
 
 from .data import Data3d
 from .data_decorators import Cropping3d, Interpolating3d, Flipping3d
-from .data_decorators import Binarizing3d
-from .transformers import Flipper, Rotator, Deformer
+from .data_decorators import Binarizing3d, Transforming3d
+from .transformers import Flipper, Rotator, Deformer, Translater
 
 
 class Data3dFactory:
@@ -71,12 +71,16 @@ class Data3dFactory:
                 self._create_rotated()
             if 'deformation' in self.types:
                 self._create_deformed()
+            if 'translation' in self.types:
+                self._create_translated()
             if 'flipping' in self.types:
                 self._create_flipped()
                 if 'rotation' in self.types:
                     self._create_rotated_flipped()
                 if 'deformation' in self.types:
                     self._create_deformed_flipped()
+                if 'translation' in self.types:
+                    self._create_translated_flipped()
 
     def _create_none(self, filepaths):
         """Abstract method to create untouched data"""
@@ -100,6 +104,14 @@ class Data3dFactory:
 
     def _create_deformed_flipped(self):
         """Abstract method to create deformed flipped data"""
+        raise NotImplementedError
+
+    def _create_translated(self):
+        """Abstract method to create translated data"""
+        raise NotImplementedError
+
+    def _create_translated_flipped(self):
+        """Abstract method to create translated flipped data"""
         raise NotImplementedError
 
 
@@ -155,6 +167,20 @@ class TrainingDataFactory(Data3dFactory):
                                 get_data_on_the_fly=True)
         label = Interpolating3d(data[1], deformer, order=0,
                                 get_data_on_the_fly=True)
+        return image, label
+
+    def _create_translated(self):
+        self.data['translated'] = self._translate(self.data['none'])
+
+    def _create_translated_flipped(self):
+        self.data['translated_flipped'] = self._translate(self.data['flipped'])
+
+    def _translate(self):
+        translater = Translater(max_trans=self.max_trans)
+        image = Transforming3d(self.data['none'][0], translater,
+                           get_data_on_the_fly=self.get_data_on_the_fly)
+        label = Transforming3d(self.data['none'][1], translater,
+                           get_data_on_the_fly=self.get_data_on_the_fly)
         return image, label
 
 
@@ -226,6 +252,14 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
     def _create_deformed_flipped(self):
         mask = self._transform('flipped', 'deformed_flipped', [Interpolating3d])
         self._crop('deformed_flipped', mask)
+
+    def _create_translated(self):
+        mask = self._transform('none', 'translated', [Transforming3d])
+        self._crop('translated', mask)
+
+    def _create_translated_flipped(self):
+        mask = self._transform('flipped', 'translated_flipped', [Transforming3d])
+        self._crop('translated_flipped', mask)
 
     def _transform(self, source_key, target_key, Transformings):
         """Transform the corresponding mask
@@ -305,6 +339,14 @@ class Data3dFactoryBinarizer(Data3dFactoryDecorator):
     def _create_deformed_flipped(self):
         result = self._binarize(self.factory.data['deformed_flipped'])
         self.data['deformed_flipped'] = result
+
+    def _create_translated(self):
+        result = self._binarize(self.factory.data['translated'])
+        self.data['translated'] = result
+
+    def _create_translated_flipped(self):
+        result = self._binarize(self.factory.data['translated_flipped'])
+        self.data['translated_flipped'] = result
 
     def _binarize(self, data):
         """Binarize data
