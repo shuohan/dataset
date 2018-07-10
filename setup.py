@@ -12,4 +12,4 @@ setup(name='network-utils',
       description='Deep network utility',
       author='Shuo Han',
       author_email='shan50@jhu.edu',
-      packages=['network_util'])
+      packages=['network_utils'])
