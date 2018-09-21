@@ -2,6 +2,7 @@
 
 import numpy as np
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
+from image_processing_3d import scale3d
 
 
 class Transformer:
@@ -225,6 +226,70 @@ class Rotator(Interpolater):
         angle = self._rand_state.rand(1)
         angle = float(angle * 2 * self.max_angle - self.max_angle)
         return angle
+
+
+class Scaler(Interpolater):
+    """Scale the data randomly
+
+    Call `image_processing_3d.scale3d` to scale the data. The scaling factors
+    are randomly sampled from a uniform distribution between 1
+    and `self.max_scale` and between -1 and -self.max_scale. If the sampled is
+    negative, convert to 1/abs(scale). Each time `self.update()` is called, the
+    scaling factors are resampled.
+
+    Attributes:
+        max_scale (positive float): Specify the sampling uniform distribution.
+        point ((3,) numpy.array): The point to scale around
+        _rand_state (numpy.random.RandomState): Random sampling
+        _x_scale, _y_scale, _z_scale ((1,) list of float): Scaling factors
+            aroung x, y, and z axes. Use list so we can copy the vairable by
+            refernce.
+
+    """
+    def __init__(self, max_scale=2, point=None):
+        self.max_angle = max_angle
+        self.point = point
+
+        self._rand_state = np.random.RandomState()
+
+    def update(self):
+        """Resample the rotation angles
+
+        """
+        self._x_scale = self._calc_rand_scale()
+        self._y_scale = self._calc_rand_scale()
+        self._z_scale = self._calc_rand_scale()
+
+    def cleanup(self):
+        pass
+
+    def transform(self, data, order):
+        """Rotate the data
+
+        Args:
+            data (numpy.array): The data to scale
+            order (int): The interpolation order
+
+        Returns:
+            scaled (numpy.array): The scaled data
+        
+        """
+        scaled = scale3d(data, self._x_scale, self._y_scale, self._z_scale,
+                         point=self.point, order=order)
+        return scaled
+
+    def _calc_rand_scale(self):
+        """Calculate random scaling factor from a uniform distribution
+        
+        Returns:
+            scale (float): The sampled scaling factor
+
+        """
+        scale = self._rand_state.rand(1)
+        scale = float(scale * (self.max_scale - 1) + 1)
+        if self._rand_state.choice([-1, 1]) < 0:
+            scale = 1 / scale
+        return scale
 
 
 class Deformer(Interpolater):
