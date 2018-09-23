@@ -17,7 +17,8 @@ image_paths = sorted(glob('data/*image.nii.gz'))
 label_paths = sorted(glob('data/*label.nii.gz'))
 mask_paths = sorted(glob('data/*mask.nii.gz'))
 
-types = ['none', 'flipping', 'rotation', 'deformation']
+# types = ['none', 'flipping', 'rotation', 'deformation']
+types = ['none', 'scaling']
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 factory = TrainingDataFactory(dim=1, label_pairs=label_pairs, max_angle=20,

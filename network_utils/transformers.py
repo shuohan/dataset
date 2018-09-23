@@ -247,7 +247,7 @@ class Scaler(Interpolater):
 
     """
     def __init__(self, max_scale=2, point=None):
-        self.max_angle = max_angle
+        self.max_scale = max_scale
         self.point = point
 
         self._rand_state = np.random.RandomState()

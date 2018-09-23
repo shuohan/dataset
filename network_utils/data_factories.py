@@ -44,7 +44,7 @@ class Data3dFactory:
         
     """
     def __init__(self, dim=1, label_pairs=[], max_angle=10, max_trans=10,
-                 sigma=5, scale=8, get_data_on_the_fly=False,
+                 sigma=5, scale=8, max_scale=1.6, get_data_on_the_fly=False,
                  transpose4d=True, types=['none']):
         self.dim = dim
         self.label_pairs = label_pairs
@@ -52,6 +52,7 @@ class Data3dFactory:
         self.max_trans = max_trans
         self.sigma = sigma
         self.scale = scale
+        self.max_scale = max_scale
         self.get_data_on_the_fly = get_data_on_the_fly
         self.transpose4d = transpose4d
         self.types = types
@@ -74,6 +75,8 @@ class Data3dFactory:
             self._create_deformed()
         if 'translation' in self.types:
             self._create_translated()
+        if 'scaling' in self.types:
+            self._create_scaled()
         if 'flipping' in self.types:
             self._create_flipped()
             if 'rotation' in self.types:
@@ -82,6 +85,8 @@ class Data3dFactory:
                 self._create_deformed_flipped()
             if 'translation' in self.types:
                 self._create_translated_flipped()
+            if 'scaling' in self.types:
+                self._create_scaled_flipped()
 
     def _create_none(self, filepaths):
         """Abstract method to create untouched data"""

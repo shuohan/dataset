@@ -18,7 +18,7 @@ from network_utils.data_factories import TrainingDataFactory
 load_on_the_fly = True
 
 # types = ['none', 'flipping', 'rotation', 'deformation', 'translation']
-types = ['none', 'translation']
+types = ['none', 'scaling']
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 data_factory = TrainingDataFactory(dim=1, label_pairs=label_pairs,
