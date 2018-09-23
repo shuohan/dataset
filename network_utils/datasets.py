@@ -108,7 +108,7 @@ class Dataset3dFactory:
         datasets.pop('none')
         if not include_none:
             train_dataset = Dataset3d([])
-        if not include_flipped:
+        if 'flipped' in datasets and not include_flipped:
             datasets.pop('flipped')
         for key, dataset in datasets.items():
             vd, td = dataset.split(validation_indices)
