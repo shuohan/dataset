@@ -3,7 +3,7 @@
 from .data import Data3d
 from .data_decorators import Cropping3d, Interpolating3d, Flipping3d
 from .data_decorators import Binarizing3d, Transforming3d
-from .transformers import Flipper, Rotator, Deformer, Translater
+from .transformers import Flipper, Rotator, Deformer, Translater, Scaler
 
 
 class Data3dFactory:
@@ -183,6 +183,21 @@ class TrainingDataFactory(Data3dFactory):
         label = Transforming3d(data[1], translater, get_data_on_the_fly=True)
         return image, label
 
+    def _create_scaled(self):
+        self.data['scaled'] = self._scale(self.data['none'])
+
+    def _create_scaled_flipped(self):
+        self.data['scaled_flipped'] = self._scale(self.data['flipped'])
+
+    def _scale(self, data):
+        scaler = Scaler(max_scale=self.max_scale)
+        image = Interpolating3d(data[0], scaler, order=1,
+                                get_data_on_the_fly=True)
+        label = Interpolating3d(data[1], scaler, order=0,
+                                get_data_on_the_fly=True)
+        return image, label
+
+
 
 class Data3dFactoryDecorator(Data3dFactory):
     """Decorate Data3dFactory
@@ -261,6 +276,15 @@ class Data3dFactoryCropper(Data3dFactoryDecorator):
         mask = self._transform('flipped', 'translated_flipped', [Transforming3d])
         self._crop('translated_flipped', mask)
 
+    def _create_scaled(self):
+        mask = self._transform('none', 'scaled', [Interpolating3d])
+        self._crop('scaled', mask)
+
+    def _create_scaled_flipped(self):
+        mask = self._transform('flipped', 'scaled_flipped', [Interpolating3d])
+        self._crop('scaled_flipped', mask)
+
+
     def _transform(self, source_key, target_key, Transformings):
         """Transform the corresponding mask
         
@@ -332,6 +356,10 @@ class Data3dFactoryBinarizer(Data3dFactoryDecorator):
         result = self._binarize(self.factory.data['deformed'])
         self.data['deformed'] = result
 
+    def _create_scaled(self):
+        result = self._binarize(self.factory.data['scaled'])
+        self.data['scaled'] = result
+
     def _create_rotated_flipped(self):
         result = self._binarize(self.factory.data['rotated_flipped'])
         self.data['rotated_flipped'] = result
@@ -339,6 +367,10 @@ class Data3dFactoryBinarizer(Data3dFactoryDecorator):
     def _create_deformed_flipped(self):
         result = self._binarize(self.factory.data['deformed_flipped'])
         self.data['deformed_flipped'] = result
+
+    def _create_scaled_flipped(self):
+        result = self._binarize(self.factory.data['scaled_flipped'])
+        self.data['scaled_flipped'] = result
 
     def _create_translated(self):
         result = self._binarize(self.factory.data['translated'])
