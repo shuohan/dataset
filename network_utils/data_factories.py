@@ -67,22 +67,21 @@ class Data3dFactory:
 
         """
         self.data = dict() 
-        if 'none' in self.types:
-            self._create_none(filepaths)
+        self._create_none(filepaths)
+        if 'rotation' in self.types:
+            self._create_rotated()
+        if 'deformation' in self.types:
+            self._create_deformed()
+        if 'translation' in self.types:
+            self._create_translated()
+        if 'flipping' in self.types:
+            self._create_flipped()
             if 'rotation' in self.types:
-                self._create_rotated()
+                self._create_rotated_flipped()
             if 'deformation' in self.types:
-                self._create_deformed()
+                self._create_deformed_flipped()
             if 'translation' in self.types:
-                self._create_translated()
-            if 'flipping' in self.types:
-                self._create_flipped()
-                if 'rotation' in self.types:
-                    self._create_rotated_flipped()
-                if 'deformation' in self.types:
-                    self._create_deformed_flipped()
-                if 'translation' in self.types:
-                    self._create_translated_flipped()
+                self._create_translated_flipped()
 
     def _create_none(self, filepaths):
         """Abstract method to create untouched data"""
