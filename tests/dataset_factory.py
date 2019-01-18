@@ -18,7 +18,7 @@ from network_utils.data_factories import TrainingDataFactory
 load_on_the_fly = True
 
 # types = ['none', 'flipping', 'rotation', 'deformation', 'translation']
-types = ['none', 'translation']
+types = ['flipping', 'translation', 'scaling']
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 data_factory = TrainingDataFactory(dim=1, label_pairs=label_pairs,
@@ -35,7 +35,9 @@ mask_paths = sorted(glob('data/*mask.nii.gz'))[:2]
 #                                                mask_paths=mask_paths,
 #                                                cropping_shape=(128,96,96))
 t_dataset, v_dataset = Dataset3dFactory.create(data_factory, [],
-                                               image_paths, label_paths)
+                                               image_paths, label_paths,
+                                               include_none=('none' in types),
+                                               include_flipped=('flipping' in types))
 
 @profile
 def get():

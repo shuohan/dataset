@@ -66,7 +66,8 @@ class Dataset3dFactory:
     """
     @classmethod
     def create(cls, data_factory, validation_indices, image_paths, label_paths,
-               mask_paths=[], cropping_shape=[], binarizer=None):
+               mask_paths=[], cropping_shape=[], binarizer=None,
+               include_none=True, include_flipped=True):
         """Create Dataset3d instance
 
         Args:
@@ -105,6 +106,10 @@ class Dataset3dFactory:
         
         val_dataset, train_dataset = datasets['none'].split(validation_indices)
         datasets.pop('none')
+        if not include_none:
+            train_dataset = Dataset3d([])
+        if 'flipped' in datasets and not include_flipped:
+            datasets.pop('flipped')
         for key, dataset in datasets.items():
             vd, td = dataset.split(validation_indices)
             train_dataset = train_dataset + td
