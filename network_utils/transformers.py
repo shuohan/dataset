@@ -273,7 +273,7 @@ class Translater(Transformer):
         return trans
 
 
-class Rotator(Interpolater):
+class Rotater(Interpolater):
     """Rotate the data randomly
 
     Call `image_processing_3d.rotate3d` to rotate the data. The rotation angles

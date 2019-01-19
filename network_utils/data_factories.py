@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .data import Data3d, Transforming3d
-from .transformers import Flipper, Rotator, Deformer, Translater, Scaler
+from .transformers import Flipper, Rotater, Deformer, Translater, Scaler
 
 
 class Data3dFactory:
