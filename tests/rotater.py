@@ -3,7 +3,6 @@
 
 import matplotlib.pyplot as plt
 from time import time
-from scipy.ndimage.measurements import center_of_mass
 from memory_profiler import profile
 
 from network_utils.data import Data3d, Transforming3d
