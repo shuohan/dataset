@@ -2,8 +2,7 @@
 
 import numpy as np
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
-from image_processing_3d import scale3d
-
+from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d, scale3d
 
 class Transformer:
     """Abstract class to transform data
@@ -25,6 +24,54 @@ class Transformer:
 
         """
         raise NotImplementedError
+
+
+class Cropper(Transformer):
+    """Crop the data using a mask
+
+    Attributes:
+        mask (.data.Data): The mask used to crop the data; assume only one
+            channel (channel first)
+        _bbox (list of slice): The bouding box indices used to crop the data
+        _source_bbox (list of slice): The index slices in `self.data` of the
+            cropping region
+        _target_bbox (list of slice): The index slices in `self._data` (cropped
+            `self.data`) of the cropping region
+
+    """
+    def __init__(self, mask, cropping_shape):
+        """Initialize
+
+        """
+        self.mask = mask
+        self.cropping_shape = cropping_shape
+
+        self._bbox = None
+        self._source_bbox = None
+        self._target_bbox = None
+
+    def update(self):
+        """Recalculate the bounding box from the mask"""
+        mask = self.mask.get_data()[0, ...]
+        bbox = calc_bbox3d(mask)
+        self._bbox = resize_bbox3d(bbox, self.cropping_shape)
+
+    def cleanup(self):
+        """Set bbox to None"""
+        self._bbox = None
+
+    def transform(self, data):
+        """Crop the data
+
+        Args:
+            data (numpy.array): The data to crop using the mask
+
+        Returns:
+            cropped (numpy.array): The cropped data
+
+        """
+        cropped, self._source_bbox, self._target_bbox = crop3d(data, self._bbox)
+        return cropped
 
 
 class Translater(Transformer):

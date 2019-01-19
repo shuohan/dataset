@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
+"""Data decorators
+
+Warp around the Data/DataDecorator classes to provide more functionality
+
+"""
 
 import numpy as np
-from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d
 
 from .data import Data
 
@@ -11,6 +15,7 @@ class DataDecorator(Data):
 
     Attributes:
         data (Data): The decorated data
+        on_the_fly (bool): True if to load/process the data on the fly
 
     """
     def __init__(self, data, on_the_fly=True):
@@ -28,47 +33,6 @@ class DataDecorator(Data):
     def cleanup(self):
         """Clean up attributes to save memory"""
         self.data.cleanup()
-
-
-class Cropping3d(DataDecorator):
-    """Crop data using mask
-
-    Call externel `image_processing_3d.crop3d` to crop the data. Check its doc
-    for more details.
-
-    Attributes:
-        data (Data): The data to crop
-        mask (Data): The mask used to crop the data
-        cropping_shape (tuple of int): The shape of cropped data
-        _data (Data): `None` when `self.on_the_fly` is `True`;
-            otherwise holding the cropped data
-        _source_bbox (list of slice): The index slices in `self.data` of the
-            cropping region
-        _target_bbox (list of slice): The index slices in `self._data` (cropped
-            `self.data`) of the cropping region
-
-    """
-    def __init__(self, data, mask, cropping_shape, on_the_fly=True):
-        super().__init__(data, on_the_fly)
-        self.mask = mask
-        self.cropping_shape = cropping_shape
-
-        self._source_bbox = None
-        self._target_bbox = None
-
-    def _get_data(self):
-        """Crop the data using the corresponding mask
-
-        Returns:
-            cropped (num_channels x num_i x ... numpy.array): The cropped data
-
-        """
-        data = self.data.get_data()
-        mask = self.mask.get_data()[0, ...]
-        bbox = calc_bbox3d(mask)
-        bbox = resize_bbox3d(bbox, self.cropping_shape)
-        cropped, self._source_bbox, self._target_bbox = crop3d(data, bbox)
-        return cropped
 
 
 class Binarizing3d(DataDecorator):
