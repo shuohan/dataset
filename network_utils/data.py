@@ -4,7 +4,14 @@ from .loads import load
 
 
 class Data:
+    """Abstract class to handle data
 
+    Attributes:
+        on_the_fly (bool): True if to load data on the fly
+        _data (numpy.array): The reference to the loaded data; None if the data
+            is not loaded or loaded on the fly
+
+    """
     def __init__(self, on_the_fly=True):
         self.on_the_fly = on_the_fly
         self._data = None
@@ -57,8 +64,17 @@ class Data:
 class Data3d(Data):
     """Object handling a 3D data
 
+    Attributes:
+        filepath (str): The path to the file to load
+        on_the_fly (bool): True if to load the data on the fly
+        transpose4d (bool): Move the last dimension to the first (channel last
+            to channel first)
+
     """
     def __init__(self, filepath, on_the_fly=True, transpose4d=True):
+        """Initialize
+
+        """
         super().__init__(on_the_fly)
         self.filepath = filepath
         self.transpose4d = transpose4d
@@ -78,7 +94,7 @@ class Data3d(Data):
         """
         data = load(self.filepath)
         if len(data.shape) == 4:
-            if self._transpose:
+            if self.transpose4d:
                 data = np.transpose(data, [3, 0, 1, 2])
         elif len(data.shape) == 3:
             data = data[None, ...]
