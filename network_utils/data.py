@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import warnings
 
 from .loads import load
 
@@ -126,6 +127,12 @@ class DataDecorator(Data):
     def __init__(self, data, on_the_fly=True):
         super().__init__(on_the_fly)
         self.data = data
+        if self.data.on_the_fly and not self.on_the_fly:
+            name = self.__class__.__name__
+            message = ('Must process on the fly since the wrapped is '
+                       'on the fly. Set %s.on_the_fly to True' % name)
+            warnings.warn(message, RuntimeWarning),
+            self.on_the_fly = True
 
     @property
     def filepath(self):

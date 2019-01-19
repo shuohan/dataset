@@ -20,8 +20,8 @@ def test(max_angle=20, on_the_fly=True):
     image = Data3d(image_path, on_the_fly=on_the_fly)
     label = Data3d(label_path, on_the_fly=on_the_fly)
     rotator = Rotater(max_angle=max_angle, point=None)
-    rimage = Transforming3d(image, rotator, on_the_fly=on_the_fly)
-    rlabel = Transforming3d(label, rotator, on_the_fly=on_the_fly)
+    rimage = Transforming3d(image, rotator, on_the_fly=False)
+    rlabel = Transforming3d(label, rotator, on_the_fly=False)
 
     rotator.update()
     start_time = time()
