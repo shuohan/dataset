@@ -76,18 +76,22 @@ class LabelImageBinarizer(LabelBinarizer, Transformer):
     def cleanup(self):
         pass
 
-    def transform(self, label_image):
+    def transform(self, label_image, squeeze=True):
         """Transform label image to binary labels
 
         Args:
             label_image (numpy.array): The label image to transform. It can be
                 2D, 3D, ...
+            squeeze (bool): Squeeze the label image
 
         Returns:
             binarization (num_i x num_j x ... x num_channels numpy.array): The
                 binary label image
 
         """
+        if squeeze:
+            label_image = np.squeeze(label_image)
+
         if not hasattr(self, 'classes_'):
             self.fit(np.unique(label_image))
         flattened_label_image = label_image.flatten()

@@ -1,83 +1,64 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-sys.path.insert(0, '..')
-
-from glob import glob
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from time import time
+from memory_profiler import profile
 
-from network_utils.label_image_binarizer import LabelImageBinarizer
-from network_utils.data_factories import TrainingDataFactory
-from network_utils.data_factories import Data3dFactoryCropper
-from network_utils.data_factories import Data3dFactoryBinarizer
-from network_utils.datasets import Dataset3d
+from network_utils.data import Data3d, Transforming3d
+from network_utils.transformers import LabelImageBinarizer
 
+image_path = 'data/at1000_image.nii.gz'
+label_path = 'data/at1000_label.nii.gz'
+mask_path = 'data/at1000_mask.nii.gz'
 
-image_paths = sorted(glob('data/*image.nii.gz'))
-label_paths = sorted(glob('data/*label.nii.gz'))
-mask_paths = sorted(glob('data/*mask.nii.gz'))
+@profile
+def test(on_the_fly=True):
+    """Test label image binarize"""
+    print('On the fly:', on_the_fly)
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
+    binarizer = LabelImageBinarizer()
+    binarizer.update()
+    blabel = Transforming3d(label, binarizer, on_the_fly=on_the_fly)
 
-types = ['none', 'rotation']
-label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
-               [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
-factory = TrainingDataFactory(dim=1, label_pairs=label_pairs, max_angle=20,
-                              get_data_on_the_fly=False, types=types)
-factory = Data3dFactoryCropper(factory, (128, 96, 96))
+    start_time = time()
+    image.get_data()
+    blabel.get_data()
+    end_time = time()
+    print('First binarization', end_time - start_time)
 
-binarizer = LabelImageBinarizer()
-factory = Data3dFactoryBinarizer(factory, binarizer)
+    start_time = time()
+    image.get_data()
+    blabel.get_data()
+    end_time = time()
+    print('second binarization', end_time - start_time)
 
-data = list()
-counter = 0
-for ip, lp, mp in zip(image_paths, label_paths, mask_paths):
-    print(ip, lp, mp)
-    factory.create(ip, lp, mp)
-    data.append(factory.data)
-    counter += 1
-    if counter == 2:
-        break
+    return image, blabel
 
-data= {key:[d[key] for d in data] for key in data[0].keys()}
-num_repeats = 2
+if __name__ == "__main__":
+    test(on_the_fly=True)
+    image, blabel = test(on_the_fly=False)
 
-for k, v in data.items():
-    print(k)
-    dataset = Dataset3d(v)
-
-    for i in range(num_repeats):
-
-        for image, label in dataset:
-            image = image[0, ...]
-
-            plt.figure()
-
-            plt.subplot(2, 3, 1)
-            sliceid = image.shape[0] // 2
-            plt.imshow(image[sliceid, :, :], cmap='gray', alpha=0.7)
-            plt.imshow(label[0, sliceid, :, :], alpha=0.3)
-            plt.subplot(2, 3, 2)
-            sliceid = image.shape[1] // 2
-            plt.imshow(image[:, sliceid, :], cmap='gray', alpha=0.7)
-            plt.imshow(label[0, :, sliceid, :], alpha=0.3)
-            plt.subplot(2, 3, 3)
-            sliceid = image.shape[2] // 2
-            plt.imshow(image[:, :, sliceid], cmap='gray', alpha=0.7)
-            plt.imshow(label[0, :, :, sliceid], alpha=0.3)
-
-            plt.subplot(2, 3, 4)
-            sliceid = image.shape[0] // 2
-            plt.imshow(image[sliceid, :, :], cmap='gray', alpha=0.7)
-            plt.imshow(label[1, sliceid, :, :], alpha=0.3)
-            plt.subplot(2, 3, 5)
-            sliceid = image.shape[1] // 2
-            plt.imshow(image[:, sliceid, :], cmap='gray', alpha=0.7)
-            plt.imshow(label[1, :, sliceid, :], alpha=0.3)
-            plt.subplot(2, 3, 6)
-            sliceid = image.shape[2] // 2
-            plt.imshow(image[:, :, sliceid], cmap='gray', alpha=0.7)
-            plt.imshow(label[1, :, :, sliceid], alpha=0.3)
-
-plt.show()
+    plt.figure(figsize=(10, 6))
+    print(image.get_data().shape)
+    print(blabel.get_data().shape)
+    shape = image.get_data().shape[1:]
+    channels = [0, 1, 8, 16, 24]
+    a_slices = [50, 50, 55, 35, 35]
+    c_slices = [145, 145, 160, 166, 150]
+    s_slices = [90, 100, 90, 60, 97]
+    num_cols = len(channels)
+    for i, (channel, a_slice, c_slice, s_slice) in \
+            enumerate(zip(channels, a_slices, c_slices, s_slices)):
+        plt.subplot(3, num_cols, i + 1)
+        plt.imshow(image.get_data()[0, :, :, a_slice], cmap='gray')
+        plt.imshow(blabel.get_data()[channel, :, :, a_slice], alpha=0.3)
+        plt.subplot(3, num_cols, i + num_cols + 1)
+        plt.imshow(image.get_data()[0, :, c_slice, :], cmap='gray')
+        plt.imshow(blabel.get_data()[channel, :, c_slice, :], alpha=0.3)
+        plt.subplot(3, num_cols, i + num_cols * 2 + 1)
+        plt.imshow(image.get_data()[0, s_slice, :, :], cmap='gray')
+        plt.imshow(blabel.get_data()[channel, s_slice, :, :], alpha=0.3)
+    plt.show()
