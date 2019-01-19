@@ -1,82 +1,70 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-sys.path.insert(0, '..')
-
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from time import time
-from scipy.ndimage.measurements import center_of_mass
+from memory_profiler import profile
 
-from network_utils.data import Data3d
-from network_utils.data_decorators import Cropping3d, Flipping3d
+from network_utils.data import Data3d, Transforming3d
 from network_utils.transformers import Flipper
 
 
-filepath = 'data/AT1000_image.nii.gz'
-data = Data3d(filepath, get_data_on_the_fly=False)
-filepath = 'data/AT1000_mask.nii.gz'
-mask = Data3d(filepath, get_data_on_the_fly=False)
-filepath = 'data/AT1000_label.nii.gz'
-label = Data3d(filepath, get_data_on_the_fly=False)
-
+image_path = 'data/at1000_image.nii.gz'
+label_path = 'data/at1000_label.nii.gz'
 label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
                [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
-flipper = Flipper(dim=1)
 
-data = Flipping3d(data, flipper, get_data_on_the_fly=True)
-mask = Flipping3d(mask, flipper, get_data_on_the_fly=True)
-data = Cropping3d(data, mask, (128, 96, 96), get_data_on_the_fly=True)
+@profile
+def test(on_the_fly=True):
+    """Test Flipper"""
+    print('On the fly:', on_the_fly)
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
+    flipper = Flipper(dim=1)
+    flipper.update()
 
-label = Flipping3d(label, flipper, get_data_on_the_fly=True,
-                   label_pairs=label_pairs)
-label = Cropping3d(label, mask, (128, 96, 96), get_data_on_the_fly=True)
+    fimage = Transforming3d(image, flipper, on_the_fly=on_the_fly,
+                            label_pairs=label_pairs)
+    flabel = Transforming3d(label, flipper, on_the_fly=on_the_fly,
+                            label_pairs=label_pairs)
 
-start_time = time()
-data.get_data()
-end_time = time()
-print('first load', end_time - start_time)
+    start_time = time()
+    fimage.get_data()
+    flabel.get_data()
+    end_time = time()
+    print('First flipper', end_time - start_time)
 
-start_time = time()
-data.get_data()
-end_time = time()
-print('second load', end_time - start_time)
+    start_time = time()
+    fimage.get_data()
+    flabel.get_data()
+    end_time = time()
+    print('Second flipper', end_time - start_time)
 
-start_time = time()
-data.get_data()
-end_time = time()
-print('third load', end_time - start_time)
+    return image, label, fimage, flabel
 
-alpha = 0.7
-plt.figure()
-flipped_data = data.get_data()[0, ...]
-flipped_label = label.get_data()[0, ...]
-print('get data')
-shape = flipped_data.shape
-plt.subplot(1, 3, 1)
-plt.imshow(flipped_data[shape[0]//2, :, :], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[shape[0]//2, :, :], alpha=1-alpha)
-plt.subplot(1, 3, 2)
-plt.imshow(flipped_data[:, shape[1]//2, :], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[:, shape[1]//2, :], alpha=1-alpha)
-plt.subplot(1, 3, 3)
-plt.imshow(flipped_data[:, :, shape[2]//2], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[:, :, shape[2]//2], alpha=1-alpha)
-print('show')
+if __name__ == "__main__":
+    test(on_the_fly=True)
+    image, label, fimage, flabel = test(on_the_fly=False)
 
-plt.figure()
-flipped_data = data.get_data()[0, ...]
-flipped_label = label.get_data()[0, ...]
-print(np.unique(flipped_label))
-print('get data')
-plt.subplot(1, 3, 1)
-plt.imshow(flipped_data[shape[0]//2, :, :], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[shape[0]//2, :, :], alpha=1-alpha)
-plt.subplot(1, 3, 2)
-plt.imshow(flipped_data[:, shape[1]//2, :], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[:, shape[1]//2, :], alpha=1-alpha)
-plt.subplot(1, 3, 3)
-plt.imshow(flipped_data[:, :, shape[2]//2], cmap='gray', alpha=0.7)
-plt.imshow(flipped_label[:, :, shape[2]//2], alpha=1-alpha)
-plt.show()
+    plt.figure()
+    shape = fimage.get_data().shape[1:]
+    plt.subplot(2, 3, 1)
+    plt.imshow(fimage.get_data()[0, shape[0]//2, :, :], cmap='gray')
+    plt.imshow(flabel.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)
+    plt.subplot(2, 3, 2)
+    plt.imshow(fimage.get_data()[0, :, shape[1]//2, :], cmap='gray')
+    plt.imshow(flabel.get_data()[0, :, shape[1]//2, :], cmap='tab20', alpha=0.3)
+    plt.subplot(2, 3, 3)
+    plt.imshow(fimage.get_data()[0, :, :, shape[2]//2], cmap='gray')
+    plt.imshow(flabel.get_data()[0, :, :, shape[2]//2], cmap='tab20', alpha=0.3)
+    plt.subplot(2, 3, 4)
+    plt.imshow(image.get_data()[0, shape[0]//2, :, :], cmap='gray')
+    plt.imshow(label.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)
+    plt.subplot(2, 3, 5)
+    plt.imshow(image.get_data()[0, :, shape[1]//2, :], cmap='gray')
+    plt.imshow(label.get_data()[0, :, shape[1]//2, :], cmap='tab20', alpha=0.3)
+    plt.subplot(2, 3, 6)
+    plt.imshow(image.get_data()[0, :, :, shape[2]//2], cmap='gray')
+    plt.imshow(label.get_data()[0, :, :, shape[2]//2], cmap='tab20', alpha=0.3)
+    plt.show()
