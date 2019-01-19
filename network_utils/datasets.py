@@ -4,7 +4,6 @@ import os
 from glob import glob
 
 from .data_factories import Data3dFactoryCropper, Data3dFactoryBinarizer
-from .label_image_binarizer import LabelImageBinarizer
 
 
 class Dataset3d:

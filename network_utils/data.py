@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
+
 from .loads import load
 
 
@@ -101,3 +103,61 @@ class Data3d(Data):
         else:
             raise TypeError('The data should be 3D or 4D (muli-channel 3D).')
         return data
+
+
+class DataDecorator(Data):
+    """Abstract class to decorate Data
+
+    Attributes:
+        data (Data): The decorated data
+        on_the_fly (bool): True if to load/process the data on the fly
+
+    """
+    def __init__(self, data, on_the_fly=True):
+        super().__init__(on_the_fly)
+        self.data = data
+
+    @property
+    def filepath(self):
+        return self.data.filepath
+
+    def update(self):
+        """Update the state/parameters"""
+        self.data.update()
+
+    def cleanup(self):
+        """Clean up attributes to save memory"""
+        self.data.cleanup()
+
+
+class Transforming3d(DataDecorator):
+    """Transform a data
+
+    Attributes:
+        transformer (Transformer): Transform the data
+
+    """
+    def __init__(self, data, transformer, on_the_fly=True, **kwargs):
+        super().__init__(data, on_the_fly)
+        self.transformer = transformer
+        self.kwargs = kwargs
+
+    def _get_data(self):
+        """Transform the data
+        
+        Returns:
+            transformed (numpy.array): The transformed data
+
+        """
+        data = self.transformer.transform(self.data.get_data(), **self.kwargs)
+        return data
+
+    def update(self):
+        """Update the state/parameters"""
+        super().update()
+        self.transformer.update()
+
+    def cleanup(self):
+        """Cleanup attributes to save memory"""
+        super().cleanup()
+        self.transformer.cleanup()
