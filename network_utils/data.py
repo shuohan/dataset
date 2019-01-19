@@ -5,21 +5,21 @@ from .loads import load
 
 class Data:
 
-    def __init__(self, get_data_on_the_fly=True):
-        self.get_data_on_the_fly = get_data_on_the_fly
+    def __init__(self, on_the_fly=True):
+        self.on_the_fly = on_the_fly
         self._data = None
 
     def get_data(self):
         """Get the data
 
-        Reload/reprocess the data if self.get_data_on_the_fly, otherwise keep a
+        Reload/reprocess the data if self.on_the_fly, otherwise keep a
         reference to the loaded/processed data.
 
         Returns:
             data (numpy.array): The loaded/processed etc. data
 
         """
-        if self.get_data_on_the_fly:
+        if self.on_the_fly:
             return self._get_data()
         else:
             if self._data is None:
@@ -58,8 +58,8 @@ class Data3d(Data):
     """Object handling a 3D data
 
     """
-    def __init__(self, filepath, get_data_on_the_fly=True, transpose4d=True):
-        super().__init__(get_data_on_the_fly)
+    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
+        super().__init__(on_the_fly)
         self.filepath = filepath
         self.transpose4d = transpose4d
 
