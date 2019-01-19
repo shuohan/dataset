@@ -21,7 +21,7 @@ def test(scale=30, sigma=5, on_the_fly=True):
     print('On the fly:', on_the_fly)
     image = Data3d(image_path, on_the_fly=on_the_fly)
     label = Data3d(label_path, on_the_fly=on_the_fly)
-    shape = image.get_data().shape
+    shape = image.shape
     deformer = Deformer(shape, sigma, scale)
     deformer.update()
 

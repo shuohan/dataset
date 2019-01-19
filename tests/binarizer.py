@@ -42,9 +42,9 @@ if __name__ == "__main__":
     image, blabel = test(on_the_fly=False)
 
     plt.figure(figsize=(10, 6))
-    print(image.get_data().shape)
-    print(blabel.get_data().shape)
-    shape = image.get_data().shape[1:]
+    print('Image shape', image.shape)
+    print('Label image shape', blabel.shape)
+    shape = image.shape[1:]
     channels = [0, 1, 8, 16, 24]
     a_slices = [50, 50, 55, 35, 35]
     c_slices = [145, 145, 160, 166, 150]

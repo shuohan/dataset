@@ -48,7 +48,7 @@ if __name__ == "__main__":
     image, label, fimage, flabel = test(on_the_fly=False)
 
     plt.figure()
-    shape = fimage.get_data().shape[1:]
+    shape = fimage.shape[1:]
     plt.subplot(2, 3, 1)
     plt.imshow(fimage.get_data()[0, shape[0]//2, :, :], cmap='gray')
     plt.imshow(flabel.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)

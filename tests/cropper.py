@@ -45,7 +45,8 @@ if __name__ == "__main__":
     cimage, clabel = test(on_the_fly=False)
 
     plt.figure()
-    shape = cimage.get_data().shape[1:]
+    shape = cimage.shape[1:]
+    print('Cropped shape', shape)
     plt.subplot(1, 3, 1)
     plt.imshow(cimage.get_data()[0, shape[0]//2, :, :], cmap='gray')
     plt.imshow(clabel.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)

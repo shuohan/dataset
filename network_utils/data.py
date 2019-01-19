@@ -18,6 +18,16 @@ class Data:
         self.on_the_fly = on_the_fly
         self._data = None
 
+    @property
+    def shape(self):
+        """Get the shape of the data
+        
+        Returns:
+            shape (tuple of int): The shape of the data
+
+        """
+        return self.get_data().shape
+
     def get_data(self):
         """Get the data
 
@@ -120,6 +130,10 @@ class DataDecorator(Data):
     @property
     def filepath(self):
         return self.data.filepath
+
+    @property
+    def shape(self):
+        return self.get_data().shape
 
     def update(self):
         """Update the state/parameters"""
