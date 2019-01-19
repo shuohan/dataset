@@ -22,24 +22,26 @@ def test(on_the_fly=True):
     image = Data3d(image_path, on_the_fly=on_the_fly)
     label = Data3d(label_path, on_the_fly=on_the_fly)
     flipper = Flipper(dim=1)
-    flipper.update()
-
     fimage = Transforming3d(image, flipper, on_the_fly=on_the_fly,
                             label_pairs=label_pairs)
     flabel = Transforming3d(label, flipper, on_the_fly=on_the_fly,
                             label_pairs=label_pairs)
 
+    flipper.update()
     start_time = time()
     fimage.get_data()
     flabel.get_data()
     end_time = time()
     print('First flipper', end_time - start_time)
+    flipper.cleanup()
 
+    flipper.update()
     start_time = time()
     fimage.get_data()
     flabel.get_data()
     end_time = time()
     print('Second flipper', end_time - start_time)
+    flipper.cleanup()
 
     return image, label, fimage, flabel
 

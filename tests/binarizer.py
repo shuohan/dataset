@@ -20,20 +20,23 @@ def test(on_the_fly=True):
     image = Data3d(image_path, on_the_fly=on_the_fly)
     label = Data3d(label_path, on_the_fly=on_the_fly)
     binarizer = LabelImageBinarizer()
-    binarizer.update()
     blabel = Transforming3d(label, binarizer, on_the_fly=on_the_fly)
 
+    binarizer.update()
     start_time = time()
     image.get_data()
     blabel.get_data()
     end_time = time()
     print('First binarization', end_time - start_time)
+    binarizer.cleanup()
 
+    binarizer.update()
     start_time = time()
     image.get_data()
     blabel.get_data()
     end_time = time()
     print('second binarization', end_time - start_time)
+    binarizer.cleanup()
 
     return image, blabel
 

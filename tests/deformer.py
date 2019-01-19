@@ -23,32 +23,36 @@ def test(scale=30, sigma=5, on_the_fly=True):
     label = Data3d(label_path, on_the_fly=on_the_fly)
     shape = image.shape
     deformer = Deformer(shape, sigma, scale)
-    deformer.update()
-
     dimage = Transforming3d(image, deformer, on_the_fly=on_the_fly)
     dlabel = Transforming3d(label, deformer, on_the_fly=on_the_fly)
 
+    deformer.update()
     start_time = time()
     dimage.get_data()
     dlabel.get_data()
     end_time = time()
     print('First rotate', end_time - start_time)
+    deformer.cleanup()
 
+    deformer.update()
     start_time = time()
     dimage.get_data()
     dlabel.get_data()
     end_time = time()
     print('Second rotate', end_time - start_time)
+    deformer.cleanup()
 
     return dimage, dlabel
 
 if __name__ == "__main__":
-    test(on_the_fly=True)
-    dimage, dlabel = test(on_the_fly=False)
+    dimage, dlabel = test(on_the_fly=True)
+    test(on_the_fly=False)
 
     sagittal = 90
     axial = 50
     coronal = 150
+
+    dimage.update()
     plt.figure()
     plt.subplot(1, 3, 1)
     plt.imshow(dimage.get_data()[0, sagittal, :, :], cmap='gray')
@@ -59,4 +63,19 @@ if __name__ == "__main__":
     plt.subplot(1, 3, 3)
     plt.imshow(dimage.get_data()[0, :, :, axial], cmap='gray')
     plt.imshow(dlabel.get_data()[0, :, :, axial], cmap='tab20', alpha=0.3)
+    dimage.cleanup()
+
+    dimage.update()
+    plt.figure()
+    plt.subplot(1, 3, 1)
+    plt.imshow(dimage.get_data()[0, sagittal, :, :], cmap='gray')
+    plt.imshow(dlabel.get_data()[0, sagittal, :, :], cmap='tab20', alpha=0.3)
+    plt.subplot(1, 3, 2)
+    plt.imshow(dimage.get_data()[0, :, coronal, :], cmap='gray')
+    plt.imshow(dlabel.get_data()[0, :, coronal, :], cmap='tab20', alpha=0.3)
+    plt.subplot(1, 3, 3)
+    plt.imshow(dimage.get_data()[0, :, :, axial], cmap='gray')
+    plt.imshow(dlabel.get_data()[0, :, :, axial], cmap='tab20', alpha=0.3)
+    dimage.cleanup()
+
     plt.show()

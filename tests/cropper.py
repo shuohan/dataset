@@ -22,21 +22,24 @@ def test(cropping_shape=(128, 96, 96), on_the_fly=True):
     label = Data3d(label_path, on_the_fly=on_the_fly)
     mask = Data3d(mask_path, on_the_fly=on_the_fly)
     cropper = Cropper(mask, cropping_shape)
-    cropper.update()
     cimage = Transforming3d(image, cropper, on_the_fly=on_the_fly)
     clabel = Transforming3d(label, cropper, on_the_fly=on_the_fly)
 
+    cropper.update()
     start_time = time()
     cimage.get_data()
     clabel.get_data()
     end_time = time()
     print('First crop', end_time - start_time)
+    cropper.cleanup()
 
+    cropper.update()
     start_time = time()
     cimage.get_data()
     clabel.get_data()
     end_time = time()
     print('second load', end_time - start_time)
+    cropper.cleanup()
 
     return cimage, clabel
 

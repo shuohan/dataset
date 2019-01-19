@@ -21,31 +21,36 @@ def test(max_angle=20, on_the_fly=True):
     image = Data3d(image_path, on_the_fly=on_the_fly)
     label = Data3d(label_path, on_the_fly=on_the_fly)
     rotator = Rotator(max_angle=max_angle, point=None)
-    rotator.update()
     rimage = Transforming3d(image, rotator, on_the_fly=on_the_fly)
     rlabel = Transforming3d(label, rotator, on_the_fly=on_the_fly)
 
+    rotator.update()
     start_time = time()
     rimage.get_data()
     rlabel.get_data()
     end_time = time()
     print('First rotate', end_time - start_time)
+    rotator.cleanup()
 
+    rotator.update()
     start_time = time()
     rimage.get_data()
     rlabel.get_data()
     end_time = time()
     print('Second rotate', end_time - start_time)
+    rotator.cleanup()
 
     return rimage, rlabel
 
 if __name__ == "__main__":
-    test(on_the_fly=True)
-    rimage, rlabel = test(on_the_fly=False)
+    rimage, rlabel = test(on_the_fly=True)
+    test(on_the_fly=False)
 
     sagittal = 90
     axial = 50
     coronal = 150
+
+    rimage.update()
     plt.figure()
     plt.subplot(1, 3, 1)
     plt.imshow(rimage.get_data()[0, sagittal, :, :], cmap='gray')
@@ -56,4 +61,18 @@ if __name__ == "__main__":
     plt.subplot(1, 3, 3)
     plt.imshow(rimage.get_data()[0, :, :, axial], cmap='gray')
     plt.imshow(rlabel.get_data()[0, :, :, axial], cmap='tab20', alpha=0.3)
+    rimage.cleanup()
+
+    rimage.update()
+    plt.figure()
+    plt.subplot(1, 3, 1)
+    plt.imshow(rimage.get_data()[0, sagittal, :, :], cmap='gray')
+    plt.imshow(rlabel.get_data()[0, sagittal, :, :], cmap='tab20', alpha=0.3)
+    plt.subplot(1, 3, 2)
+    plt.imshow(rimage.get_data()[0, :, coronal, :], cmap='gray')
+    plt.imshow(rlabel.get_data()[0, :, coronal, :], cmap='tab20', alpha=0.3)
+    plt.subplot(1, 3, 3)
+    plt.imshow(rimage.get_data()[0, :, :, axial], cmap='gray')
+    plt.imshow(rlabel.get_data()[0, :, :, axial], cmap='tab20', alpha=0.3)
+    rimage.cleanup()
     plt.show()
