@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
+"""Object holding the data loading/processing logic
 
+The attribute Data.value_pairs is awkward since normally an image should not have
+a left/right label correspondency but without this the whole stuff is really
+messy since the usage of Decorator. The decorator itself is however hard to get
+rid of since the transformation requirs the flexibility of the types and the
+applying order...
+
+"""
 import numpy as np
 import warnings
 
@@ -11,12 +19,18 @@ class Data:
 
     Attributes:
         on_the_fly (bool): True if to load data on the fly
+        interp_order (int): The interpolation order; images should have >=1 and
+            label images should have order == 0
+        value_pairs (list of tuple): Each element of the list is a two element
+            tuple containing the values that need to be swapped during flipping
         _data (numpy.array): The reference to the loaded data; None if the data
             is not loaded or loaded on the fly
 
     """
-    def __init__(self, on_the_fly=True):
+    def __init__(self, on_the_fly=True, interp_order=1, value_pairs=list()):
         self.on_the_fly = on_the_fly
+        self.interp_order = interp_order
+        self.value_pairs = value_pairs
         self._data = None
 
     @property
@@ -84,11 +98,12 @@ class Data3d(Data):
             to channel first)
 
     """
-    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
+    def __init__(self, filepath, on_the_fly=True, transpose4d=True,
+                 interp_order=1, value_pairs=list()):
         """Initialize
 
         """
-        super().__init__(on_the_fly)
+        super().__init__(on_the_fly, interp_order, value_pairs)
         self.filepath = filepath
         self.transpose4d = transpose4d
 
@@ -142,6 +157,14 @@ class DataDecorator(Data):
     def shape(self):
         return self.get_data().shape
 
+    @property
+    def interp_order(self):
+        return self.data.interp_order
+
+    @property
+    def value_pairs(self):
+        return self.data.value_pairs
+
     def update(self):
         """Update the state/parameters"""
         self.data.update()
@@ -158,10 +181,9 @@ class Transforming3d(DataDecorator):
         transformer (Transformer): Transform the data
 
     """
-    def __init__(self, data, transformer, on_the_fly=True, **kwargs):
+    def __init__(self, data, transformer, on_the_fly=True):
         super().__init__(data, on_the_fly)
         self.transformer = transformer
-        self.kwargs = kwargs
 
     def _get_data(self):
         """Transform the data
@@ -170,7 +192,7 @@ class Transforming3d(DataDecorator):
             transformed (numpy.array): The transformed data
 
         """
-        data = self.transformer.transform(self.data.get_data(), **self.kwargs)
+        data = self.transformer.transform(self.data))
         return data
 
     def update(self):
