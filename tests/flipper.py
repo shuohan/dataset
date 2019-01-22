@@ -6,7 +6,7 @@ import numpy as np
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Image3d, Label3d, Flipping3d
 from network_utils.transformers import Flipper
 
 
@@ -19,13 +19,12 @@ label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
 def test(on_the_fly=True):
     """Test Flipper"""
     print('On the fly:', on_the_fly)
-    image = Data3d(image_path, on_the_fly=on_the_fly)
-    label = Data3d(label_path, on_the_fly=on_the_fly)
+    image = Image3d(image_path, on_the_fly=on_the_fly)
+    label = Label3d(label_path, on_the_fly=on_the_fly)
+    label.value_pairs = label_pairs
     flipper = Flipper(dim=1)
-    fimage = Transforming3d(image, flipper, on_the_fly=on_the_fly,
-                            label_pairs=label_pairs)
-    flabel = Transforming3d(label, flipper, on_the_fly=on_the_fly,
-                            label_pairs=label_pairs)
+    fimage = Flipping3d(image, flipper, on_the_fly=on_the_fly)
+    flabel = Flipping3d(label, flipper, on_the_fly=on_the_fly)
 
     flipper.update()
     start_time = time()
@@ -48,25 +47,28 @@ def test(on_the_fly=True):
 if __name__ == "__main__":
     test(on_the_fly=True)
     image, label, fimage, flabel = test(on_the_fly=False)
+    a_ind = 50
+    c_ind = 145
+    s_ind = 90
 
     plt.figure()
     shape = fimage.shape[1:]
     plt.subplot(2, 3, 1)
-    plt.imshow(fimage.get_data()[0, shape[0]//2, :, :], cmap='gray')
-    plt.imshow(flabel.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)
+    plt.imshow(fimage.get_data()[0, s_ind, :, :], cmap='gray')
+    plt.imshow(flabel.get_data()[0, s_ind, :, :], cmap='tab20', alpha=0.3)
     plt.subplot(2, 3, 2)
-    plt.imshow(fimage.get_data()[0, :, shape[1]//2, :], cmap='gray')
-    plt.imshow(flabel.get_data()[0, :, shape[1]//2, :], cmap='tab20', alpha=0.3)
+    plt.imshow(fimage.get_data()[0, :, c_ind, :], cmap='gray')
+    plt.imshow(flabel.get_data()[0, :, c_ind, :], cmap='tab20', alpha=0.3)
     plt.subplot(2, 3, 3)
-    plt.imshow(fimage.get_data()[0, :, :, shape[2]//2], cmap='gray')
-    plt.imshow(flabel.get_data()[0, :, :, shape[2]//2], cmap='tab20', alpha=0.3)
+    plt.imshow(fimage.get_data()[0, :, :, a_ind], cmap='gray')
+    plt.imshow(flabel.get_data()[0, :, :, a_ind], cmap='tab20', alpha=0.3)
     plt.subplot(2, 3, 4)
-    plt.imshow(image.get_data()[0, shape[0]//2, :, :], cmap='gray')
-    plt.imshow(label.get_data()[0, shape[0]//2, :, :], cmap='tab20', alpha=0.3)
+    plt.imshow(image.get_data()[0, s_ind, :, :], cmap='gray')
+    plt.imshow(label.get_data()[0, s_ind, :, :], cmap='tab20', alpha=0.3)
     plt.subplot(2, 3, 5)
-    plt.imshow(image.get_data()[0, :, shape[1]//2, :], cmap='gray')
-    plt.imshow(label.get_data()[0, :, shape[1]//2, :], cmap='tab20', alpha=0.3)
+    plt.imshow(image.get_data()[0, :, c_ind, :], cmap='gray')
+    plt.imshow(label.get_data()[0, :, c_ind, :], cmap='tab20', alpha=0.3)
     plt.subplot(2, 3, 6)
-    plt.imshow(image.get_data()[0, :, :, shape[2]//2], cmap='gray')
-    plt.imshow(label.get_data()[0, :, :, shape[2]//2], cmap='tab20', alpha=0.3)
+    plt.imshow(image.get_data()[0, :, :, a_ind], cmap='gray')
+    plt.imshow(label.get_data()[0, :, :, a_ind], cmap='tab20', alpha=0.3)
     plt.show()

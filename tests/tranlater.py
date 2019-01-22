@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Image3d, Label3d, Transforming3d
 from network_utils.transformers import Translater
 
 
@@ -17,8 +17,8 @@ def test(max_translation=50, on_the_fly=True):
     """Test Translater"""
     print('Maximum translation:', max_translation)
     print('On the fly:', on_the_fly)
-    image = Data3d(image_path, on_the_fly=on_the_fly)
-    label = Data3d(label_path, on_the_fly=on_the_fly)
+    image = Image3d(image_path, on_the_fly=on_the_fly)
+    label = Label3d(label_path, on_the_fly=on_the_fly)
     translater = Translater(max_trans=max_translation)
     timage = Transforming3d(image, translater, on_the_fly=on_the_fly)
     tlabel = Transforming3d(label, translater, on_the_fly=on_the_fly)

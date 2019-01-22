@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Image3d, Label3d, Interpolating3d
 from network_utils.transformers import Rotater
 
 
@@ -17,11 +17,11 @@ def test(max_angle=20, on_the_fly=True):
     """Test Rotater"""
     print('Maximum angle:', max_angle)
     print('On the fly:', on_the_fly)
-    image = Data3d(image_path, on_the_fly=on_the_fly)
-    label = Data3d(label_path, on_the_fly=on_the_fly)
+    image = Image3d(image_path, on_the_fly=on_the_fly)
+    label = Label3d(label_path, on_the_fly=on_the_fly)
     rotator = Rotater(max_angle=max_angle, point=None)
-    rimage = Transforming3d(image, rotator, on_the_fly=False)
-    rlabel = Transforming3d(label, rotator, on_the_fly=False)
+    rimage = Interpolating3d(image, rotator, on_the_fly=False)
+    rlabel = Interpolating3d(label, rotator, on_the_fly=False)
 
     rotator.update()
     start_time = time()

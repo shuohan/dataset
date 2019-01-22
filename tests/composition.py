@@ -7,7 +7,8 @@ import numpy as np
 from memory_profiler import profile
 from time import time
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Image3d, Label3d
+from network_utils.data import Transforming3d, Interpolating3d, Flipping3d
 from network_utils.transformers import Rotater, Deformer, Cropper, Translater
 from network_utils.transformers import LabelImageBinarizer, Scaler, Flipper
 
@@ -28,31 +29,31 @@ cropping_shape=(128, 96, 96)
 @profile
 def test1():
     """ -> flipper -> rotater -> scaler -> deformer -> cropper -> binarizer"""
-    image = Data3d(image_path, on_the_fly=False)
-    label = Data3d(label_path, on_the_fly=False)
-    mask = Data3d(mask_path, on_the_fly=False)
+    image = Image3d(image_path, on_the_fly=False)
+    label = Label3d(label_path, on_the_fly=False)
+    mask = Label3d(mask_path, on_the_fly=False)
+    label.value_pairs = label_pairs
 
     flipper = Flipper()
-    fimage = Transforming3d(image, flipper, on_the_fly=False)
-    flabel = Transforming3d(label, flipper, on_the_fly=False,
-                            label_pairs=label_pairs)
-    fmask = Transforming3d(mask, flipper, on_the_fly=False)
+    fimage = Flipping3d(image, flipper, on_the_fly=False)
+    flabel = Flipping3d(label, flipper, on_the_fly=False)
+    fmask = Flipping3d(mask, flipper, on_the_fly=False)
 
     point = np.array(center_of_mass(np.squeeze(mask.get_data())))
     rotater = Rotater(max_angle=20, point=point)
-    rimage = Transforming3d(fimage, rotater, on_the_fly=True)
-    rlabel = Transforming3d(flabel, rotater, on_the_fly=True, order=0)
-    rmask = Transforming3d(fmask, rotater, on_the_fly=True, order=0)
+    rimage = Interpolating3d(fimage, rotater, on_the_fly=True)
+    rlabel = Interpolating3d(flabel, rotater, on_the_fly=True)
+    rmask = Interpolating3d(fmask, rotater, on_the_fly=True)
 
     deformer = Deformer(image.shape, def_sigma, def_scale)
-    dimage = Transforming3d(rimage, deformer, on_the_fly=True)
-    dlabel = Transforming3d(rlabel, deformer, on_the_fly=True, order=0)
-    dmask = Transforming3d(rmask, deformer, on_the_fly=True, order=0)
+    dimage = Interpolating3d(rimage, deformer, on_the_fly=True)
+    dlabel = Interpolating3d(rlabel, deformer, on_the_fly=True)
+    dmask = Interpolating3d(rmask, deformer, on_the_fly=True)
 
     scaler = Scaler(max_scale=max_scale, point=point)
-    simage = Transforming3d(dimage, scaler, on_the_fly=True)
-    slabel = Transforming3d(dlabel, scaler, on_the_fly=True, order=0)
-    smask = Transforming3d(dmask, scaler, on_the_fly=True, order=0)
+    simage = Interpolating3d(dimage, scaler, on_the_fly=True)
+    slabel = Interpolating3d(dlabel, scaler, on_the_fly=True)
+    smask = Interpolating3d(dmask, scaler, on_the_fly=True)
 
     cropper = Cropper(smask, cropping_shape)
     cimage = Transforming3d(simage, cropper, on_the_fly=True)
@@ -89,25 +90,25 @@ def test1():
 @profile
 def test2():
     """ -> flipper -> rotater -> scaler -> deformer -> translater"""
-    image = Data3d(image_path, on_the_fly=False)
-    label = Data3d(label_path, on_the_fly=False)
+    image = Image3d(image_path, on_the_fly=False)
+    label = Label3d(label_path, on_the_fly=False)
+    label.value_pairs = label_pairs
 
     flipper = Flipper()
-    fimage = Transforming3d(image, flipper, on_the_fly=False)
-    flabel = Transforming3d(label, flipper, on_the_fly=False,
-                            label_pairs=label_pairs)
+    fimage = Flipping3d(image, flipper, on_the_fly=False)
+    flabel = Flipping3d(label, flipper, on_the_fly=False)
 
     rotater = Rotater(max_angle=20, point=None)
-    rimage = Transforming3d(fimage, rotater, on_the_fly=True)
-    rlabel = Transforming3d(flabel, rotater, on_the_fly=True, order=0)
+    rimage = Interpolating3d(fimage, rotater, on_the_fly=True)
+    rlabel = Interpolating3d(flabel, rotater, on_the_fly=True)
 
     deformer = Deformer(image.shape, def_sigma, def_scale)
-    dimage = Transforming3d(rimage, deformer, on_the_fly=True)
-    dlabel = Transforming3d(rlabel, deformer, on_the_fly=True, order=0)
+    dimage = Interpolating3d(rimage, deformer, on_the_fly=True)
+    dlabel = Interpolating3d(rlabel, deformer, on_the_fly=True)
 
     scaler = Scaler(max_scale=max_scale, point=None)
-    simage = Transforming3d(dimage, scaler, on_the_fly=True)
-    slabel = Transforming3d(dlabel, scaler, on_the_fly=True, order=0)
+    simage = Interpolating3d(dimage, scaler, on_the_fly=True)
+    slabel = Interpolating3d(dlabel, scaler, on_the_fly=True)
 
     translater = Translater(max_trans=max_trans)
     timage = Transforming3d(simage, translater, on_the_fly=True)

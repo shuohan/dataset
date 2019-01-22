@@ -6,7 +6,7 @@ from scipy.ndimage.measurements import center_of_mass
 from memory_profiler import profile
 import numpy as np
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Image3d, Label3d, Interpolating3d, Transforming3d
 from network_utils.transformers import Scaler, Cropper
 
 
@@ -20,9 +20,9 @@ def test(max_scale=2, cropping_shape=(128, 96, 96), on_the_fly=True,
     """Test Rotater"""
     print('Maximum scale:', max_scale)
     print('On the fly:', on_the_fly)
-    image = Data3d(image_path, on_the_fly=on_the_fly)
-    label = Data3d(label_path, on_the_fly=on_the_fly)
-    mask = Data3d(mask_path, on_the_fly=on_the_fly)
+    image = Image3d(image_path, on_the_fly=on_the_fly)
+    label = Label3d(label_path, on_the_fly=on_the_fly)
+    mask = Label3d(mask_path, on_the_fly=on_the_fly)
     if around_mask:
         point = np.array(center_of_mass(np.squeeze(mask.get_data())))
     else:
@@ -30,9 +30,9 @@ def test(max_scale=2, cropping_shape=(128, 96, 96), on_the_fly=True,
     print('Scaling center:', point)
 
     scaler = Scaler(max_scale=max_scale, point=point)
-    simage = Transforming3d(image, scaler, on_the_fly=on_the_fly)
-    slabel = Transforming3d(label, scaler, on_the_fly=on_the_fly)
-    smask = Transforming3d(mask, scaler, on_the_fly=on_the_fly)
+    simage = Interpolating3d(image, scaler, on_the_fly=on_the_fly)
+    slabel = Interpolating3d(label, scaler, on_the_fly=on_the_fly)
+    smask = Interpolating3d(mask, scaler, on_the_fly=on_the_fly)
 
     cropper = Cropper(smask, cropping_shape)
     cimage = Transforming3d(simage, cropper, on_the_fly=on_the_fly)

@@ -6,7 +6,7 @@ import numpy as np
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Data3d, Transforming3d
+from network_utils.data import Data3d, Image3d, Label3d, Transforming3d
 from network_utils.transformers import LabelImageBinarizer
 
 image_path = 'data/at1000_image.nii.gz'
@@ -17,8 +17,8 @@ mask_path = 'data/at1000_mask.nii.gz'
 def test(on_the_fly=True):
     """Test label image binarize"""
     print('On the fly:', on_the_fly)
-    image = Data3d(image_path, on_the_fly=on_the_fly)
-    label = Data3d(label_path, on_the_fly=on_the_fly)
+    image = Image3d(image_path, on_the_fly=on_the_fly)
+    label = Label3d(label_path, on_the_fly=on_the_fly)
     binarizer = LabelImageBinarizer()
     blabel = Transforming3d(label, binarizer, on_the_fly=on_the_fly)
 

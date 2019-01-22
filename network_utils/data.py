@@ -29,9 +29,25 @@ class Data:
     """
     def __init__(self, on_the_fly=True, interp_order=1, value_pairs=list()):
         self.on_the_fly = on_the_fly
-        self.interp_order = interp_order
-        self.value_pairs = value_pairs
+        self._interp_order = interp_order
+        self._value_pairs = value_pairs
         self._data = None
+
+    @property
+    def interp_order(self):
+        return self._interp_order
+
+    @interp_order.setter
+    def interp_order(self, order):
+        self._interp_order = order
+
+    @property
+    def value_pairs(self):
+        return self._value_pairs
+
+    @value_pairs.setter
+    def value_pairs(self, pairs):
+        self._value_pairs = pairs
 
     @property
     def shape(self):
@@ -131,6 +147,18 @@ class Data3d(Data):
         return data
 
 
+class Image3d(Data3d):
+    """Object handling a 3D image"""
+    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
+        super().__init__(filepath, on_the_fly, transpose4d, interp_order=1)
+
+
+class Label3d(Data3d):
+    """Object handling a 3D label image"""
+    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
+        super().__init__(filepath, on_the_fly, transpose4d, interp_order=0)
+
+
 class DataDecorator(Data):
     """Abstract class to decorate Data
 
@@ -175,10 +203,10 @@ class DataDecorator(Data):
 
 
 class Transforming3d(DataDecorator):
-    """Transform a data
+    """Transform the data
 
     Attributes:
-        transformer (Transformer): Transform the data
+        transformer (transformers.Transformer): Transform the data
 
     """
     def __init__(self, data, transformer, on_the_fly=True):
@@ -189,10 +217,10 @@ class Transforming3d(DataDecorator):
         """Transform the data
         
         Returns:
-            transformed (numpy.array): The transformed data
+            data (numpy.array): The transformed data
 
         """
-        data = self.transformer.transform(self.data))
+        data = self.transformer.transform(self.data.get_data())
         return data
 
     def update(self):
@@ -204,3 +232,19 @@ class Transforming3d(DataDecorator):
         """Cleanup attributes to save memory"""
         super().cleanup()
         self.transformer.cleanup()
+
+
+class Interpolating3d(Transforming3d):
+    """Interpolate the data"""
+    def _get_data(self):
+        interp_order = self.data.interp_order
+        data = self.transformer.transform(self.data.get_data(), interp_order)
+        return data
+
+
+class Flipping3d(Transforming3d):
+    """Flip the data"""
+    def _get_data(self):
+        value_pairs = self.data.value_pairs
+        data = self.transformer.transform(self.data.get_data(), value_pairs)
+        return data
