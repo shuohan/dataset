@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from .data import Data3d
-from .data_decorators import Cropping3d, Interpolating3d, Flipping3d
-from .data_decorators import Binarizing3d, Transforming3d
-from .transformers import Flipper, Rotator, Deformer, Translater, Scaler
+from .data import Data3d, Transforming3d
+from .transformers import Flipper, Rotater, Deformer, Translater, Scaler
 
 
 class Data3dFactory:

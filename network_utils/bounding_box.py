@@ -3,8 +3,8 @@
 import numpy as np
 from image_processing_3d import calc_bbox3d
 
+from .data import DataDecorator
 from .data_factories import Data3dFactoryDecorator
-from .data_decorators import DataDecorator
 
 
 class BboxFactoryDecorator(Data3dFactoryDecorator):
@@ -43,7 +43,7 @@ class BboxFactoryDecorator(Data3dFactoryDecorator):
 
     def _calc_bbox(self, data):
         image = data[0]
-        bbox = Bbox(data[1], get_data_on_the_fly=data[1].get_data_on_the_fly)
+        bbox = Bbox(data[1], on_the_fly=data[1].on_the_fly)
         return image, bbox
 
 

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from sklearn.preprocessing import LabelBinarizer
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
-from image_processing_3d import scale3d
+from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d, scale3d
 
 
 class Transformer:
@@ -25,6 +26,173 @@ class Transformer:
 
         """
         raise NotImplementedError
+
+
+class Interpolater(Transformer):
+    """Abstract class to transform data using interpolation
+
+    """
+    def transform(self, data, order=1):
+        """Abstract method to transform the data using interpolation
+
+        Args:
+            data (numpy.array): The data to transform
+            order (int): The interpolation order. 0: nearest neighbor
+                interpolation; 1: linear interpolation
+
+        """
+        raise NotImplementedError
+
+
+class LabelImageBinarizer(LabelBinarizer, Transformer):
+    """Binarize label image (one-hot encoding)
+
+    For example, if the label images is [1, 12; 3, 12] with 3 different labels.
+    Binarization first map these labels to binary codes 1 -> [1, 0, 0],
+    3 -> [0, 1, 0], 12 -> [0, 0, 1], and the label image is converted to
+    [1, 0; 0, 0], [0, 0; 1, 0], and [0, 1; 0, 1] for these 3 binary channels.
+
+    Check sklearn.preprocessing.LabelBinarizer for more details. The parent
+    class can only transform 1D labels. This class can transform higher
+    dimensional label image.
+
+    """
+    def fit(self, label_image):
+        """Fit label image binarizer. Do not support sparse array.
+
+        Args:
+            label_image (numpy.array): The label image to fit. It can be 2D, 3D,
+                ...
+
+        Returns:
+            self
+
+        """
+        return super().fit(label_image.flatten())
+
+    def update(self):
+        pass
+
+    def cleanup(self):
+        pass
+
+    def transform(self, label_image, squeeze=True):
+        """Transform label image to binary labels
+
+        Args:
+            label_image (numpy.array): The label image to transform. It can be
+                2D, 3D, ...
+            squeeze (bool): Squeeze the label image
+
+        Returns:
+            binarization (num_i x num_j x ... x num_channels numpy.array): The
+                binary label image
+
+        """
+        if squeeze:
+            label_image = np.squeeze(label_image)
+
+        if not hasattr(self, 'classes_'):
+            self.fit(np.unique(label_image))
+        flattened_label_image = label_image.flatten()
+        binarization = super().transform(flattened_label_image)
+        num_channels = len(self.classes_) if len(self.classes_) > 2 else 1
+        binarization = binarization.reshape((*label_image.shape, num_channels))
+        binarization = np.rollaxis(binarization, -1) # channels first
+        return binarization
+
+
+class Flipper(Transformer):
+    """Flip the data along an dimension (axis)
+
+    Attributes:
+        dim (int): The dimension/axis that the data is flipped along
+
+    """
+    def __init__(self, dim=1):
+        self.dim = dim
+
+    def update(self):
+        pass
+
+    def cleanup(self):
+        pass
+
+    def transform(self, data, label_pairs=[]):
+        """Flip the data
+
+        If `label_pairs` is empty, the class just flip the data; if not, the
+        class which swap the corresponding labels after the flipping. For
+        example, suppose 23 is a label on the left side of brain, while 26 on
+        the right.  After flipping the image, the labels 23 and 26 should be
+        swapped to enforce they are at the correct sides.
+
+        Args:
+            data (numpy.array): The data to flip
+            label_pairs (list of tuple of int): Each element is a two-item tuple
+                containing the correspondence of the label to swap after
+                flipping
+
+        Returns:
+            flipped (numpy.array): The flipped data
+
+        """
+        flipped = np.flip(data, self.dim).copy()
+        for (pair1, pair2) in label_pairs:
+            mask1 = flipped==pair1
+            mask2 = flipped==pair2
+            flipped[mask1] = pair2
+            flipped[mask2] = pair1
+        return flipped
+
+
+class Cropper(Transformer):
+    """Crop the data using a mask
+
+    Attributes:
+        mask (.data.Data): The mask used to crop the data; assume only one
+            channel (channel first)
+        cropping_shape (tuple of int): The resulting shape of the cropped
+        _bbox (list of slice): The bouding box indices used to crop the data
+        _source_bbox (list of slice): The index slices in `self.data` of the
+            cropping region
+        _target_bbox (list of slice): The index slices in `self._data` (cropped
+            `self.data`) of the cropping region
+
+    """
+    def __init__(self, mask, cropping_shape):
+        """Initialize
+
+        """
+        self.mask = mask
+        self.cropping_shape = cropping_shape
+
+        self._bbox = None
+        self._source_bbox = None
+        self._target_bbox = None
+
+    def update(self):
+        """Recalculate the bounding box from the mask"""
+        mask = self.mask.get_data()[0, ...]
+        bbox = calc_bbox3d(mask)
+        self._bbox = resize_bbox3d(bbox, self.cropping_shape)
+
+    def cleanup(self):
+        """Set bbox to None"""
+        self._bbox = None
+
+    def transform(self, data):
+        """Crop the data
+
+        Args:
+            data (numpy.array): The data to crop using the mask
+
+        Returns:
+            cropped (numpy.array): The cropped data
+
+        """
+        cropped, self._source_bbox, self._target_bbox = crop3d(data, self._bbox)
+        return cropped
 
 
 class Translater(Transformer):
@@ -106,67 +274,7 @@ class Translater(Transformer):
         return trans
 
 
-class Interpolater(Transformer):
-    """Abstract class to transform data using interpolation
-
-    """
-    def transform(self, data, order):
-        """Abstract method to transform the data using interpolation
-
-        Args:
-            data (numpy.array): The data to transform
-            order (int): The interpolation order. 0: nearest neighbor
-                interpolation; 1: linear interpolation
-
-        """
-        raise NotImplementedError
-
-
-class Flipper(Transformer):
-    """Flip the data along an dimension (axis)
-
-    Attributes:
-        dim (int): The dimension/axis that the data is flipped along
-
-    """
-    def __init__(self, dim=1):
-        self.dim = dim
-
-    def update(self):
-        pass
-
-    def cleanup(self):
-        pass
-
-    def transform(self, data, label_pairs=[]):
-        """Flip the data
-
-        If `label_pairs` is empty, the class just flip the data; if not, the
-        class which swap the corresponding labels after the flipping. For
-        example, suppose 23 is a label on the left side of brain, while 26 on
-        the right.  After flipping the image, the labels 23 and 26 should be
-        swapped to enforce they are at the correct sides.
-
-        Args:
-            data (numpy.array): The data to flip
-            label_pairs (list of list of int): Each element is a two-item list
-                which contains the correspondence of the label to swap after
-                flipping
-
-        Returns:
-            flipped (numpy.array): The flipped data
-
-        """
-        flipped = np.flip(data, self.dim).copy()
-        for (pair1, pair2) in label_pairs:
-            mask1 = flipped==pair1
-            mask2 = flipped==pair2
-            flipped[mask1] = pair2
-            flipped[mask2] = pair1
-        return flipped
-
-
-class Rotator(Interpolater):
+class Rotater(Interpolater):
     """Rotate the data randomly
 
     Call `image_processing_3d.rotate3d` to rotate the data. The rotation angles
@@ -201,7 +309,7 @@ class Rotator(Interpolater):
     def cleanup(self):
         pass
 
-    def transform(self, data, order):
+    def transform(self, data, order=1):
         """Rotate the data
 
         Args:
@@ -263,7 +371,7 @@ class Scaler(Interpolater):
     def cleanup(self):
         pass
 
-    def transform(self, data, order):
+    def transform(self, data, order=1):
         """Rotate the data
 
         Args:
@@ -334,7 +442,7 @@ class Deformer(Interpolater):
         self._y_deform = None
         self._z_deform = None
 
-    def transform(self, data, order):
+    def transform(self, data, order=1):
         """Deform the data
         
         Args:
