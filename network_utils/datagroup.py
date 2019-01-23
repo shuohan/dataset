@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from augmentation_strategies import AugmentationStrategyFactory
-from data import Data
+from .aug_strats import AugmentationStrategyFactory
+from .transformers import Cropper
 
 
 class DataGroup:
@@ -12,63 +12,42 @@ class DataGroup:
     parameters)
 
     Attributes:
-        implementor (DataImp): The implementor handling the augmentation
+        implementor (DataGroupImp): The implementor handling the augmentation
             application logic
-        images (list of data.Data): Contain the image data
-        labels (list of data.Data): Contain the label image data
-        mask (data.Data): The mask used to crop the images/label images
-        strategies (list of AugmentationStrategy): An augmentation strategy
-            applies the transformation to augment the data
+        data (list of .data.Data): Contain the images/label images
+        strategies (list of .aug_strats.AugmentationStrategy): An augmentation
+            strategy applies the transformation to augment the data
 
     """
     def __init__(self):
-        self.implementor = None
-        self.images = list()
-        self.labels = list()
-        self.mask = list()
-        self.strategies = list()
+        self._implementor = None
+        self._data = list()
+        self._strategies = list()
 
-    def set_implementor(self, imp):
-        """Set the data group implementor
+    @property
+    def implementor(self):
+        return self._implementor
 
-        Args:
-            imp (DataGroupImp): The implementor to set
+    @implementor.setter
+    def implementor(self, imp):
+        self._implementor = imp
 
-        """
-        self.implementor = imp
+    @property
+    def data(self):
+        return self._data
 
-    def add_image(self, data):
-        """Add an image into the data group
-
-        DataGroup can accept as many images as needed
-
-        Args:
-            data (data.Data): data to add
-
-        """
-        self.images.append(data)
-
-    def add_label(self, data):
-        """Add an label image into the data group
-
-        DataGroup can accept as many label images as needed
+    def add_data(self, data):
+        """Add a data into the data group, accept as many data as needed
 
         Args:
-            data (data.Data): data to add
+            data (.data.Data): The data to add
 
         """
-        self.labels.append(data)
+        self._data.append(data)
 
-    def add_mask(self, mask):
-        """Add an image mask for cropping into the data group
-
-        DataGroup can only accept one (or none) mask
-
-        Args:
-            data (data.Data): data to add
-
-        """
-        self.mask = [mask]
+    @property
+    def strategies(self):
+        return self._strategies
 
     def add_augmentation(self, augmenation):
         """Add an augmentation method to be applied to the data
@@ -79,12 +58,104 @@ class DataGroup:
         """
         factory = AugmentationStrategyFactory()
         strategy = factory.create(augmentation, self)
-        self.strategies.append(strategy)
+        self._strategies.append(strategy)
 
-    def augment(self):
+    def _augment(self):
+        """Augment the data"""
+        return self.implementor.augment(self.data, self.strategies)
+
+    def get_data(self):
+        return self._augment()
+
+
+class DataGroupDecorator(DataGroup):
+    """Decorate DataGroup
+
+    """
+    def __init__(self, datagroup):
+        super().__init__()
+        self.datagroup = datagroup
+
+    @property
+    def implementor(self):
+        return self.datagroup.implementor
+
+    @implementor.setter
+    def implementor(self, imp):
+        raise RuntimeError('Cannot set implementor in DataGroupDecorator')
+
+    @property
+    def data(self):
+        return self.datagroup.data
+
+    @property
+    def strategies(self):
+        return self.datagroup.strategies
+
+    def _augment(self):
         raise NotImplementedError
 
-    def get_datagroup(self):
+
+class DataGroupMasking(DataGroupDecorator):
+    """Use a mask to crop the data
+
+    Attributes:
+        mask (.data.Data): The mask to crop the data
+        cropping_shape (tuple of int): The tuple of shape of the cropped
+
+    """
+    def __init__(self, datagroup):
+        super().__init__(datagroup)
+        self.mask = None
+        self.cropping_shape = (128, 96, 96)
+
+    def set_mask(self, mask):
+        """Set an image mask for cropping
+
+        Args:
+            mask (.data.Data): The mask used to crop the data
+
+        """
+        self.mask = mask
+
+    def set_cropping_shape(self, shape):
+        """Set the resulted shape after cropping
+
+        Args:
+            shape (tuple of int): The tuple of the shape (x, y, z)
+
+        """
+        self.cropping_shape = shape
+
+    def _crop(self, data, mask):
+        """Crop the data using the mask with the cropping shape
+
+        Args:
+            data (list of .data.Data or .data.DataDecorator): The data to crop
+
+        Returns:
+            results (list of .data.DataDecorator): The cropped data
+
+        """
+        c = Cropper(mask, self.cropping_shape)
+        cropped = [Transforming3d(d, c, on_the_fly=d.on_the_fly) for d in data]
+        return cropped
+
+    def _augment(self):
+        data = (*self.data, self.mask)
+        augmented = self.implementor.augment(data, self.strategies)
+        return self._crop(augmented[:-1], augmented[-1])
+
+
+class DataGroupExtracting(DataGroupDecorator):
+    """Extract patches from DataGroup
+
+    """
+    def __init__(self, datagroup, num_patches=10):
+        super().__init__(datagroup)
+        self.num_patches = num_patches
+
+    def _augment(self):
         raise NotImplementedError
 
 
@@ -95,22 +166,14 @@ class DataGroupImp:
         datagroup (DataGroup): Provide augmentation strategies for selection
 
     """
-    def __init__(self, datagroup):
-        self.datagroup = datagroup
-
-    def augment(self):
+    def augment(self, data, strategies):
         """Compose the augmentation to augment the data
 
         Args:
-            images (list of data.Data): The images to augment
-            labels (list of data.Data): The label images to augment
-            mask (list of data.Data): The cropping mask to augment
-
-        Returns:
-            a_images (list of data.Decorator/data.Data): The augmented images
-            a_labels (list of data.Decorator/data.Data): The augmented labels
-            a_mask (list of data.Decorator/data.Data): The augmented mask
-        
+            data (list of .data.Data): The data to augment
+            strategies (list of aug_strats.AugmentationStrategy): The
+                augmentatiion strategies to apply to the data
+                
         """
         raise NotImplementedError
 
@@ -125,27 +188,21 @@ class RandomDataGroupImp(DataGroupImp):
         prob (float): The probability of performing an augmentation
 
     """
-    def __init__(self, datagroup, prob=0.5):
-        super().__init__(datagroup)
+    def __init__(self, prob=0.5):
         self.prob = prob
 
-    def augment(self, images, labels, mask):
-        """See DataGroupImp.augment"""
+    def augment(self, data, strategies):
         if np.random.rand <= self.prob:
-            strategy = np.random.choice(self.datagroup.strategies)
-            a_images, a_labels, a_mask = strategy.augment(images, labels, mask)
-        else:
-            a_images, a_labels, a_mask = images, labels, mask
-        return a_images, a_labels, a_mask
+            strategy = np.random.choice(strategies)
+            data = strategy.augment(*data)
+        return data
 
 
 class SerialDataGroupImp(DataGroupImp):
     """Compose all augmentation strategy to apply to the data
     
     """
-    def augment(self, images, labels, mask):
-        """See DataGroupImp.augment"""
-        a_images, a_labels, a_mask = images, labels, mask
-        for stg in self.datagroup.strategies:
-            a_images, a_labels, a_mask = stg.augment(a_images, a_labels, a_mask)
-        return a_images, a_labels, a_mask
+    def augment(self, data, strategies):
+        for strategy in strategies:
+            data = strategy.augment(*data)
+        return data
