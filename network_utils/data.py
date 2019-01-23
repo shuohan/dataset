@@ -183,7 +183,7 @@ class DataDecorator(Data):
 
     @property
     def shape(self):
-        return self.get_data().shape
+        return self.data.shape # for operation that do not change the shape
 
     @property
     def interp_order(self):
@@ -237,14 +237,23 @@ class Transforming3d(DataDecorator):
 class Interpolating3d(Transforming3d):
     """Interpolate the data"""
     def _get_data(self):
-        interp_order = self.data.interp_order
-        data = self.transformer.transform(self.data.get_data(), interp_order)
-        return data
+        dd = self.transformer.transform(self.data.get_data(), self.interp_order)
+        return dd
 
 
 class Flipping3d(Transforming3d):
     """Flip the data"""
     def _get_data(self):
-        value_pairs = self.data.value_pairs
-        data = self.transformer.transform(self.data.get_data(), value_pairs)
-        return data
+        dd = self.transformer.transform(self.data.get_data(), self.value_pairs)
+        return dd
+
+
+class Cropping3d(Transforming3d):
+    """Crop the data"""
+    @property
+    def shape(self):
+        num_channels = self.data.shape[0]
+        shape = (num_channels, *self.transformer.cropping_shape)
+        return shape
+    def _get_data(self):
+        return self.transformer.transform(self.data.get_data())

@@ -6,7 +6,7 @@ from scipy.ndimage.measurements import center_of_mass
 from memory_profiler import profile
 import numpy as np
 
-from network_utils.data import Image3d, Label3d, Transforming3d, Interpolating3d
+from network_utils.data import Image3d, Label3d, Interpolating3d, Cropping3d
 from network_utils.transformers import Rotater, Cropper
 
 
@@ -35,8 +35,8 @@ def test(max_angle=20, cropping_shape=(128, 96, 96), on_the_fly=True,
     rmask = Interpolating3d(mask, rotator, on_the_fly=on_the_fly)
 
     cropper = Cropper(rmask, cropping_shape)
-    cimage = Transforming3d(rimage, cropper, on_the_fly=on_the_fly)
-    clabel = Transforming3d(rlabel, cropper, on_the_fly=on_the_fly)
+    cimage = Cropping3d(rimage, cropper, on_the_fly=on_the_fly)
+    clabel = Cropping3d(rlabel, cropper, on_the_fly=on_the_fly)
 
     return cimage, clabel
 

@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from .aug_strats import AugmentationStrategyFactory
-from .transformers import Cropper
+import numpy as np
+
+from .aug_strats import create_aug_strat
+from .configs import Config
+from .data import Cropping3d
+from .transformers import Cropper, LabelImageBinarizer
+
+config = Config()
 
 
 class DataGroup:
@@ -56,9 +62,7 @@ class DataGroup:
             augmentation (str): The allowed augmentaiton
 
         """
-        factory = AugmentationStrategyFactory()
-        strategy = factory.create(augmentation, self)
-        self._strategies.append(strategy)
+        self._strategies.append(create_aug_strat(augmentation))
 
     def _augment(self):
         """Augment the data"""
@@ -66,6 +70,51 @@ class DataGroup:
 
     def get_data(self):
         return self._augment()
+
+
+class LabelImageGroup(DataGroup):
+    """Data group containing label images
+
+    """
+    def __init__(self):
+        super().__init__()
+        self._label_ind = list()
+
+    def add_data(self, data):
+        raise RuntimeError('Use LabelImageGroup.add_image instead')
+
+    def add_image(self, image):
+        """Add an image into the datagroup
+
+        Args:
+            image (.data.Image3d): The image to add
+
+        """
+        self._data.append(data)
+        self._label_ind.append(False)
+
+    def add_label(self, image):
+        """Add a label image into the datagroup
+
+        Args:
+            label (.data.Label3d): The label image to add
+
+        """
+        self._data.append(data)
+        self._label_ind.append(True)
+
+    def _augment(self):
+        """Augment the data"""
+        aug = np.array(self.implementor.augment(self.data, self.strategies))
+        label_ind = np.array(self._label_ind)
+        images = aug[np.logical_not(label_ind)]
+        labels = self._binarize(aug[label_ind])
+        return (*images, *labels)
+
+    def _binarize(self, labels):
+        """One-hot encode the label images"""
+        b = LabelImageBinarizer()
+        return [Transforming3d(l, b, on_the_fly=l.on_the_fly) for l in labels]
 
 
 class DataGroupDecorator(DataGroup):
@@ -107,7 +156,6 @@ class DataGroupMasking(DataGroupDecorator):
     def __init__(self, datagroup):
         super().__init__(datagroup)
         self.mask = None
-        self.cropping_shape = (128, 96, 96)
 
     def set_mask(self, mask):
         """Set an image mask for cropping
@@ -117,15 +165,6 @@ class DataGroupMasking(DataGroupDecorator):
 
         """
         self.mask = mask
-
-    def set_cropping_shape(self, shape):
-        """Set the resulted shape after cropping
-
-        Args:
-            shape (tuple of int): The tuple of the shape (x, y, z)
-
-        """
-        self.cropping_shape = shape
 
     def _crop(self, data, mask):
         """Crop the data using the mask with the cropping shape
@@ -137,8 +176,8 @@ class DataGroupMasking(DataGroupDecorator):
             results (list of .data.DataDecorator): The cropped data
 
         """
-        c = Cropper(mask, self.cropping_shape)
-        cropped = [Transforming3d(d, c, on_the_fly=d.on_the_fly) for d in data]
+        c = Cropper(mask, config.cropping_shape)
+        cropped = [Cropping3d(d, c, on_the_fly=d.on_the_fly) for d in data]
         return cropped
 
     def _augment(self):

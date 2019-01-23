@@ -2,6 +2,9 @@
 
 from .data import Transforming3d, Interpolating3d, Flipping3d
 from .transformers import Flipper, Translater, Rotater, Deformer, Scaler
+from .configs import Config
+
+config = Config()
 
 
 def create_aug_strat(augmentation, **kwargs):
@@ -15,24 +18,24 @@ def create_aug_strat(augmentation, **kwargs):
 
     """
     if augmentation == 'flipping':
-        return FlippingStrategy(**kwargs)
+        return FlippingStrategy()
     elif augmentation == 'translation':
-        return TranslationStrategy(**kwargs)
+        return TranslationStrategy()
     elif augmentation == 'rotation':
-        return RotationStrategy(**kwargs)
+        return RotationStrategy()
     elif augmentation == 'scaling':
-        return ScalingStrategy(**kwargs)
+        return ScalingStrategy()
     elif augmentation == 'deformation':
-        return DeformationStrategy(**kwargs)
+        return DeformationStrategy()
 
 
 class AugmentationStrategy:
     """Abstract class for augmentation to apply to the data
-    
-    """
-    def __init__(self, **kwargs):
-        pass
 
+    Pass all the data at the same time to AugmentationStrategy.augment to
+    perform the transformation with the same parameters
+
+    """
     def augment(self, *data):
         """Apply augmentation
 
@@ -47,55 +50,36 @@ class AugmentationStrategy:
 
 
 class RotationStrategy(AugmentationStrategy):
-    """Apply rotation augmentation
-    
-    Args:
-        rotater (.transformers.Rotater): Rotate data with the same parameters
-
-    """
-    def __init__(self, max_angle=15, point=None):
-        self.rotater = Rotater(max_angle=max_angle, point=point)
-
-    def change_rotation_center(self, point):
-        """Change the rotation center
-
-        Args:
-            points (None or numpy.array): The rotation center
-
-        """
-        self.rotater.point = point
-
+    """Apply rotation augmentation with the same parameters"""
     def augment(self, *data):
-        data = [Interpolating3d(d, self.rotater, on_the_fly=True) for d in data]
-        return data
+        rotater = Rotater(max_angle=config.max_angle)
+        return [Interpolating3d(d, rotater, on_the_fly=True) for d in data]
 
 
 class TranslationStrategy(AugmentationStrategy):
-    """Translate the data
-
-    Args:
-        translater (.transformers.Translater): Translate the data with the same
-            parameters
-    
-    """
-    def __init__(self, max_trans=30):
-        self.translater = Translater(max_trans=max_trans)
-
+    """Translate the data with the same parameters"""
     def augment(self, *data):
-        dd = [Transforming3d(d, self.translater, on_the_fly=True) for d in data]
-        return dd
+        translater = Translater(max_trans=config.max_trans)
+        return [Transforming3d(d, translater, on_the_fly=True) for d in data]
 
 
 class FlippingStrategy(AugmentationStrategy):
+    """Flip the data"""
     def augment(self, *data): 
-        pass
+        flipper = Flipper(dim=config.flip_dim)
+        return [Flipping3d(d, flipper, on_the_fly=d.on_the_fly) for d in data]
 
 
 class DeformationStrategy(AugmentationStrategy):
+    """Deform the data with the same parameters"""
     def augment(self, *data):
-        pass
+        shape = data[0].shape
+        deformer = Deformer(shape, config.deform_sigma, config.deform_scale)
+        return [Interpolating3d(d, deformer, on_the_fly=True) for d in data]
 
 
 class ScalingStrategy(AugmentationStrategy):
+    """Scale the data with the same parameters"""
     def augment(self, *data):
-        pass
+        scaler = Scaler(max_scale=config.max_scale)
+        return [Interpolating3d(d, scaler, on_the_fly=True) for d in data]

@@ -7,7 +7,7 @@ import numpy as np
 from memory_profiler import profile
 from time import time
 
-from network_utils.data import Image3d, Label3d
+from network_utils.data import Image3d, Label3d, Cropping3d
 from network_utils.data import Transforming3d, Interpolating3d, Flipping3d
 from network_utils.transformers import Rotater, Deformer, Cropper, Translater
 from network_utils.transformers import LabelImageBinarizer, Scaler, Flipper
@@ -56,8 +56,8 @@ def test1():
     smask = Interpolating3d(dmask, scaler, on_the_fly=True)
 
     cropper = Cropper(smask, cropping_shape)
-    cimage = Transforming3d(simage, cropper, on_the_fly=True)
-    clabel = Transforming3d(slabel, cropper, on_the_fly=True)
+    cimage = Cropping3d(simage, cropper, on_the_fly=True)
+    clabel = Cropping3d(slabel, cropper, on_the_fly=True)
 
     binarizer = LabelImageBinarizer()
     blabel = Transforming3d(clabel, binarizer, on_the_fly=True)

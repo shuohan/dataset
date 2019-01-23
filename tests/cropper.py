@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Image3d, Label3d, Transforming3d
+from network_utils.data import Image3d, Label3d, Cropping3d
 from network_utils.transformers import Cropper
 
 
@@ -22,8 +22,8 @@ def test(cropping_shape=(128, 96, 96), on_the_fly=True):
     label = Label3d(label_path, on_the_fly=on_the_fly)
     mask = Label3d(mask_path, on_the_fly=on_the_fly)
     cropper = Cropper(mask, cropping_shape)
-    cimage = Transforming3d(image, cropper, on_the_fly=on_the_fly)
-    clabel = Transforming3d(label, cropper, on_the_fly=on_the_fly)
+    cimage = Cropping3d(image, cropper, on_the_fly=on_the_fly)
+    clabel = Cropping3d(label, cropper, on_the_fly=on_the_fly)
 
     cropper.update()
     start_time = time()

@@ -152,6 +152,7 @@ class Cropper(Transformer):
     Attributes:
         mask (.data.Data): The mask used to crop the data; assume only one
             channel (channel first)
+        cropping_shape (tuple of int): The resulting shape of the cropped
         _bbox (list of slice): The bouding box indices used to crop the data
         _source_bbox (list of slice): The index slices in `self.data` of the
             cropping region
