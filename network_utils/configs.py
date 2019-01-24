@@ -22,6 +22,8 @@ class Config(metaclass=Singleton):
         self._set_default('deform_scale', 8)
         self._set_default('flip_dim', 1)
         self._set_default('binarize', True)
+        self._set_default('aug_prob', 0.5)
+        self._set_default('aug_sel', 'random')
 
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file

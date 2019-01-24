@@ -7,11 +7,12 @@ from .configs import Config
 config = Config()
 
 
-def create_aug_strat(augmentation, **kwargs):
-    """Create an AugmentationStrategy
+def create_image_aug_strat(augmentation, item):
+    """Create an AugmentationStrategy for an image
     
     Args:
         augmentation (str): The type of the augmentation
+        data_item (.datagorup.DataItem): The 
 
     Returns:
         result (AugmentationStrategy): The created augmentation strategy
@@ -27,6 +28,18 @@ def create_aug_strat(augmentation, **kwargs):
         return ScalingStrategy()
     elif augmentation == 'deformation':
         return DeformationStrategy()
+
+
+def create_label_aug_strat(augmentation):
+    """Create an AugmentationStrategy for a label image
+
+    Args:
+        augmentation (str): The type of the augmentation
+
+    Returns:
+        result (AugmentationStrategy): The created augmentation strategy
+
+    """
 
 
 class AugmentationStrategy:
