@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import numpy as np
 from collections import OrderedDict
 
+from .aug_strats import create_image_aug_strat, create_label_aug_strat
+from .aug_sel import create_selector
 from .transformers import create_transformer
-from .configs import Config
-
-config = Config()
 
 
 class DataItem:
@@ -51,7 +49,7 @@ class DataGroup(DataItem):
         self.items = list()
         self.augmented_items = list()
         self.transformers = OrderedDict()
-        self.selector = create_selector(configs.aug_sel)
+        self.selector = create_selector()
 
     def add_item(self, item):
         """Add a data item into the group, accept as many data as needed
@@ -92,54 +90,3 @@ class DataGroup(DataItem):
         for trans in self.transformers.values():
             trans.cleanup()
         return data
-
-
-def create_selector(type):
-    if type == 'random':
-        return RandomSelector()
-    elif type == 'serial':
-        return SerialSelector()
-
-
-class AugmentationSelector:
-    """Abstract class to select augmentation
-    
-    """
-    def select(self, augmentations):
-        """Select the augmentation to apply
-
-        Args:
-            augmentations (list of str): The candidate augmentation types to
-                select from 
-
-        Returns:
-            selected (list of str): The selected augmentations
-
-        """
-        raise NotImplementedError
-
-
-class RandomSelector(AugmentationSelector):
-    """Randomly select an augmentation method to change the data
-
-    The self.prob specifies the probability of performing an augmentation and
-    this augmentation will be chosen from all available augmentaiton
-
-    Attributes:
-        prob (float): The probability of perform an augmentation
-
-    """
-    def __init__(self):
-        self.prob = configs.aug_prob
-
-    def select(self, augmentations):
-        selected = list()
-        if np.random.rand() <= self.prob:
-            selected = [np.random.choice(augmentations)]
-        return selected
-
-
-class SerialSelector(AugmentationSelector):
-    """Select all augmentation strategy to apply to the data"""
-    def select(self, augmentations):
-        return augmentations
