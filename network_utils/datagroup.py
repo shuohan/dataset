@@ -77,6 +77,8 @@ class DataGroup(DataItem):
     def augment(self):
         """Augment the data"""
         selected = self.selector.select(self.transformers.keys())
+        for sel in selected:
+            self.transformers[sel].update()
         self.augmented_items = [item.augment(selected) for item in self.items]
 
     def get_data(self):
@@ -86,7 +88,10 @@ class DataGroup(DataItem):
             data (tuple of .data.Data): The augmented data
 
         """
-        return tuple([item.get_data() for item in self.augmented_items])
+        data = tuple([item.get_data() for item in self.augmented_items])
+        for trans in self.transformers.values():
+            trans.cleanup()
+        return data
 
 
 def create_selector(type):
