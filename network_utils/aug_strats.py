@@ -1,98 +1,109 @@
 # -*- coding: utf-8 -*-
 
-from .data import Transforming3d, Interpolating3d, Flipping3d
-from .transformers import Flipper, Translater, Rotater, Deformer, Scaler
+from .data import Transforming3d
 from .configs import Config
 
-config = Config()
 
-
-def create_image_aug_strat(augmentation, item):
+def create_image_aug_strat(augmentation, item, transformer):
     """Create an AugmentationStrategy for an image
     
     Args:
         augmentation (str): The type of the augmentation
-        data_item (.datagorup.DataItem): The 
+        item (.datagorup.DataItem): The data item with the required properties
+        transformer (.transformers.Transformer): The shared transformer to
+            transform the data
 
     Returns:
         result (AugmentationStrategy): The created augmentation strategy
 
     """
     if augmentation == 'flipping':
-        return FlippingStrategy()
+        return FlippingStrategy(transformer)
     elif augmentation == 'translation':
-        return TranslationStrategy()
+        return AugmentationStrategy(transformer)
     elif augmentation == 'rotation':
-        return RotationStrategy()
+        return ImageInterpStrategy(transformer)
     elif augmentation == 'scaling':
-        return ScalingStrategy()
+        return ImageInterpStrategy(transformer)
     elif augmentation == 'deformation':
-        return DeformationStrategy()
+        return ImageInterpStrategy(transformer)
 
 
-def create_label_aug_strat(augmentation):
+def create_label_aug_strat(augmentation, item, transformer):
     """Create an AugmentationStrategy for a label image
 
     Args:
         augmentation (str): The type of the augmentation
+        item (.datagorup.DataItem): The data item with the required properties
+        transformer (.transformers.Transformer): The shared transformer to
+            transform the data
 
     Returns:
         result (AugmentationStrategy): The created augmentation strategy
 
     """
+    if augmentation == 'flipping':
+        return FlippingStrategy(transformer, item.label_pairs)
+    elif augmentation == 'translation':
+        return AugmentationStrategy(transformer)
+    elif augmentation == 'rotation':
+        return LabelInterpStrategy(transformer)
+    elif augmentation == 'scaling':
+        return LabelInterpStrategy(transformer)
+    elif augmentation == 'deformation':
+        return LabelInterpStrategy(transformer)
 
 
 class AugmentationStrategy:
-    """Abstract class for augmentation to apply to the data
+    """Apply augmentation to the data
 
-    Pass all the data at the same time to AugmentationStrategy.augment to
-    perform the transformation with the same parameters
+    Attributes:
+        transformer (.transformers.Transformer): The shared transformer to
+            transform the data
 
     """
-    def augment(self, *data):
+    def __init__(self, transformer):
+        self.transformer = transformer
+
+    def augment(self, data):
         """Apply augmentation
 
         Args:
-            data (.data.Data or .data.DataDecorator): The data to augment
+            data (.data.Data): The data to augment
 
         Returns:
-            augmentated (list of .data.DataDecorator): The augmented data
+            augmented (.data.DataDecorator): The augmented data
 
         """
-        raise NotImplementedError
+        return Transforming3d(data, self.transformer, on_the_fly=True)
 
 
-class RotationStrategy(AugmentationStrategy):
-    """Apply rotation augmentation with the same parameters"""
-    def augment(self, *data):
-        rotater = Rotater(max_angle=config.max_angle)
-        return [Interpolating3d(d, rotater, on_the_fly=True) for d in data]
+class ImageInterpStrategy(AugmentationStrategy):
+    """Apply interpolation to the image"""
+    def augment(self, data):
+        return Transforming3d(data, self.transformer, on_the_fly=True,
+                              order=Config().image_interp_order)
 
 
-class TranslationStrategy(AugmentationStrategy):
-    """Translate the data with the same parameters"""
-    def augment(self, *data):
-        translater = Translater(max_trans=config.max_trans)
-        return [Transforming3d(d, translater, on_the_fly=True) for d in data]
+class LabelInterpStrategy(AugmentationStrategy):
+    """Apply interpolation to the label image"""
+    def augment(self, data):
+        return Transforming3d(data, self.transformer, on_the_fly=True,
+                              order=Config().label_interp_order)
 
 
 class FlippingStrategy(AugmentationStrategy):
-    """Flip the data"""
-    def augment(self, *data): 
-        flipper = Flipper(dim=config.flip_dim)
-        return [Flipping3d(d, flipper, on_the_fly=d.on_the_fly) for d in data]
+    """Flip the data
+    
+    Args:
+        label_pairs (list of tuple of int): The label to swap during flipping
+        
+    """
+    def __init__(self, transformer, label_pairs=list()):
+        super().__init__(transformer)
+        self.label_pairs = label_pairs
 
-
-class DeformationStrategy(AugmentationStrategy):
-    """Deform the data with the same parameters"""
-    def augment(self, *data):
-        shape = data[0].shape
-        deformer = Deformer(shape, config.deform_sigma, config.deform_scale)
-        return [Interpolating3d(d, deformer, on_the_fly=True) for d in data]
-
-
-class ScalingStrategy(AugmentationStrategy):
-    """Scale the data with the same parameters"""
-    def augment(self, *data):
-        scaler = Scaler(max_scale=config.max_scale)
-        return [Interpolating3d(d, scaler, on_the_fly=True) for d in data]
+    def augment(self, data): 
+        return Transforming3d(data, self.transformer,
+                              on_the_fly=data.on_the_fly,
+                              label_pairs=self.label_pairs)
