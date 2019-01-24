@@ -5,6 +5,22 @@ from sklearn.preprocessing import LabelBinarizer
 from image_processing_3d import rotate3d, deform3d, calc_random_deformation3d
 from image_processing_3d import crop3d, calc_bbox3d, resize_bbox3d, scale3d
 
+from .configs import Config
+
+
+def create_transformer(type):
+    config = Config()
+    if type == 'flipping':
+        return Flipper(dim=config.flip_dim)
+    elif type == 'translation':
+        return Translater(max_trans=config.max_trans)
+    elif type == 'rotation':
+        return Rotater(max_angle=config.max_rot_angle)
+    elif type == 'deformation':
+        return Deformer(config.image_shape, config.def_sigma, config.def_scale)
+    elif type == 'scaling':
+        return Scaler(max_scale=config.max_scale)
+
 
 class Transformer:
     """Abstract class to transform data

@@ -15,15 +15,17 @@ class Config(metaclass=Singleton):
     """
     def __init__(self, config_json='configs.json'):
         self._loaded = self._load_json(config_json)
-        self._set_default('max_translation', 30)
-        self._set_default('max_rotation', 15)
+        self._set_default('max_trans', 30)
+        self._set_default('max_rot_angle', 15)
         self._set_default('max_scale', 2)
-        self._set_default('deform_sigma', 5)
-        self._set_default('deform_scale', 8)
+        self._set_default('def_sigma', 5)
+        self._set_default('def_scale', 8)
         self._set_default('flip_dim', 1)
         self._set_default('binarize', True)
         self._set_default('aug_prob', 0.5)
         self._set_default('aug_sel', 'random')
+        self._set_default('image_shape', [256, 256, 256])
+        self._set_default('crop_shape', [128, 96, 96])
 
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file
