@@ -19,35 +19,13 @@ class Data:
 
     Attributes:
         on_the_fly (bool): True if to load data on the fly
-        interp_order (int): The interpolation order; images should have >=1 and
-            label images should have order == 0
-        value_pairs (list of tuple): Each element of the list is a two element
-            tuple containing the values that need to be swapped during flipping
         _data (numpy.array): The reference to the loaded data; None if the data
             is not loaded or loaded on the fly
 
     """
-    def __init__(self, on_the_fly=True, interp_order=1, value_pairs=list()):
+    def __init__(self, on_the_fly=True):
         self.on_the_fly = on_the_fly
-        self._interp_order = interp_order
-        self._value_pairs = value_pairs
         self._data = None
-
-    @property
-    def interp_order(self):
-        return self._interp_order
-
-    @interp_order.setter
-    def interp_order(self, order):
-        self._interp_order = order
-
-    @property
-    def value_pairs(self):
-        return self._value_pairs
-
-    @value_pairs.setter
-    def value_pairs(self, pairs):
-        self._value_pairs = pairs
 
     @property
     def shape(self):
@@ -114,12 +92,11 @@ class Data3d(Data):
             to channel first)
 
     """
-    def __init__(self, filepath, on_the_fly=True, transpose4d=True,
-                 interp_order=1, value_pairs=list()):
+    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
         """Initialize
 
         """
-        super().__init__(on_the_fly, interp_order, value_pairs)
+        super().__init__(on_the_fly)
         self.filepath = filepath
         self.transpose4d = transpose4d
 
@@ -147,18 +124,6 @@ class Data3d(Data):
         return data
 
 
-class Image3d(Data3d):
-    """Object handling a 3D image"""
-    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
-        super().__init__(filepath, on_the_fly, transpose4d, interp_order=1)
-
-
-class Label3d(Data3d):
-    """Object handling a 3D label image"""
-    def __init__(self, filepath, on_the_fly=True, transpose4d=True):
-        super().__init__(filepath, on_the_fly, transpose4d, interp_order=0)
-
-
 class DataDecorator(Data):
     """Abstract class to decorate Data
 
@@ -184,14 +149,6 @@ class DataDecorator(Data):
     @property
     def shape(self):
         return self.data.shape # for operation that do not change the shape
-
-    @property
-    def interp_order(self):
-        return self.data.interp_order
-
-    @property
-    def value_pairs(self):
-        return self.data.value_pairs
 
     def update(self):
         """Update the state/parameters"""
@@ -235,25 +192,44 @@ class Transforming3d(DataDecorator):
 
 
 class Interpolating3d(Transforming3d):
-    """Interpolate the data"""
+    """Interpolate the data
+
+    Attributes:
+        order (int): The interpolation order
+    
+    """
+    def __init__(self, data, transformer, on_the_fly=True, order=1):
+        super().__init__(data, transformer, on_the_fly)
+        self.order = order
+
     def _get_data(self):
-        dd = self.transformer.transform(self.data.get_data(), self.interp_order)
-        return dd
+        return self.transformer.transform(self.data.get_data(), self.order)
 
 
 class Flipping3d(Transforming3d):
-    """Flip the data"""
+    """Flip the data
+
+    Attributes:
+        pairs (list of tuple of int): See .transformers.Flipper
+    
+    """
+    def __init__(self, data, transformer, on_the_fly=True, pairs=list()):
+        super().__init__(data, transformer, on_the_fly)
+        self.pairs = pairs
+
     def _get_data(self):
-        dd = self.transformer.transform(self.data.get_data(), self.value_pairs)
-        return dd
+        return self.transformer.transform(self.data.get_data(), self.pairs)
 
 
 class Cropping3d(Transforming3d):
-    """Crop the data"""
+    """Crop the data
+    
+    """
     @property
     def shape(self):
         num_channels = self.data.shape[0]
         shape = (num_channels, *self.transformer.cropping_shape)
         return shape
+
     def _get_data(self):
         return self.transformer.transform(self.data.get_data())

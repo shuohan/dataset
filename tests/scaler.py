@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Image3d, Label3d, Interpolating3d
+from network_utils.data import Data3d, Interpolating3d
 from network_utils.transformers import Scaler
 
 
@@ -17,11 +17,11 @@ def test(max_scale=3, on_the_fly=True):
     """Test Scaler"""
     print('Maximum scale:', max_scale)
     print('On the fly:', on_the_fly)
-    image = Image3d(image_path, on_the_fly=on_the_fly)
-    label = Label3d(label_path, on_the_fly=on_the_fly)
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
     scaler = Scaler(max_scale=max_scale)
-    simage = Interpolating3d(image, scaler, on_the_fly=on_the_fly)
-    slabel = Interpolating3d(label, scaler, on_the_fly=on_the_fly)
+    simage = Interpolating3d(image, scaler, on_the_fly=on_the_fly, order=1)
+    slabel = Interpolating3d(label, scaler, on_the_fly=on_the_fly, order=0)
 
     scaler.update()
     start_time = time()

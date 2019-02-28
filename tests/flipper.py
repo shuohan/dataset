@@ -6,25 +6,24 @@ import numpy as np
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Image3d, Label3d, Flipping3d
+from network_utils.data import Data3d, Flipping3d
 from network_utils.transformers import Flipper
 
 
 image_path = 'data/at1000_image.nii.gz'
 label_path = 'data/at1000_label.nii.gz'
-label_pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
-               [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
+pairs = [[33, 36], [43, 46], [53, 56], [63, 66], [73, 76], [74, 77],
+         [75, 78], [83, 86], [84, 87], [93, 96], [103, 106]]
 
 @profile
 def test(on_the_fly=True):
     """Test Flipper"""
     print('On the fly:', on_the_fly)
-    image = Image3d(image_path, on_the_fly=on_the_fly)
-    label = Label3d(label_path, on_the_fly=on_the_fly)
-    label.value_pairs = label_pairs
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
     flipper = Flipper(dim=1)
-    fimage = Flipping3d(image, flipper, on_the_fly=on_the_fly)
-    flabel = Flipping3d(label, flipper, on_the_fly=on_the_fly)
+    fimage = Flipping3d(image, flipper, on_the_fly=on_the_fly, pairs=pairs)
+    flabel = Flipping3d(label, flipper, on_the_fly=on_the_fly, pairs=pairs)
 
     flipper.update()
     start_time = time()

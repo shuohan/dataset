@@ -6,7 +6,7 @@ from time import time
 from scipy.ndimage.measurements import center_of_mass
 from memory_profiler import profile
 
-from network_utils.data import Image3d, Label3d, Interpolating3d
+from network_utils.data import Data3d, Interpolating3d
 from network_utils.transformers import Deformer
 
 
@@ -19,12 +19,12 @@ def test(scale=30, sigma=5, on_the_fly=True):
     print('Scale:', scale)
     print('Sigma:', sigma)
     print('On the fly:', on_the_fly)
-    image = Image3d(image_path, on_the_fly=on_the_fly)
-    label = Label3d(label_path, on_the_fly=on_the_fly)
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
     shape = image.shape
     deformer = Deformer(shape, sigma, scale)
-    dimage = Interpolating3d(image, deformer, on_the_fly=on_the_fly)
-    dlabel = Interpolating3d(label, deformer, on_the_fly=on_the_fly)
+    dimage = Interpolating3d(image, deformer, on_the_fly=on_the_fly, order=1)
+    dlabel = Interpolating3d(label, deformer, on_the_fly=on_the_fly, order=0)
 
     deformer.update()
     start_time = time()

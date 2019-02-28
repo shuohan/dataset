@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from time import time
 from memory_profiler import profile
 
-from network_utils.data import Image3d, Label3d, Interpolating3d
+from network_utils.data import Data3d, Interpolating3d
 from network_utils.transformers import Rotater
 
 
@@ -17,27 +17,27 @@ def test(max_angle=20, on_the_fly=True):
     """Test Rotater"""
     print('Maximum angle:', max_angle)
     print('On the fly:', on_the_fly)
-    image = Image3d(image_path, on_the_fly=on_the_fly)
-    label = Label3d(label_path, on_the_fly=on_the_fly)
-    rotator = Rotater(max_angle=max_angle, point=None)
-    rimage = Interpolating3d(image, rotator, on_the_fly=False)
-    rlabel = Interpolating3d(label, rotator, on_the_fly=False)
+    image = Data3d(image_path, on_the_fly=on_the_fly)
+    label = Data3d(label_path, on_the_fly=on_the_fly)
+    rotater = Rotater(max_angle=max_angle, point=None)
+    rimage = Interpolating3d(image, rotater, on_the_fly=False, order=1)
+    rlabel = Interpolating3d(label, rotater, on_the_fly=False, order=0)
 
-    rotator.update()
+    rotater.update()
     start_time = time()
     rimage.get_data()
     rlabel.get_data()
     end_time = time()
     print('First rotate', end_time - start_time)
-    rotator.cleanup()
+    rotater.cleanup()
 
-    rotator.update()
+    rotater.update()
     start_time = time()
     rimage.get_data()
     rlabel.get_data()
     end_time = time()
     print('Second rotate', end_time - start_time)
-    rotator.cleanup()
+    rotater.cleanup()
 
     return rimage, rlabel
 
