@@ -7,7 +7,7 @@ import json
 from glob import glob
 from collections import defaultdict
 
-from .images import Image, Label
+from .images import Image, Label, Mask
 
 
 class Dataset:
@@ -27,10 +27,17 @@ class DatasetDecorator(Dataset):
 
     def __init__(self, dataset):
         self.dataset = dataset
+        self.image_suffixes = self.dataset.image_suffixes
 
     @property
     def images(self):
-        return self.dataset._images
+        return self.dataset.images
+
+    def __str__(self):
+        return self.dataset.__str__()
+
+    def add_images(self):
+        raise NotImplementedError
 
 
 class ImageDataset(Dataset):
@@ -61,10 +68,9 @@ class ImageDataset(Dataset):
 class Delineated(DatasetDecorator):
 
     def __init__(self, dataset, label_suffixes=['label'], desc_suffix='labels'):
-        self.dataset = dataset
+        super().__init__(dataset)
         self.label_suffixes = label_suffixes
         self.desc_suffix = desc_suffix
-        self.image_suffixes = dataset.image_suffixes
 
     def add_images(self, dirname, ext='.nii.gz', id=''):
         self.dataset.add_images(dirname, ext, id)
@@ -80,9 +86,6 @@ class Delineated(DatasetDecorator):
                 label = Label(filepath=filepath, labels=labels, pairs=pairs)
                 self.images[name].append(label)
     
-    def __str__(self):
-        return self.dataset.__str__()
-
     def _load_label_desc(self, filepath):
         with open(filepath) as jfile:
             contents = json.load(jfile)
@@ -92,8 +95,14 @@ class Delineated(DatasetDecorator):
 class Masked(DatasetDecorator):
 
     def __init__(self, dataset, mask_suffixes=['mask']):
-        self.dataset = dataset
+        super().__init__(dataset)
         self.mask_suffixes = mask_suffixes
 
     def add_images(self, dirname, ext='.nii.gz', id=''):
-        pass
+        self.dataset.add_images(dirname, ext, id)
+        for filepath in sorted(glob(os.path.join(dirname, '*' + ext))):
+            parts = os.path.basename(filepath).replace(ext, '').split('_')
+            name = os.path.join(id, parts[0])
+            if parts[-1] in self.mask_suffixes:
+                mask = Mask(filepath=filepath)
+                self.images[name].append(mask)
