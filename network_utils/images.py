@@ -59,11 +59,11 @@ class Image:
 class Label(Image):
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 labels=[], label_pairs=[]):
+                 labels=[], pairs=[]):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
         self.labels = labels
-        self.label_pairs = label_pairs
+        self.pairs = pairs
 
     def binarize(self):
         # message =  self.message + ['binarize']
