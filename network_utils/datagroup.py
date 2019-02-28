@@ -4,62 +4,42 @@ from collections import OrderedDict
 
 from .aug_strats import create_image_aug_strat, create_label_aug_strat
 from .aug_sel import create_selector
+from .data import Data
 from .transformers import create_transformer
 
 
-class DataItem:
-    pass
-
-
-class Image(DataItem):
-    pass
-
-
-class ItemDecorator(DataItem):
-    pass
-
-
-class LabelImage(ItemDecorator):
-    pass
-
-
-class MasedImage(ItemDecorator):
-    pass
-
-
-class PatchExtracting(ItemDecorator):
-    pass
-
-
-class DataGroup(DataItem):
+class DataGroup:
     """Group data sharing the same operations
 
     For example, the image and its corresponding label images need to be
     transformed by the exactly same transforamtion (with the same transformation
     parameters)
 
+    The augmentation logic is handled by self.augmetor. The DataGroup is in
+    charge of the maintenance of the pool of augmentation methods.
+
     Attributes:
-        items (list of DataItem): Contain the images/label images
+        data (list of .data.Data): Contain the images/label images
+        augmented_data (list of .data.Data): Contain the augmented data
         transformers (dict of .transformers.Transformer): Apply transform
-        selector (AugmentationSelector): Select augmentation from the registered
-            augmentation pool
+        augmentor (augmentors.Augmentor): Peform augmentation to data
 
     """
     def __init__(self):
-        self.items = list()
-        self.augmented_items = list()
+        self.data = list()
+        self.augmented_data = list()
         self.transformers = OrderedDict()
-        self.selector = create_selector()
+        self.augmentor = create_augmentor(self)
 
-    def add_item(self, item):
+    def add_data(self, data):
         """Add a data item into the group, accept as many data as needed
 
         Args:
-            item (Item): The data item to add
+            data (.data.Data): The data to add
 
         """
-        self.items.append(item)
-        self.augmented_items.append(item)
+        self.data.append(data)
+        self.augmented_data.append(data)
 
     def register_augmentation(self, augmenation):
         """Register an augmentation method into the pool
@@ -69,24 +49,19 @@ class DataGroup(DataItem):
 
         """
         self.transformers[augmentation] = create_transformer(augmentation)
-        for item in items:
-            item.register_augmentation(augmentation, transformer)
 
     def augment(self):
         """Augment the data"""
-        selected = self.selector.select(self.transformers.keys())
-        for sel in selected:
-            self.transformers[sel].update()
-        self.augmented_items = [item.augment(selected) for item in self.items]
+        self.augmented_data = self.augmentor.augment()
 
     def get_data(self):
         """Return the augmented data
 
         Returns:
-            data (tuple of .data.Data): The augmented data
+            data (tuple of numpy.array): The augmented data
 
         """
-        data = tuple([item.get_data() for item in self.augmented_items])
+        data = tuple([d.get_data() for d in self.augmented_data])
         for trans in self.transformers.values():
             trans.cleanup()
         return data
