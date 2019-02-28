@@ -3,7 +3,9 @@
 """Implement Image to handle data
 
 """
-from loads import load
+import os
+
+from .loads import load
 
 
 class Image:
@@ -39,15 +41,14 @@ class Image:
     @property
     def data(self):
         if self.on_the_fly:
-            return load(filepath)
+            return load(self.filepath)
         else:
             if self._data is None:
-                self._data = load(filepath)
+                self._data = load(self.filepath)
             return self._data
 
     def __str__(self):
-        message = ' '.join(self._message)
-        return ' '.join([self.filepath, message])
+        return ' '.join([os.path.basename(self.filepath)] + self.message)
 
     def update(self, data, message):
         """Create a new instance with data"""

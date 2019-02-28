@@ -1,63 +1,69 @@
 # -*- coding: utf-8 -*-
+"""Implement Datasets to handel image iteration
+
+"""
+import os
+from glob import glob
+from collections import defaultdict
+
+from .images import Image
 
 
 class Dataset:
-    """Implements __len__ and __getiem__
-
-    Attributes:
-        data (list of tuple of .data.Data or .data.DataDecorator): Data holder.
-            The tuple should contain the image/label image pair etc. and the
-            transfomered applied to them should be the same so update/cleanup
-            one from the tuple should also update/clean the rest of the tuple
-        
-    """
-    def __init__(self, data):
-        self.data = data
 
     def __len__(self):
-        return len(self.data)
+        raise NotImplementedError
 
     def __getitem__(self, key):
-        """Get an item from the dataset
+        raise NotImplementedError
 
-        Args:
-            key (int): The index
 
-        Returns:
-            results (tuple of numpy.array): The data to retrieve
+class DatasetDecorator(Dataset):
 
-        """
-        assert type(key) is int
-        data = self.data[key] # (image, image_image, ect.)
-        data[0].update() # update the first should also update the rest
-        results = tuple([d.get_data() for d in data])
-        data[0].cleanup()# cleanup the first should also cleanup the rest
-        return results
+    def __init__(self, dataset):
+        self.dataset = dataset
 
-    def __add__(self, dataset):
-        """Combine with other dataset
 
-        Args:
-            dataset (Dataset3d): The dataset to combine
-        
-        Returns:
-            combined_dataset (Dataset3d): The combined datasets
+class ImageDataset(Dataset):
 
-        """
-        combined_data = self.data + dataset.data
-        return Dataset(combined_data)
+    def __init__(self, image_suffixes=['image']):
+        self.image_suffixes = image_suffixes
+        self.images = defaultdict(list)
 
-    def split(self, indices):
-        """Split self to two datasets
+    def add_images(self, dirname, ext='.nii.gz', id=''):
+        for filepath in sorted(glob(os.path.join(dirname, '*' + ext))):
+            parts = os.path.basename(filepath).replace(ext, '').split('_')
+            name = os.path.join(id, parts[0])
+            if parts[-1] in self.image_suffixes:
+                image = Image(filepath=filepath)
+                self.images[name].append(image)
 
-        Args:
-            indices (list of int): The indices in the original data of the first
-                split dataset
+    def __str__(self):
+        info = list()
+        info.append('-' * 80)
+        for name, group in self.images.items():
+            info.append(name)
+            for image in group:
+                info.append('    ' + image.__str__())
+            info.append('-' * 80)
+        return '\n'.join(info)
 
-        """
-        indices_all = set(range(len(self)))
-        indices1 = set(indices)
-        indices2 = indices_all - indices1
-        data1 = [self.data[i] for i in sorted(list(indices1))]
-        data2 = [self.data[i] for i in sorted(list(indices2))]
-        return Dataset3d(data1), Dataset3d(data2)
+
+# class Delineated(DatasetDecorator):
+# 
+#     def __init__(self, dataset, label_suffixes=['label']):
+#         self.dataset = dataset
+#         self.label_suffixes = label_suffixes
+# 
+#     def add_images(self, dirname, ext='.nii.gz', id=''):
+#         pass
+# 
+# 
+# class Masked(DatasetDecorator):
+# 
+#     def __init__(self, dataset, mask_suffixes=['mask']):
+#         self.dataset = dataset
+#         self.mask_suffixes = mask_suffixes
+# 
+#     def add_images(self, dirname, ext='.nii.gz', id=''):
+#         pass
