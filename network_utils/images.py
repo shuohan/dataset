@@ -1,0 +1,83 @@
+# -*- coding: utf-8 -*-
+
+"""Implement Image to handle data
+
+"""
+from loads import load
+
+
+class Image:
+
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
+        """Initialize
+
+        Raises:
+            RuntimeError: filepath and data are both None. The class should load
+                from filepath or data
+            RuntimeError: filepath is not None, data is None, and on_the_fly is
+                True. If the class is initialized from data, on_the_fly should
+                be False
+
+        """
+        if filepath is None and data is None:
+            raise RuntimeError('"filepath" and "data" should not be both None')
+
+        if filepath is not None:
+            self.filepath = filepath
+            self.on_the_fly = on_the_fly
+            self._data = None
+        else:
+            if on_the_fly:
+                error = ('"on_the_fly" should be False if initialize from data')
+                raise RuntimeError(error)
+            self.on_the_fly = False
+            self._data = data
+
+        self.message = message
+        self.interp_order = 1
+
+    @property
+    def data(self):
+        if self.on_the_fly:
+            return load(filepath)
+        else:
+            if self._data is None:
+                self._data = load(filepath)
+            return self._data
+
+    def __str__(self):
+        message = ' '.join(self._message)
+        return ' '.join([self.filepath, message])
+
+    def update(self, data, message):
+        """Create a new instance with data"""
+        message =  self.message + [message]
+        return self.__class__(self.filepath, data, False, message)
+
+
+class Label(Image):
+
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
+                 labels=[], label_pairs=[]):
+        super().__init__(filepath, data, on_the_fly, message)
+        self.interp_order = 0
+        self.labels = labels
+        self.label_pairs = label_pairs
+
+    def binarize(self):
+        # message =  self.message + ['binarize']
+        # data = binarize(self.data, self.labels)
+        # return self.__class__(self.filepath, data, False, message, self.labels,
+        #                       self.label_pairs)
+        return self
+
+
+class Mask(Image):
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
+        super().__init__(filepath, data, on_the_fly, message)
+        self.interp_order = 0
+
+    def crop(self, image):
+        cropped = crop(image)
+        message =  self.message + ['crop']
+        return self.__class__(self.filepath, cropped, False, message)
