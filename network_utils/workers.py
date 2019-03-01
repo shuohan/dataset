@@ -4,15 +4,30 @@
 
 """
 import numpy as np
+from image_processing_3d import rotate3d, scale3d
 
 from .images import Mask
+
+
+aug_types = ['rotation', 'scaling']
+
+
+def create_worker(worker_name):
+    if worker_name == 'rotation':
+        return Rotator()
+    elif worker_name == 'flipping':
+        return Flipper()
+    elif worker_name == 'cropping':
+        return Cropper()
+    elif worker_name == 'scaling':
+        return Scaler()
 
 
 class Worker:
     """Abstract class to process .images.Image
     
     """
-    message = None
+    message = ''
 
     def __init__(self):
         pass
@@ -30,7 +45,7 @@ class Worker:
         results = list()
         for image in images:
             data = self._process(image)
-            results.append(image.update(data, message=self.message))
+            results.append(image.update(data, self.message))
         return tuple(results)
 
     def _process(self, image):
@@ -62,6 +77,8 @@ class Rotator(Worker):
         _z (float): Rotation angle aroung the z axis in degrees
 
     """
+    message = 'rotate'
+
     def __init__(self, max_angle=5, point=None):
         """Initialize
 
@@ -116,6 +133,8 @@ class Scaler(Worker):
         _z (float): Scaling factor around the z axis
 
     """
+    message  = 'scale'
+
     def __init__(self, max_scale=2, point=None):
         """Initialize
 
@@ -162,6 +181,8 @@ class Flipper(Worker):
         dim (int): The dimension/axis that the image is flipped around
 
     """
+    message = 'flip'
+
     def __init__(self, dim=1):
         self.dim = dim
 
@@ -181,7 +202,7 @@ class Flipper(Worker):
             result (numpy.array): The flipped image data
 
         """
-        result = np.flip(data, self.dim).copy()
+        result = np.flip(image.data, self.dim).copy()
         if hasattr(image, 'label_pairs'):
             for (pair1, pair2) in image.label_pairs:
                 mask1 = result==pair1

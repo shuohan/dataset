@@ -50,7 +50,8 @@ class Image:
     def update(self, data, message):
         """Create a new instance with data"""
         message =  self.message + [message]
-        return self.__class__(self.filepath, data, False, message)
+        new_image = self.__class__(self.filepath, data, False, message)
+        return new_image
 
     @property
     def shape(self):
@@ -65,6 +66,12 @@ class Label(Image):
         self.interp_order = 0
         self.labels = labels
         self.pairs = pairs
+
+    def update(self, data, message):
+        message =  self.message + [message]
+        new_image = self.__class__(self.filepath, data, False, message,
+                                   self.labels, self.pairs)
+        return new_image
 
     def binarize(self):
         # message =  self.message + ['binarize']
@@ -92,7 +99,6 @@ class Mask(Image):
         cropped = crop3d(image.data, self._bbox)[0]
         message =  image.message + ['crop']
         new_image = image.__class__(image.filepath, cropped, False, message)
-        print(new_image.shape)
         return new_image
 
     @property

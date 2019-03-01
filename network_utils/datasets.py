@@ -12,9 +12,11 @@ from .images import Image, Label, Mask
 
 class Dataset:
 
-    def __init__(self, image_suffixes=['image']):
+    def __init__(self, image_suffixes=['image'], verbose=False):
         self.image_suffixes = image_suffixes
         self._images = defaultdict(list)
+        self._pipelines = list()
+        self.verbose = verbose
 
     @property
     def images(self):
@@ -28,6 +30,16 @@ class Dataset:
                 image = Image(filepath=filepath)
                 self.images[name].append(image)
 
+    @property
+    def pipelines(self):
+        return self._pipelines
+
+    def add_pipeline(self, pipeline):
+        self.pipelines.append(pipeline)
+
+    def add_pipelines(self, *pipelines):
+        self.pipelines.extend(pipelines)
+
     def __str__(self):
         info = list()
         info.append('-' * 80)
@@ -39,10 +51,40 @@ class Dataset:
         return '\n'.join(info)
 
     def __len__(self):
-        raise NotImplementedError
+        return len(self.images) * len(self.pipelines)
 
     def __getitem__(self, key):
-        raise NotImplementedError
+        """Get item by key
+
+        Indices are arranged as:
+
+            pipeline 1           pipeline 2          pipeline 3      ...
+        _________________    _________________   _________________
+        |               |    |               |   |               |
+        image1 image2 ...    image1 image2 ...   image1 image2 ...
+
+        Args:
+            key (int): The index of the item to get
+
+        """
+        if len(self) == 0:
+            raise IndexError('No images or no pipeline')
+        if key >= len(self):
+            raise IndexError('Index %d is out of range %d' % (key, len(self)))
+        elif key < 0:
+            raise IndexError('Index %d is smaller than 0' % (key,))
+
+        pipeline_ind = key // len(self.images)
+        image_ind = key % len(self.images)
+        pipeline = self.pipelines[pipeline_ind]
+        images = list(self.images.values())[image_ind]
+        processed = pipeline.process(*images)
+        if self.verbose:
+            print('-' * 80)
+            for p in processed:
+                print(p)
+            print('-' * 80)
+        return [p.data for p in processed]
 
 
 class DatasetDecorator(Dataset):
@@ -54,6 +96,10 @@ class DatasetDecorator(Dataset):
     @property
     def images(self):
         return self.dataset.images
+
+    @property
+    def pipelines(self):
+        return self.dataset.pipelines
 
     def add_images(self):
         raise NotImplementedError
