@@ -4,6 +4,7 @@
 
 """
 import os
+from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .loads import load
 
@@ -24,17 +25,13 @@ class Image:
         if filepath is None and data is None:
             raise RuntimeError('"filepath" and "data" should not be both None')
 
-        if filepath is not None:
-            self.filepath = filepath
-            self.on_the_fly = on_the_fly
-            self._data = None
-        else:
-            if on_the_fly:
-                error = ('"on_the_fly" should be False if initialize from data')
-                raise RuntimeError(error)
-            self.on_the_fly = False
-            self._data = data
+        if data is not None and on_the_fly:
+            error = '"on_the_fly" should be False if initialize from data'
+            raise RuntimeError(error)
 
+        self.filepath = filepath
+        self.on_the_fly = on_the_fly
+        self._data = data
         self.message = message
         self.interp_order = 1
 
@@ -55,6 +52,10 @@ class Image:
         message =  self.message + [message]
         return self.__class__(self.filepath, data, False, message)
 
+    @property
+    def shape(self):
+        return self.data.shape # TODO
+
 
 class Label(Image):
 
@@ -74,11 +75,26 @@ class Label(Image):
 
 
 class Mask(Image):
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
+                 cropping_shape=(128, 96, 96)):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
+        self.cropping_shape = cropping_shape
+        self._bbox = None
+        
+    def calc_bbox(self):
+        bbox = calc_bbox3d(self.data)
+        self._bbox = resize_bbox3d(bbox, self.cropping_shape)
 
     def crop(self, image):
-        cropped = crop(image)
-        message =  self.message + ['crop']
-        return self.__class__(self.filepath, cropped, False, message)
+        if self._bbox is None:
+            self.calc_bbox()
+        cropped = crop3d(image.data, self._bbox)[0]
+        message =  image.message + ['crop']
+        new_image = image.__class__(image.filepath, cropped, False, message)
+        print(new_image.shape)
+        return new_image
+
+    @property
+    def shape(self):
+        return self.cropping_shape

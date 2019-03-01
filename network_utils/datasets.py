@@ -12,39 +12,13 @@ from .images import Image, Label, Mask
 
 class Dataset:
 
-    def __len__(self):
-        raise NotImplementedError
-
-    def __getitem__(self, key):
-        raise NotImplementedError
+    def __init__(self, image_suffixes=['image']):
+        self.image_suffixes = image_suffixes
+        self._images = defaultdict(list)
 
     @property
     def images(self):
         return self._images
-
-
-class DatasetDecorator(Dataset):
-
-    def __init__(self, dataset):
-        self.dataset = dataset
-        self.image_suffixes = self.dataset.image_suffixes
-
-    @property
-    def images(self):
-        return self.dataset.images
-
-    def __str__(self):
-        return self.dataset.__str__()
-
-    def add_images(self):
-        raise NotImplementedError
-
-
-class ImageDataset(Dataset):
-
-    def __init__(self, image_suffixes=['image']):
-        self.image_suffixes = image_suffixes
-        self._images = defaultdict(list)
 
     def add_images(self, dirname, ext='.nii.gz', id=''):
         for filepath in sorted(glob(os.path.join(dirname, '*' + ext))):
@@ -63,6 +37,35 @@ class ImageDataset(Dataset):
                 info.append('    ' + image.__str__())
             info.append('-' * 80)
         return '\n'.join(info)
+
+    def __len__(self):
+        raise NotImplementedError
+
+    def __getitem__(self, key):
+        raise NotImplementedError
+
+
+class DatasetDecorator(Dataset):
+
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.image_suffixes = self.dataset.image_suffixes
+
+    @property
+    def images(self):
+        return self.dataset.images
+
+    def add_images(self):
+        raise NotImplementedError
+
+    def __str__(self):
+        return self.dataset.__str__()
+
+    def __len__(self):
+        return self.dataset.__len__()
+
+    def __getitem__(self, key):
+        return self.dataset.__getitem__(key)
 
 
 class Delineated(DatasetDecorator):

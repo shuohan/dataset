@@ -3,6 +3,10 @@
 """Implement Worker to process Image
 
 """
+import numpy as np
+
+from .images import Mask
+
 
 class Worker:
     """Abstract class to process .images.Image
@@ -194,14 +198,6 @@ class Cropper(Worker):
         update results as an 2D array for multiple masks
 
     """
-    def __init__(self, mask, cropping_shape):
-        """Initialize
-
-        """
-        mask = self.mask.get_data()[0, ...]
-        bbox = calc_bbox3d(mask)
-        self._bbox = resize_bbox3d(bbox, self.cropping_shape)
-
     def process(self, *images):
         """Crop the images
 
@@ -220,6 +216,7 @@ class Cropper(Worker):
         for image in images:
             if isinstance(image, Mask):
                 masks.append(image)
+            else:
                 others.append(image)
 
         results = list()
