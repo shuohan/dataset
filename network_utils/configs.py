@@ -8,8 +8,8 @@ class Config(metaclass=Singleton):
     """Global configurations
 
     Attributes:
-        max_translation (int): The maximum translation for augmentation
-        max_rotation_angle (float): The maximum rotation angle for augmentation
+        max_trans (int): The maximum translation for augmentation
+        max_rot_angle (float): The maximum rotation angle for augmentation
         max_scale (float): The maximum scaling factor for augmentation
 
     """
@@ -22,10 +22,12 @@ class Config(metaclass=Singleton):
         self._set_default('def_scale', 8)
         self._set_default('flip_dim', 1)
         self._set_default('binarize', True)
-        self._set_default('aug_prob', 0.5)
-        self._set_default('aug_sel', 'random')
         self._set_default('image_shape', [256, 256, 256])
         self._set_default('crop_shape', [128, 96, 96])
+        self._set_default('aug_prob', 0.5)
+        self._set_default('total_addon', ['flipping', 'cropping'])
+        self._set_default('total_aug', ['translation', 'rotation', 'scaling',
+                                        'deformation'])
 
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file

@@ -4,23 +4,57 @@
 
 """
 import numpy as np
+from enum import Enum, auto
 from image_processing_3d import rotate3d, scale3d
+from py_singleton import Singleton
 
+from .configs import Config
 from .images import Mask
 
 
-aug_types = ['rotation', 'scaling']
+class WorkerTypes(Enum):
+    flipping = auto()
+    translation = auto()
+    rotation = auto()
+    scaling = auto()
+    deformation = auto()
+    cropping = auto()
 
 
-def create_worker(worker_name):
-    if worker_name == 'rotation':
-        return Rotator()
-    elif worker_name == 'flipping':
-        return Flipper()
-    elif worker_name == 'cropping':
-        return Cropper()
-    elif worker_name == 'scaling':
-        return Scaler()
+class WorkerFactory(metaclass=Singleton):
+
+    def __init__(self):
+        config = Config()
+        self.aug_workers = self._check(config.total_aug)
+        self.addon_workers = self._check(config.total_addon)
+
+    def _check(self, worker_names):
+        results = list()
+        for worker_name in worker_names:
+            if hasattr(WorkerTypes, worker_name):
+                results.append(WorkerTypes[worker_name])
+            else:
+                raise ValueError('Worker "%s" does not exist.' % worker_name)
+        return results
+
+    def create(self, worker_name):
+        if not hasattr(WorkerTypes, worker_name):
+            raise ValueError('Worker "%s" does not exist.' % worker_name)
+
+        if WorkerTypes[worker_name] == WorkerTypes.translation:
+            return Translator()
+        elif WorkerTypes[worker_name] == WorkerTypes.rotation:
+            return Rotator()
+        elif WorkerTypes[worker_name] == WorkerTypes.scaling:
+            return Scaler()
+        elif WorkerTypes[worker_name] == WorkerTypes.deformation:
+            return Deformer()
+        elif WorkerTypes[worker_name] == WorkerTypes.flipping:
+            return Flipper()
+        elif WorkerTypes[worker_name] == WorkerTypes.cropping:
+            return Cropper()
+
+    def 
 
 
 class Worker:

@@ -9,19 +9,7 @@ import numpy as np
 from .workers import create_worker, Worker, aug_types
 
 
-class Pipeline(Worker):
-
-    def __init__(self):
-        self.workers = list()
-
-    def register(self, worker_name):
-        self.workers.append(worker_name)
-
-    def process(self, *images):
-        raise NotImplementedError
-
-
-class RandomPipeline(Pipeline):
+class RandomPipeline(Worker):
 
     def __init__(self, random_prob=0.5):
         super().__init__()
@@ -58,13 +46,5 @@ class RandomPipeline(Pipeline):
         else:
             workers = self.workers
         for worker_name in workers:
-            images = create_worker(worker_name).process(*images)
-        return images
-
-
-class SerialPipeline(Pipeline):
-
-    def process(self, *images):
-        for worker_name in self.workers:
             images = create_worker(worker_name).process(*images)
         return images
