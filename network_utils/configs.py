@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import json
 from py_singleton import Singleton
 
@@ -37,7 +38,7 @@ class Config(metaclass=Singleton):
             default (anything): The default value of this attribute
 
         """
-        value = self._loaded[key] if value in self._loaded else default
+        value = self._loaded[key] if key in self._loaded else default
         setattr(self, key, value)
 
     def _load_json(self, filename):

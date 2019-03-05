@@ -6,7 +6,8 @@
 from collections import OrderedDict
 import numpy as np
 
-from .workers import create_worker, Worker, aug_types
+from .workers import Worker, WorkerName, WorkerType, WorkerTypeMapping
+from .workers import create_worker
 
 
 class RandomPipeline(Worker):
@@ -21,12 +22,16 @@ class RandomPipeline(Worker):
         self._rand_state = np.random.RandomState()
 
     def register(self, worker_name):
-        if worker_name in aug_types:
+        mapping = WorkerTypeMapping()
+        worker_name = WorkerName[worker_name]
+        if mapping[worker_name] is WorkerType.aug:
             self._register_random(worker_name)
-        else:
+        elif mapping[worker_name] is WorkerType.addon:
             priority = len(self.workers) + len(self.random_workers)
             self.worker_priorities.append(priority)
             self.workers.append(worker_name)
+        else:
+            raise RuntimeError('Worker "%s" does not exist.' % worker_name)
 
     def _register_random(self, worker_name):
         priority = len(self.workers) + len(self.random_workers)
