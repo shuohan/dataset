@@ -4,6 +4,7 @@
 """
 import os
 import json
+import numpy as np
 from glob import glob
 from collections import defaultdict
 
@@ -12,9 +13,12 @@ from .images import Image, Label, Mask, BoundingBox
 
 class Dataset:
 
-    def __init__(self, image_suffixes=['image'], verbose=False):
+    def __init__(self, images=None, image_suffixes=['image'], verbose=False):
         self.image_suffixes = image_suffixes
-        self._images = defaultdict(list)
+        if isinstance(images, defaultdict) and images.default_factory == list:
+            self._images = images
+        else:
+            self._images = defaultdict(list)
         self._pipelines = list()
         self.verbose = verbose
 
@@ -86,12 +90,28 @@ class Dataset:
             print('-' * 80)
         return [p.output for p in processed]
 
+    def split(self, indicies):
+        indicies2 = sorted(list(set(range(len(self.images))) - set(indicies)))
+        keys = np.array(list(self.images.keys()))
+        keys1 = keys[indicies]
+        keys2 = keys[indicies2]
+        print(keys1)
+        print(keys2)
+        images1 = defaultdict(list, {k: self.images[k] for k in keys1})
+        images2 = defaultdict(list, {k: self.images[k] for k in keys2})
+        dataset1 = Dataset(images=images1, image_suffixes=self.image_suffixes,
+                           verbose=self.verbose)
+        dataset2 = Dataset(images=images2, image_suffixes=self.image_suffixes,
+                           verbose=self.verbose)
+        dataset1.add_pipelines(*self.pipelines)
+        dataset2.add_pipelines(*self.pipelines)
+        return dataset1, dataset2
+
 
 class DatasetDecorator(Dataset):
 
     def __init__(self, dataset):
         self.dataset = dataset
-        self.image_suffixes = self.dataset.image_suffixes
 
     @property
     def images(self):
@@ -100,6 +120,20 @@ class DatasetDecorator(Dataset):
     @property
     def pipelines(self):
         return self.dataset.pipelines
+
+    @property
+    def image_suffixes(self):
+        return self.dataset.image_suffixes
+
+    @property
+    def verbose(self):
+        return self.dataset.verbose
+
+    def add_pipeline(self, pipeline):
+        self.dataset.pipelines.append(pipeline)
+
+    def add_pipelines(self, *pipelines):
+        self.dataset.pipelines.extend(pipelines)
 
     def add_images(self):
         raise NotImplementedError
@@ -112,6 +146,9 @@ class DatasetDecorator(Dataset):
 
     def __getitem__(self, key):
         return self.dataset.__getitem__(key)
+
+    def split(self, indicies):
+        return self.dataset.split(indicies)
 
 
 class Delineated(DatasetDecorator):
