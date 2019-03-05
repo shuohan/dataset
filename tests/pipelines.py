@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.ndimage.morphology import binary_dilation
 
-from network_utils.datasets import Dataset, Delineated, Masked
+from network_utils.datasets import Dataset, Delineated, Masked, Located
 from network_utils.pipelines import RandomPipeline
 from network_utils.configs import Config
 
@@ -31,6 +33,42 @@ plt.subplot(1, 3, 3)
 plt.imshow(image[:, :, shape[2]//2], cmap='gray')
 plt.imshow(label[:, :, shape[2]//2], alpha=0.3)
 plt.title('no cropping')
+
+# ------------------------------------------------------------------------------ 
+
+dataset = Dataset(verbose=True)
+dataset = Delineated(dataset)
+dataset = Located(dataset)
+dataset = Masked(dataset)
+dataset.add_images(dirname, id='tmc')
+pipeline = RandomPipeline()
+pipeline.register('scaling')
+pipeline.register('rotation')
+pipeline.register('deformation')
+pipeline.register('cropping')
+dataset.add_pipeline(pipeline)
+
+image, label, bbox = dataset[image_ind]
+shape = image.shape
+mask = np.zeros(image.shape, dtype=bool)
+mask[bbox[0]:bbox[1], bbox[2]:bbox[3], bbox[4]:bbox[5]] = 1
+mask = binary_dilation(mask) ^ mask
+plt.figure()
+plt.subplot(1, 3, 1)
+plt.imshow(image[shape[0]//2, :, :], cmap='gray')
+plt.imshow(label[shape[0]//2, :, :], alpha=0.3)
+plt.imshow(mask[shape[0]//2, :, :], alpha=0.3, cmap='autumn')
+plt.subplot(1, 3, 2)
+plt.imshow(image[:, shape[1]//2, :], cmap='gray')
+plt.imshow(label[:, shape[1]//2, :], alpha=0.3)
+plt.imshow(mask[:, shape[1]//2, :], alpha=0.3, cmap='autumn')
+plt.subplot(1, 3, 3)
+plt.imshow(image[:, :, shape[2]//2], cmap='gray')
+plt.imshow(label[:, :, shape[2]//2], alpha=0.3)
+plt.imshow(mask[:, :, shape[2]//2], alpha=0.3, cmap='autumn')
+plt.title('bounding box')
+
+# ------------------------------------------------------------------------------ 
 
 dataset = Dataset(verbose=True)
 dataset = Delineated(dataset)

@@ -4,6 +4,7 @@
 
 """
 import os
+import numpy as np
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .loads import load
@@ -37,12 +38,31 @@ class Image:
 
     @property
     def data(self):
+        """Get data
+
+        Returns:
+            result (numpy.array): The image data
+
+        """
         if self.on_the_fly:
             return load(self.filepath)
         else:
             if self._data is None:
                 self._data = load(self.filepath)
             return self._data
+
+    @property
+    def output(self):
+        """Get output
+
+        self.output will be used by .datasets.Dataset to yield data. self.data
+        will mainly be used by .workers.Worker to process
+
+        Returns:
+            result (numpy.array): The output of the image
+
+        """
+        return self.data
 
     def __str__(self):
         return ' '.join([os.path.basename(self.filepath)] + self.message)
@@ -104,3 +124,26 @@ class Mask(Image):
     @property
     def shape(self):
         return self.cropping_shape
+
+
+class BoundingBox(Image):
+    """Bounding box of an image
+
+    A binary image will be kept for .workers.Worker to process. The output is
+    an array of start and stop along the x, y, and z axes
+    
+    TODO:
+        support loading from .csv file
+
+    """
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
+        super().__init__(filepath, data, on_the_fly, message)
+        self.interp_order = 0
+
+    @property
+    def output(self):
+        bbox = calc_bbox3d(self.data)
+        output = list()
+        for b in bbox:
+            output.extend((b.start, b.stop))
+        return np.array(output)

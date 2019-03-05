@@ -7,7 +7,7 @@ import json
 from glob import glob
 from collections import defaultdict
 
-from .images import Image, Label, Mask
+from .images import Image, Label, Mask, BoundingBox
 
 
 class Dataset:
@@ -84,7 +84,7 @@ class Dataset:
             for p in processed:
                 print(p)
             print('-' * 80)
-        return [p.data for p in processed]
+        return [p.output for p in processed]
 
 
 class DatasetDecorator(Dataset):
@@ -155,3 +155,19 @@ class Masked(DatasetDecorator):
             if parts[-1] in self.mask_suffixes:
                 mask = Mask(filepath=filepath)
                 self.images[name].append(mask)
+
+
+class Located(DatasetDecorator):
+
+    def __init__(self, dataset, bbox_suffixes=['bbox', 'mask']):
+        super().__init__(dataset)
+        self.bbox_suffixes = bbox_suffixes
+
+    def add_images(self, dirname, ext='.nii.gz', id=''):
+        self.dataset.add_images(dirname, ext, id)
+        for filepath in sorted(glob(os.path.join(dirname, '*' + ext))):
+            parts = os.path.basename(filepath).replace(ext, '').split('_')
+            name = os.path.join(id, parts[0])
+            if parts[-1] in self.bbox_suffixes:
+                bbox = BoundingBox(filepath=filepath)
+                self.images[name].append(bbox)
