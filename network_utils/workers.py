@@ -5,8 +5,9 @@
 """
 import numpy as np
 from enum import Enum, auto
-from image_processing_3d import rotate3d, scale3d
 from py_singleton import Singleton
+from image_processing_3d import rotate3d, scale3d
+from image_processing_3d import calc_random_deformation3d, deform3d
 
 from .configs import Config
 from .images import Mask
@@ -64,18 +65,20 @@ def create_worker(worker_name):
         ValueError: The worker_name is not in enum WorkerName
 
     """
-    if worker_name is WorkerName.translation:
-        return Translator()
-    elif worker_name is WorkerName.rotation:
-        return Rotator()
-    elif worker_name is WorkerName.scaling:
-        return Scaler()
-    elif worker_name is WorkerName.deformation:
-        return Deformer()
-    elif worker_name is WorkerName.flipping:
-        return Flipper()
+    config = Config()
+    if worker_name is WorkerName.flipping:
+        return Flipper(dim=config.flip_dim)
     elif worker_name is WorkerName.cropping:
         return Cropper()
+    elif worker_name is WorkerName.translation:
+        return Translater(max_trans=config.max_trans)
+    elif worker_name is WorkerName.rotation:
+        return Rotator(max_angle=config.max_rot_angle)
+    elif worker_name is WorkerName.scaling:
+        return Scaler(max_scale=config.max_scale)
+    elif worker_name is WorkerName.deformation:
+        return Deformer(shape=config.image_shape, sigma=config.def_sigma,
+                        scale=config.def_scale)
     else:
         raise ValueError('Worker "%s" is not in WorkerName')
 
@@ -305,3 +308,134 @@ class Cropper(Worker):
             # results.append(cropped) # TODO
             results.extend(cropped)
         return results
+
+
+class Translater(Worker):
+    """Translate images randomly along x, y, and z axes
+
+    The translation is integer for simplicity
+    
+    Attributes:
+        max_trans (int): The translation will be uniformly sampled from
+            [-self.max_trans, self.max_trans]
+        _rand_state (numpy.random.RandomState): Random sampling
+        _x (int): Translation along x axis
+        _y (int): Translation along y axis
+        _z (int): Translation along z axis
+
+    """
+    message = 'translate'
+
+    def __init__(self, max_trans=30):
+        self.max_trans = max_trans
+        self._rand_state = np.random.RandomState()
+        self._x = self._calc_random_trans()
+        self._y = self._calc_random_trans()
+        self._z = self._calc_random_trans()
+
+    def _process(self, image):
+        """Translate an image
+        
+        Args:
+            image (.image.Image): The image to translate
+
+        Returns:
+            result (numpy.data): The translated image
+
+        """
+        data = image.data
+        result = np.zeros_like(data)
+        xs, xt = self._calc_index(self._x, data.shape[0])
+        ys, yt = self._calc_index(self._y, data.shape[1])
+        zs, zt = self._calc_index(self._z, data.shape[2])
+        result[..., xt, yt, zt] = data[..., xs, ys, zs]
+        return result
+
+    def _calc_index(self, trans, size):
+        """Calculate target and source indexing slices from translation
+
+        Args:
+            trans (int): The translation of the data
+            size (int): The size of the data
+
+        Returns:
+            source (slice): The indexing slice in the source data
+            target (slice): The indexing slice in the target data
+
+        """
+        if trans > 0:
+            source = slice(0, size-1-trans, None)
+            target = slice(trans, size-1, None)
+        elif trans <= 0:
+            source = slice(-trans, size-1, None)
+            target = slice(0, size-1+trans, None)
+        return source, target
+
+    def _calc_random_trans(self):
+        """Randomly sample translation along an axis
+        
+        Returns:
+            trans (int): The translation along an axis
+
+        """
+        trans = self._rand_state.rand(1)
+        trans = int(np.round(trans * 2 * self.max_trans - self.max_trans))
+        return trans
+
+
+class Deformer(Worker):
+    """Deform the images randomly
+    
+    Call external `image_processing_3d.deform3d` to perform the elastic
+    transform. It creates a random deformation field specified by `self.sigma`
+    (for deformation field smoothness) and `self.scale` (for displacement
+    maginitude). The dispacement scale is randomly sampled from a uniform
+    distribution [0, `self.scale`].
+
+    Attributes:
+        shape (tuple of int): The shape of the data to deform
+        sigma (float): Control the smoothness of the deformation field. The
+            larger the value, the smoother the field
+        scale (float): Control the magnitude of the displacement. In pixels,
+            i.e. the larget displacement at a pixel along a direction is
+            `self.scale`.
+        _rand_state (numpy.random.RandomState): Random sampler
+        _x (numpy.array) Pixelwise translation (deformation field) along x axis
+        _x (numpy.array) Pixelwise translation (deformation field) along y axis
+        _x (numpy.array) Pixelwise translation (deformation field) along z axis
+
+    """
+    message = 'deform'
+
+    def __init__(self, shape, sigma, scale):
+        self.shape = shape
+        self.sigma = sigma
+        self.scale = scale
+        self._rand_state = np.random.RandomState()
+        self._x = self._calc_random_deform()
+        self._y = self._calc_random_deform()
+        self._z = self._calc_random_deform()
+
+    def _process(self, image):
+        """Deform an image
+        
+        Args:
+            image (.image.Image): The image to deform
+
+        Returns:
+            result (numpy.array): The deformed image
+
+        """
+        return deform3d(image.data, self._x, self._y, self._z,
+                        order=image.interp_order)
+
+    def _calc_random_deform(self):
+        """Randomly sample deformation (single axis)
+        
+        Returns:
+            deform (numpy.array): The deformation field along a axis
+
+        """
+        scale = self._rand_state.rand(1) * self.scale
+        deform = calc_random_deformation3d(self.shape, self.sigma, scale)
+        return deform

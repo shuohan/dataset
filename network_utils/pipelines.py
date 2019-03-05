@@ -70,7 +70,7 @@ class RandomPipeline(Worker):
 
         """
         workers = self._fixed_workers.copy()
-        if self._rand_state.rand() <= self.random_prob:
+        if self._random_workers and self._rand_state.rand() <= self.random_prob:
             ind = self._rand_state.choice(range(len(self._random_workers)))
             workers.append(self._random_workers[ind])
         for priority, worker_name in sorted(workers):
