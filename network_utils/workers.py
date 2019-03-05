@@ -60,6 +60,9 @@ def create_worker(worker_name):
     Returns:
         worker (.workers.Worker): The worker instance
 
+    Raises:
+        ValueError: The worker_name is not in enum WorkerName
+
     """
     if worker_name is WorkerName.translation:
         return Translator()
@@ -73,6 +76,8 @@ def create_worker(worker_name):
         return Flipper()
     elif worker_name is WorkerName.cropping:
         return Cropper()
+    else:
+        raise ValueError('Worker "%s" is not in WorkerName')
 
 
 class Worker:
@@ -235,7 +240,7 @@ class Flipper(Worker):
     """
     message = 'flip'
 
-    def __init__(self, dim=1):
+    def __init__(self, dim=0):
         self.dim = dim
 
     def _process(self, image):
@@ -255,8 +260,8 @@ class Flipper(Worker):
 
         """
         result = np.flip(image.data, self.dim).copy()
-        if hasattr(image, 'label_pairs'):
-            for (pair1, pair2) in image.label_pairs:
+        if hasattr(image, 'pairs'):
+            for (pair1, pair2) in image.pairs:
                 mask1 = result==pair1
                 mask2 = result==pair2
                 result[mask1] = pair2
