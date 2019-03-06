@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 
-from network_utils.datasets import Dataset, Delineated, Masked, Located
+from network_utils.images import ImageLoader, ImageType
+from network_utils.datasets import Dataset
 from network_utils.pipelines import RandomPipeline
 from network_utils.configs import Config
 
 dirname = 'data'
+desc_filepath = os.path.join(dirname, 'labels.json')
 image_ind = 5
 
-dataset = Dataset(verbose=True)
-dataset = Delineated(dataset)
-dataset.add_images(dirname, id='tmc')
+loader = ImageLoader(dirname, id='tmc')
+loader.load(ImageType.image, ImageType.label)
+dataset = Dataset(images=loader.images, verbose=True)
+
 pipeline = RandomPipeline()
 dataset.add_pipeline(pipeline)
 
@@ -36,11 +40,11 @@ plt.title('no cropping')
 
 # ------------------------------------------------------------------------------ 
 
-dataset = Dataset(verbose=True)
-dataset = Delineated(dataset)
-dataset = Located(dataset)
-dataset = Masked(dataset)
-dataset.add_images(dirname, id='tmc')
+loader = ImageLoader(dirname, id='tmc')
+loader.load(ImageType.image, ImageType.label)
+loader.load(ImageType.bounding_box, ImageType.mask)
+dataset = Dataset(loader.images, verbose=True)
+
 pipeline = RandomPipeline()
 pipeline.register('scaling')
 pipeline.register('rotation')
@@ -70,10 +74,9 @@ plt.title('bounding box')
 
 # ------------------------------------------------------------------------------ 
 
-dataset = Dataset(verbose=True)
-dataset = Delineated(dataset)
-dataset = Masked(dataset)
-dataset.add_images(dirname, id='tmc')
+loader = ImageLoader(dirname, id='tmc')
+loader.load(ImageType.image, ImageType.label, ImageType.mask)
+dataset = Dataset(loader.images, verbose=True)
 
 pipeline = RandomPipeline()
 pipeline.register('flipping')
@@ -97,10 +100,9 @@ plt.title('flipping')
 # augmentation = ['rotation', 'scaling', 'translation', 'deformation']
 augmentation = ['deformation']
 for aug in augmentation:
-    dataset = Dataset(verbose=True)
-    dataset = Delineated(dataset)
-    dataset = Masked(dataset)
-    dataset.add_images(dirname, id='tmc')
+    loader = ImageLoader(dirname, id='tmc')
+    loader.load(ImageType.image, ImageType.label, ImageType.mask)
+    dataset = Dataset(images=loader.images, verbose=True)
 
     pipeline = RandomPipeline()
     pipeline.register(aug)

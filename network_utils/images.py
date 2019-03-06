@@ -5,9 +5,68 @@
 """
 import os
 import numpy as np
+from glob import glob
+from enum import Enum, auto
+from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
-from .loads import load
+from .configs import Config
+from .loads import load, load_label_desc
+
+
+class ImageType(Enum):
+    image = auto()
+    label = auto()
+    mask = auto()
+    bounding_box = auto()
+
+
+class ImageLoader:
+    """Gather information of files
+
+    Attributes:
+        dirname (str): The directory to the files
+        ext (str): The extension name of the files
+        id (str): The identifier of the dataset
+        _files (list of dict): The list of dict with file information. 'name':
+            the name of the file; 'suffix': the suffix of the filename;
+            'filepath': the path to the file
+        
+    """
+    def __init__(self, dirname, id='', ext='.nii.gz'):
+        self.dirname = dirname
+        self.id = id
+        self.ext = ext
+        self._files = self._gather_files()
+        self.images = defaultdict(list)
+
+    def _gather_files(self):
+        files = list()
+        for filepath in sorted(glob(os.path.join(self.dirname, '*'+self.ext))):
+            parts = os.path.basename(filepath).replace(self.ext, '').split('_')
+            name = os.path.join(self.id, parts[0])
+            files.append(dict(name=name, suffix=parts[-1], filepath=filepath))
+        return files
+
+    def load(self, *image_types):
+        config = Config()
+        for type in image_types:
+            if type is ImageType.image:
+                self._load(config.image_suffixes, Image)
+            elif type is ImageType.label:
+                desc_filepath = os.path.join(self.dirname, config.label_desc)
+                l, p = load_label_desc(desc_filepath)
+                self._load(config.label_suffixes, Label, labels=l, pairs=p)
+            elif type is ImageType.mask:
+                self._load(config.mask_suffixes, Mask)
+            elif type is ImageType.bounding_box:
+                self._load(config.bbox_suffixes, BoundingBox)
+
+    def _load(self, suffixes, image_class, **kwargs):
+        for file in self._files:
+            if file['suffix'] in suffixes:
+                bbox = image_class(filepath=file['filepath'], **kwargs)
+                self.images[file['name']].append(bbox)
 
 
 class Image:

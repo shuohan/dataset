@@ -26,6 +26,11 @@ class Config(metaclass=Singleton):
         self._set_default('image_shape', [256, 256, 256])
         self._set_default('crop_shape', [128, 96, 96])
         self._set_default('aug_prob', 0.5)
+        self._set_default('image_suffixes', ['image'])
+        self._set_default('label_suffixes', ['label'])
+        self._set_default('mask_suffixes', ['mask'])
+        self._set_default('bbox_suffixes', ['bbox', 'mask'])
+        self._set_default('label_desc', 'labels.json')
         self._set_default('total_addon', ['flipping', 'cropping'])
         self._set_default('total_aug', ['translation', 'rotation', 'scaling',
                                         'deformation'])

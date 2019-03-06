@@ -1,22 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 
-from network_utils.datasets import Dataset, Delineated, Masked, Located
+from network_utils.datasets import Dataset, FileInfoGatherer
 from network_utils.pipelines import RandomPipeline
 from network_utils.configs import Config
 
 dirname = 'data'
+desc_filepath = os.path.join(dirname, 'labels.json')
 image_ind = 5
 
 dataset = Dataset(verbose=True)
-dataset = Delineated(dataset)
-dataset = Located(dataset)
-dataset = Masked(dataset)
-dataset.add_images(dirname, id='tmc')
+dataset.file_info_gatherer = FileInfoGatherer(dirname, id='tmc')
+dataset.add_images()
+dataset.add_labels(desc=desc_filepath)
+dataset.add_masks()
+dataset.add_bounding_boxes()
 print(dataset)
 dataset1, dataset2 = dataset.split([1, 3, 5, 6])
 
