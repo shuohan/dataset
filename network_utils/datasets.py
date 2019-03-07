@@ -1,63 +1,63 @@
 # -*- coding: utf-8 -*-
+"""Implement Datasets to handel image iteration
+
+"""
+import numpy as np
+from collections import defaultdict
 
 
 class Dataset:
-    """Implements __len__ and __getiem__
 
-    Attributes:
-        data (list of tuple of .data.Data or .data.DataDecorator): Data holder.
-            The tuple should contain the image/label image pair etc. and the
-            transfomered applied to them should be the same so update/cleanup
-            one from the tuple should also update/clean the rest of the tuple
-        
-    """
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, images, verbose=False):
+        self.images = images
+        self.verbose = verbose
+        self.pipelines = list()
+
+    def add_pipeline(self, *pipelines):
+        self.pipelines.extend(pipelines)
+
+    def __str__(self):
+        info = list()
+        info.append('-' * 80)
+        for name, group in self.images.items():
+            info.append(name)
+            for image in group:
+                info.append('    ' + image.__str__())
+            info.append('-' * 80)
+        return '\n'.join(info)
 
     def __len__(self):
-        return len(self.data)
+        return len(self.images) * len(self.pipelines)
 
     def __getitem__(self, key):
-        """Get an item from the dataset
+        """Get item by key
+
+        Indices are arranged as:
+
+            pipeline 1           pipeline 2          pipeline 3      ...
+        _________________    _________________   _________________
+        |               |    |               |   |               |
+        image1 image2 ...    image1 image2 ...   image1 image2 ...
 
         Args:
-            key (int): The index
-
-        Returns:
-            results (tuple of numpy.array): The data to retrieve
+            key (int): The index of the item to get
 
         """
-        assert type(key) is int
-        data = self.data[key] # (image, image_image, ect.)
-        data[0].update() # update the first should also update the rest
-        results = tuple([d.get_data() for d in data])
-        data[0].cleanup()# cleanup the first should also cleanup the rest
-        return results
+        if len(self) == 0:
+            raise IndexError('No images or no pipeline')
+        if key >= len(self):
+            raise IndexError('Index %d is out of range %d' % (key, len(self)))
+        elif key < 0:
+            raise IndexError('Index %d is smaller than 0' % (key,))
 
-    def __add__(self, dataset):
-        """Combine with other dataset
-
-        Args:
-            dataset (Dataset3d): The dataset to combine
-        
-        Returns:
-            combined_dataset (Dataset3d): The combined datasets
-
-        """
-        combined_data = self.data + dataset.data
-        return Dataset(combined_data)
-
-    def split(self, indices):
-        """Split self to two datasets
-
-        Args:
-            indices (list of int): The indices in the original data of the first
-                split dataset
-
-        """
-        indices_all = set(range(len(self)))
-        indices1 = set(indices)
-        indices2 = indices_all - indices1
-        data1 = [self.data[i] for i in sorted(list(indices1))]
-        data2 = [self.data[i] for i in sorted(list(indices2))]
-        return Dataset3d(data1), Dataset3d(data2)
+        pipeline_ind = key // len(self.images)
+        image_ind = key % len(self.images)
+        pipeline = self.pipelines[pipeline_ind]
+        images = list(self.images.values())[image_ind]
+        processed = pipeline.process(*images)
+        if self.verbose:
+            print('-' * 80)
+            for p in processed:
+                print(p)
+            print('-' * 80)
+        return [p.output for p in processed]
