@@ -71,7 +71,7 @@ def create_worker(worker_name):
     elif worker_name is WorkerName.cropping:
         return Cropper()
     elif worker_name is WorkerName.translation:
-        return Translater(max_trans=config.max_trans)
+        return Translator(max_trans=config.max_trans)
     elif worker_name is WorkerName.rotation:
         return Rotator(max_angle=config.max_rot_angle)
     elif worker_name is WorkerName.scaling:
@@ -310,7 +310,7 @@ class Cropper(Worker):
         return results
 
 
-class Translater(Worker):
+class Translator(Worker):
     """Translate images randomly along x, y, and z axes
 
     The translation is integer for simplicity
