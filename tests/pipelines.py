@@ -6,10 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 
-from dataset.images import ImageLoader
-from dataset.datasets import Dataset
-from dataset.pipelines import RandomPipeline
-from dataset.configs import Config
+from dataset import ImageLoader, Dataset, RandomPipeline, Config
 
 dirname = 'data'
 image_ind = 5
