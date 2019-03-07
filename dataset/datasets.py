@@ -7,13 +7,31 @@ from collections import defaultdict
 
 
 class Dataset:
+    """Dataset for yielding data
 
+    The length of the dataset will be the number of pipelines times the number
+    of images. Hold multiple pipelines and each separately processes all the
+    images
+
+    Attributes:
+        images (.images.ImageCollection): The collection of images
+        verbose (bool): Print info
+        pipelines (list of .pipelines.RandomPipeline): Pipeines to process
+            images
+
+    """
     def __init__(self, images, verbose=False):
         self.images = images
         self.verbose = verbose
         self.pipelines = list()
 
     def add_pipeline(self, *pipelines):
+        """Add pipelines for image processing
+
+        Args:
+            pipeline (.pipelines.RandomPipeline): A pipeline to process images
+
+        """
         self.pipelines.extend(pipelines)
 
     def __str__(self):
