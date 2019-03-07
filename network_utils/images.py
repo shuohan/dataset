@@ -50,6 +50,9 @@ class ImageCollection(defaultdict):
         collection2 = self.__class__({k: self[k] for k in keys[indicies2]})
         return collection1, collection2
 
+    def copy(self):
+        return self.__class__(self)
+
     def __add__(self, other):
         """Merge two image collections
 
