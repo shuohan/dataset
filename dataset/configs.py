@@ -35,7 +35,7 @@ class Config(metaclass=Singleton):
                                           'label_normalization'])
         self._set_default('total_aug', ['translation', 'rotation', 'scaling',
                                         'deformation'])
-        self._set_default('verbose', True)
+        self._set_default('verbose', False)
 
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file

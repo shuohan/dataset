@@ -5,6 +5,8 @@
 import numpy as np
 from collections import defaultdict
 
+from .configs import Config
+
 
 class Dataset:
     """Dataset for yielding data
@@ -20,9 +22,9 @@ class Dataset:
             images
 
     """
-    def __init__(self, images, verbose=False):
+    def __init__(self, images):
         self.images = images
-        self.verbose = verbose
+        self.verbose = Config().verbose
         self.pipelines = list()
 
     def add_pipeline(self, *pipelines):

@@ -17,7 +17,7 @@ image_ind = 5
 
 loader = ImageLoader(dirname, id='tmc')
 loader.load('image', 'label')
-dataset = Dataset(images=loader.images, verbose=Config().verbose)
+dataset = Dataset(images=loader.images)
 pipeline = RandomPipeline()
 dataset.add_pipeline(pipeline)
 data_loader = DataLoader(dataset)
