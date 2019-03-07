@@ -34,6 +34,7 @@ class Config(metaclass=Singleton):
         self._set_default('total_addon', ['flipping', 'cropping'])
         self._set_default('total_aug', ['translation', 'rotation', 'scaling',
                                         'deformation'])
+        self._set_default('verbose', True)
 
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file

@@ -12,12 +12,11 @@ from network_utils.pipelines import RandomPipeline
 from network_utils.configs import Config
 
 dirname = 'data'
-desc_filepath = os.path.join(dirname, 'labels.json')
 image_ind = 5
 
 loader = ImageLoader(dirname, id='tmc')
 loader.load(ImageType.image, ImageType.label)
-dataset = Dataset(images=loader.images, verbose=True)
+dataset = Dataset(images=loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
 dataset.add_pipeline(pipeline)
@@ -43,7 +42,7 @@ plt.title('no cropping')
 loader = ImageLoader(dirname, id='tmc')
 loader.load(ImageType.image, ImageType.label)
 loader.load(ImageType.bounding_box, ImageType.mask)
-dataset = Dataset(loader.images, verbose=True)
+dataset = Dataset(loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
 pipeline.register('scaling')
@@ -76,7 +75,7 @@ plt.title('bounding box')
 
 loader = ImageLoader(dirname, id='tmc')
 loader.load(ImageType.image, ImageType.label, ImageType.mask)
-dataset = Dataset(loader.images, verbose=True)
+dataset = Dataset(loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
 pipeline.register('flipping')
@@ -102,7 +101,7 @@ augmentation = ['deformation']
 for aug in augmentation:
     loader = ImageLoader(dirname, id='tmc')
     loader.load(ImageType.image, ImageType.label, ImageType.mask)
-    dataset = Dataset(images=loader.images, verbose=True)
+    dataset = Dataset(images=loader.images, verbose=Config().verbose)
 
     pipeline = RandomPipeline()
     pipeline.register(aug)

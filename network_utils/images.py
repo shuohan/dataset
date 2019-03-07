@@ -21,6 +21,50 @@ class ImageType(Enum):
     bounding_box = auto()
 
 
+class ImageCollection(defaultdict):
+    """Image collection
+
+    Each key corresponds images of the same subject, the value is a list of
+    Image instances
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(list, *args, **kwargs)
+
+    def split(self, indicies):
+        """Split images into two instances of ImageCollection
+
+        Args:
+            indicies (list of int): The indices in self for the first collection 
+
+        Returns:
+            collection1 (ImageCollection): The collection of images
+                corresponding to the input arg `indicies`
+            collection2 (ImageCollection): The collection of images
+                corresponding to the rest
+
+        """
+        indicies2 = sorted(list(set(range(len(self))) - set(indicies)))
+        keys = np.array(list(self.keys()))
+        collection1 = self.__class__({k: self[k] for k in keys[indicies]})
+        collection2 = self.__class__({k: self[k] for k in keys[indicies2]})
+        return collection1, collection2
+
+    def __add__(self, other):
+        """Merge two image collections
+
+        Args:
+            other (ImageCollection): The other collection to merge
+
+        Returns:
+            result (ImageCollection): Merged collection
+
+        """
+        result = self.copy()
+        result.update(other)
+        return result
+
+
 class ImageLoader:
     """Load images
 
@@ -30,19 +74,18 @@ class ImageLoader:
         dirname (str): The directory to the files
         ext (str): The extension name of the files
         id (str): The identifier of the dataset
+        images (ImageCollection): The loaded images        
         _files (list of dict): The list of dict with file information. 'name':
             the name of the file; 'suffix': the suffix of the filename;
             'filepath': the path to the file
-        _images (defaultdit(list)): The loaded images; the values of the same
-            key all correspond to the same images
-        
+
     """
     def __init__(self, dirname, id='', ext='.nii.gz'):
         self.dirname = dirname
         self.id = id
         self.ext = ext
+        self.images = ImageCollection()
         self._files = self._gather_files()
-        self.images = defaultdict(list)
 
     def _gather_files(self):
         files = list()

@@ -61,16 +61,3 @@ class Dataset:
                 print(p)
             print('-' * 80)
         return [p.output for p in processed]
-
-    def split(self, indicies):
-        indicies2 = sorted(list(set(range(len(self.images))) - set(indicies)))
-        keys = np.array(list(self.images.keys()))
-        keys1 = keys[indicies]
-        keys2 = keys[indicies2]
-        images1 = defaultdict(list, {k: self.images[k] for k in keys1})
-        images2 = defaultdict(list, {k: self.images[k] for k in keys2})
-        dataset1 = Dataset(images=images1, verbose=self.verbose)
-        dataset2 = Dataset(images=images2, verbose=self.verbose)
-        dataset1.add_pipeline(*self.pipelines)
-        dataset2.add_pipeline(*self.pipelines)
-        return dataset1, dataset2
