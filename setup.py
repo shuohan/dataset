@@ -7,9 +7,10 @@ import subprocess
 command = ['git', 'describe', '--tags']
 version = subprocess.check_output(command).decode().strip()
 
-setup(name='network-utils',
+setup(name='dataset',
       version=version,
-      description='Deep network utility',
+      description=('Dataset for 3D images with data augmentation and other '
+                   'operations'),
       author='Shuo Han',
       author_email='shan50@jhu.edu',
-      packages=['network_utils'])
+      packages=['dataset'])
