@@ -7,6 +7,7 @@ from collections import OrderedDict
 import numpy as np
 from heapq import heappush, heappop
 
+from .configs import Config
 from .workers import Worker, WorkerName, WorkerType, WorkerTypeMapping
 from .workers import create_worker
 
@@ -31,9 +32,9 @@ class RandomPipeline(Worker):
         _rand_state (numpy.random.RandomState): Numpy random state
 
     """
-    def __init__(self, random_prob=1):
+    def __init__(self):
         super().__init__()
-        self.random_prob = random_prob
+        self.random_prob = Config().aug_prob
         self._fixed_workers = list()
         self._random_workers = list()
         self._rand_state = np.random.RandomState()
