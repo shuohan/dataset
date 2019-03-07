@@ -4,8 +4,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from network_utils.loads import load_label_desc
-from network_utils.images import Label, Mask
+from dataset.loads import load_label_desc
+from dataset.images import Label, Mask
 
 
 filepath = 'data/at1000_label.nii.gz'

@@ -7,10 +7,10 @@ import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 from torch.utils.data import DataLoader
 
-from network_utils.images import ImageLoader, ImageType
-from network_utils.datasets import Dataset
-from network_utils.pipelines import RandomPipeline
-from network_utils.configs import Config
+from dataset.images import ImageLoader, ImageType
+from dataset.datasets import Dataset
+from dataset.pipelines import RandomPipeline
+from dataset.configs import Config
 
 dirname = 'data'
 image_ind = 5
