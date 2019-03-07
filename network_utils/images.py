@@ -214,7 +214,7 @@ class Label(Image):
 
     """
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 labels=[], pairs=[]):
+                 labels=dict(), pairs=list()):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
         self.labels = labels
@@ -226,12 +226,20 @@ class Label(Image):
                                    self.labels, self.pairs)
         return new_image
 
-    def binarize(self):
-        # message =  self.message + ['binarize']
-        # data = binarize(self.data, self.labels)
-        # return self.__class__(self.filepath, data, False, message, self.labels,
-        #                       self.label_pairs)
-        return self
+    def normalize(self):
+        """Convert label values into 0 : num_labels
+
+        Returns:
+            result (Label): The normalized label image
+
+        """
+        if len(self.labels) == 0:
+            labels = np.unique(self.data)
+        else:
+            labels = sorted(self.labels.keys())
+        data = np.digitize(self.data, labels, right=True)
+        result = self.update(data, 'label_norm')
+        return result
 
 
 class Mask(Image):

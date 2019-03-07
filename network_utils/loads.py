@@ -60,5 +60,6 @@ def load_label_desc(filepath):
             contents = json.load(jfile)
         labels, pairs = contents['labels'], contents['pairs']
     else:
-        labels, pairs = [], []
+        labels, pairs = dict(), list()
+    labels = {int(k): v for k, v in labels.items()}
     return labels, pairs
