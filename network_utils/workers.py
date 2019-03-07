@@ -289,7 +289,7 @@ class Cropper(Worker):
             image (.images.Image): The image to crop or the mask
 
         Returns:
-            results (list of 
+            results (tuple of .images.Image): The cropped images
 
         """
         masks = list()
@@ -307,7 +307,7 @@ class Cropper(Worker):
                 cropped.append(mask.crop(image))
             # results.append(cropped) # TODO
             results.extend(cropped)
-        return results
+        return tuple(results)
 
 
 class Translator(Worker):
