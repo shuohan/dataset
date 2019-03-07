@@ -113,6 +113,7 @@ for aug in augmentation:
     pipeline.register(aug)
     if aug != 'translation':
         pipeline.register('cropping')
+    pipeline.register('label_normalization')
     dataset.add_pipeline(pipeline)
 
     image, label = dataset[image_ind][:2]

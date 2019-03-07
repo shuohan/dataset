@@ -31,7 +31,8 @@ class Config(metaclass=Singleton):
         self._set_default('mask_suffixes', ['mask'])
         self._set_default('bbox_suffixes', ['bbox', 'mask'])
         self._set_default('label_desc', 'labels.json')
-        self._set_default('total_addon', ['flipping', 'cropping'])
+        self._set_default('total_addon', ['flipping', 'cropping',
+                                          'label_normalization'])
         self._set_default('total_aug', ['translation', 'rotation', 'scaling',
                                         'deformation'])
         self._set_default('verbose', True)

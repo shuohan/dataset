@@ -10,7 +10,7 @@ from image_processing_3d import rotate3d, scale3d
 from image_processing_3d import calc_random_deformation3d, deform3d
 
 from .configs import Config
-from .images import Mask
+from .images import Mask, Label
 
 
 class WorkerName(Enum):
@@ -20,6 +20,7 @@ class WorkerName(Enum):
     scaling = auto()
     deformation = auto()
     cropping = auto()
+    label_normalization = auto()
 
 
 class WorkerType(Enum):
@@ -70,6 +71,8 @@ def create_worker(worker_name):
         return Flipper(dim=config.flip_dim)
     elif worker_name is WorkerName.cropping:
         return Cropper()
+    elif worker_name is WorkerName.label_normalization:
+        return LabelNormalizer()
     elif worker_name is WorkerName.translation:
         return Translator(max_trans=config.max_trans)
     elif worker_name is WorkerName.rotation:
@@ -439,3 +442,28 @@ class Deformer(Worker):
         scale = self._rand_state.rand(1) * self.scale
         deform = calc_random_deformation3d(self.shape, self.sigma, scale)
         return deform
+
+
+class LabelNormalizer(Worker):
+    """Normalize label image to replace label values with 0 : num_labels
+
+    """
+    def process(self, *images):
+        """Normalize the label images
+
+        Only affect .images.Label instances
+
+        Args:
+            image (.images.Image): The image to normalize
+
+        Returns:
+            results (tuple of .images.Image): The normalized images
+            
+        """
+        results = list()
+        for image in images:
+            if isinstance(image, Label):
+                results.append(image.normalize())
+            else:
+                results.append(image)
+        return tuple(results)
