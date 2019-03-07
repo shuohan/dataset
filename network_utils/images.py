@@ -22,7 +22,9 @@ class ImageType(Enum):
 
 
 class ImageLoader:
-    """Gather information of files
+    """Load images
+
+    Call self.load and access loaded images via self.images
 
     Attributes:
         dirname (str): The directory to the files
@@ -31,6 +33,8 @@ class ImageLoader:
         _files (list of dict): The list of dict with file information. 'name':
             the name of the file; 'suffix': the suffix of the filename;
             'filepath': the path to the file
+        _images (defaultdit(list)): The loaded images; the values of the same
+            key all correspond to the same images
         
     """
     def __init__(self, dirname, id='', ext='.nii.gz'):
@@ -49,6 +53,12 @@ class ImageLoader:
         return files
 
     def load(self, *image_types):
+        """Load images
+
+        Args:
+            image_type (enum ImageType): The type of the images to load
+
+        """
         config = Config()
         for type in image_types:
             if type is ImageType.image:
@@ -58,7 +68,8 @@ class ImageLoader:
                 l, p = load_label_desc(desc_filepath)
                 self._load(config.label_suffixes, Label, labels=l, pairs=p)
             elif type is ImageType.mask:
-                self._load(config.mask_suffixes, Mask)
+                self._load(config.mask_suffixes, Mask,
+                           cropping_shape=config.crop_shape)
             elif type is ImageType.bounding_box:
                 self._load(config.bbox_suffixes, BoundingBox)
 
@@ -70,7 +81,17 @@ class ImageLoader:
 
 
 class Image:
+    """Image
 
+    Attributes:
+        filepath (str): The path to the file to load
+        data (numpy.array): The image data
+        on_the_fly (bool): If load the data on the fly
+        message (list of str): The message for printing
+        interp_order (int): The interpolation order of the image
+        _data (numpy.array): Internal reference to the data; used for on the fly
+         
+    """
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
         """Initialize
 
@@ -138,7 +159,14 @@ class Image:
 
 
 class Label(Image):
+    """Label Image
 
+    Attributes:
+        labels (dict): The key is the label value and the dict value is the name
+            of the label
+        pairs (list): Each is a pair of left/right corresponding labels
+
+    """
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
                  labels=[], pairs=[]):
         super().__init__(filepath, data, on_the_fly, message)
@@ -161,18 +189,36 @@ class Label(Image):
 
 
 class Mask(Image):
+    """Mask
+
+    Attributes:
+        cropping_shape (list of int): The shape of the cropped
+
+    """
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 cropping_shape=(128, 96, 96)):
+                 cropping_shape=[128, 96, 96]):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
         self.cropping_shape = cropping_shape
         self._bbox = None
         
     def calc_bbox(self):
+        """Calculate the bounding box
+
+        """
         bbox = calc_bbox3d(self.data)
         self._bbox = resize_bbox3d(bbox, self.cropping_shape)
 
     def crop(self, image):
+        """Crop another image
+
+        Args:
+            image (Image): The other image to crop
+
+        Returns
+            image (Image): The cropped image
+
+        """
         if self._bbox is None:
             self.calc_bbox()
         cropped = crop3d(image.data, self._bbox)[0]
@@ -183,6 +229,12 @@ class Mask(Image):
     @property
     def shape(self):
         return self.cropping_shape
+
+    def update(self, data, message):
+        message =  self.message + [message]
+        new_image = self.__class__(self.filepath, data, False, message,
+                                   cropping_shape=self.cropping_shape)
+        return new_image
 
 
 class BoundingBox(Image):
