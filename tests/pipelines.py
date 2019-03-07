@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 
-from dataset.images import ImageLoader, ImageType
+from dataset.images import ImageLoader
 from dataset.datasets import Dataset
 from dataset.pipelines import RandomPipeline
 from dataset.configs import Config
@@ -16,7 +16,7 @@ image_ind = 5
 
 print('no cropping')
 loader = ImageLoader(dirname, id='tmc')
-loader.load(ImageType.image, ImageType.label, ImageType.mask)
+loader.load('image', 'label', 'mask')
 dataset = Dataset(images=loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
@@ -44,8 +44,7 @@ plt.title('no cropping')
 
 print('bounding box')
 loader = ImageLoader(dirname, id='tmc')
-loader.load(ImageType.image, ImageType.label)
-loader.load(ImageType.bounding_box, ImageType.mask)
+loader.load('image', 'label', 'bounding_box', 'mask')
 dataset = Dataset(loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
@@ -80,7 +79,7 @@ plt.title('bounding box')
 
 print('flipping')
 loader = ImageLoader(dirname, id='tmc')
-loader.load(ImageType.image, ImageType.label, ImageType.mask)
+loader.load('image', 'label', 'mask')
 dataset = Dataset(loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
@@ -106,7 +105,7 @@ augmentation = ['rotation', 'scaling', 'translation', 'deformation']
 for aug in augmentation:
     print(aug)
     loader = ImageLoader(dirname, id='tmc')
-    loader.load(ImageType.image, ImageType.label, ImageType.mask)
+    loader.load('image', 'label', 'mask')
     dataset = Dataset(images=loader.images, verbose=Config().verbose)
 
     pipeline = RandomPipeline()

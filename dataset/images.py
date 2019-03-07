@@ -102,21 +102,21 @@ class ImageLoader:
         """Load images
 
         Args:
-            image_type (enum ImageType): The type of the images to load
+            image_type (str): The type of the images to load
 
         """
         config = Config()
         for type in image_types:
-            if type is ImageType.image:
+            if ImageType[type] is ImageType.image:
                 self._load(config.image_suffixes, Image)
-            elif type is ImageType.label:
+            elif ImageType[type] is ImageType.label:
                 desc_filepath = os.path.join(self.dirname, config.label_desc)
                 l, p = load_label_desc(desc_filepath)
                 self._load(config.label_suffixes, Label, labels=l, pairs=p)
-            elif type is ImageType.mask:
+            elif ImageType[type] is ImageType.mask:
                 self._load(config.mask_suffixes, Mask,
                            cropping_shape=config.crop_shape)
-            elif type is ImageType.bounding_box:
+            elif ImageType[type] is ImageType.bounding_box:
                 self._load(config.bbox_suffixes, BoundingBox)
 
     def _load(self, suffixes, image_class, **kwargs):

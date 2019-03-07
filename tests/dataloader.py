@@ -7,7 +7,7 @@ import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 from torch.utils.data import DataLoader
 
-from dataset.images import ImageLoader, ImageType
+from dataset.images import ImageLoader
 from dataset.datasets import Dataset
 from dataset.pipelines import RandomPipeline
 from dataset.configs import Config
@@ -16,7 +16,7 @@ dirname = 'data'
 image_ind = 5
 
 loader = ImageLoader(dirname, id='tmc')
-loader.load(ImageType.image, ImageType.label)
+loader.load('image', 'label')
 dataset = Dataset(images=loader.images, verbose=Config().verbose)
 pipeline = RandomPipeline()
 dataset.add_pipeline(pipeline)
