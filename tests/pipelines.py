@@ -14,8 +14,9 @@ from network_utils.configs import Config
 dirname = 'data'
 image_ind = 5
 
+print('no cropping')
 loader = ImageLoader(dirname, id='tmc')
-loader.load(ImageType.image, ImageType.label)
+loader.load(ImageType.image, ImageType.label, ImageType.mask)
 dataset = Dataset(images=loader.images, verbose=Config().verbose)
 
 pipeline = RandomPipeline()
@@ -23,7 +24,9 @@ dataset.add_pipeline(pipeline)
 
 Config().image_shape = dataset[0][0].shape
 
-image, label = dataset[image_ind]
+image, label, mask = dataset[image_ind]
+print(image.dtype, label.dtype, mask.dtype)
+
 shape = image.shape
 plt.figure()
 plt.subplot(1, 3, 1)
@@ -39,6 +42,7 @@ plt.title('no cropping')
 
 # ------------------------------------------------------------------------------ 
 
+print('bounding box')
 loader = ImageLoader(dirname, id='tmc')
 loader.load(ImageType.image, ImageType.label)
 loader.load(ImageType.bounding_box, ImageType.mask)
@@ -52,6 +56,7 @@ pipeline.register('cropping')
 dataset.add_pipeline(pipeline)
 
 image, label, bbox = dataset[image_ind]
+print(image.dtype, label.dtype, bbox.dtype)
 shape = image.shape
 mask = np.zeros(image.shape, dtype=bool)
 mask[bbox[0]:bbox[1], bbox[2]:bbox[3], bbox[4]:bbox[5]] = 1
@@ -73,6 +78,7 @@ plt.title('bounding box')
 
 # ------------------------------------------------------------------------------ 
 
+print('flipping')
 loader = ImageLoader(dirname, id='tmc')
 loader.load(ImageType.image, ImageType.label, ImageType.mask)
 dataset = Dataset(loader.images, verbose=Config().verbose)
@@ -96,9 +102,9 @@ plt.imshow(image[:, :, shape[2]//2], cmap='gray')
 plt.imshow(label[:, :, shape[2]//2], alpha=0.3)
 plt.title('flipping')
 
-# augmentation = ['rotation', 'scaling', 'translation', 'deformation']
-augmentation = ['deformation']
+augmentation = ['rotation', 'scaling', 'translation', 'deformation']
 for aug in augmentation:
+    print(aug)
     loader = ImageLoader(dirname, id='tmc')
     loader.load(ImageType.image, ImageType.label, ImageType.mask)
     dataset = Dataset(images=loader.images, verbose=Config().verbose)

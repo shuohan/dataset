@@ -130,6 +130,7 @@ class Image:
     """Image
 
     Attributes:
+        dtype (type): Data type such as np.float32 and np.uint8
         filepath (str): The path to the file to load
         data (numpy.array): The image data
         on_the_fly (bool): If load the data on the fly
@@ -138,6 +139,8 @@ class Image:
         _data (numpy.array): Internal reference to the data; used for on the fly
          
     """
+    dtype = np.float32
+
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
         """Initialize
 
@@ -171,10 +174,10 @@ class Image:
 
         """
         if self.on_the_fly:
-            return load(self.filepath)
+            return load(self.filepath, self.dtype)
         else:
             if self._data is None:
-                self._data = load(self.filepath)
+                self._data = load(self.filepath, self.dtype)
             return self._data
 
     @property
@@ -213,6 +216,8 @@ class Label(Image):
         pairs (list): Each is a pair of left/right corresponding labels
 
     """
+    dtype = np.uint8
+
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
                  labels=dict(), pairs=list()):
         super().__init__(filepath, data, on_the_fly, message)
@@ -249,6 +254,8 @@ class Mask(Image):
         cropping_shape (list of int): The shape of the cropped
 
     """
+    dtype = np.uint8
+
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
                  cropping_shape=[128, 96, 96]):
         super().__init__(filepath, data, on_the_fly, message)
@@ -301,6 +308,8 @@ class BoundingBox(Image):
         support loading from .csv file
 
     """
+    dtype = np.uint8
+
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
