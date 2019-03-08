@@ -125,6 +125,11 @@ class ImageLoader:
                 bbox = image_class(filepath=file['filepath'], **kwargs)
                 self.images[file['name']].append(bbox)
 
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            key = list(self.images.keys())[key]
+        return self.images[key]
+
 
 class Image:
     """Image
