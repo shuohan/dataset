@@ -22,6 +22,7 @@ class Config(metaclass=Singleton):
         flip_dim (int): The flipping axis (0 is x axis, etc.)
         image_shape (list of int): The shape of the images to resize to
         crop_shape (list of int): The cropping shape of ROI using mask
+        patch_shape (list of int): The shape of extracted patch
         aug_prob (float): The augmentation probability; 1 means always using
             augmentation, 0 means not using
         image_suffixes (list of str): The suffixes of image filenames
@@ -49,6 +50,7 @@ class Config(metaclass=Singleton):
         self._set_default('flip_dim', 0)
         self._set_default('image_shape', [196, 256, 196])
         self._set_default('crop_shape', [160, 96, 96])
+        self._set_default('patch_shape', [64, 64, 64])
         self._set_default('aug_prob', 1)
         self._set_default('image_suffixes', ['image'])
         self._set_default('label_suffixes', ['label'])
@@ -56,7 +58,8 @@ class Config(metaclass=Singleton):
         self._set_default('bbox_suffixes', ['bbox', 'mask'])
         self._set_default('label_desc', 'labels.json')
         self._set_default('verbose', False)
-        addons = ['resizing', 'flipping', 'cropping', 'label_normalization']
+        addons = ['resizing', 'flipping', 'cropping', 'label_normalization',
+                  'patch']
         augs = ['translation', 'rotation', 'scaling', 'deformation',
                 'sigmoid_intensity']
         self._set_default('total_addon', addons)

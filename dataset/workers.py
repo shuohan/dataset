@@ -6,7 +6,7 @@
 import numpy as np
 from enum import Enum, auto
 from py_singleton import Singleton
-from image_processing_3d import rotate3d, scale3d, padcrop3d
+from image_processing_3d import rotate3d, scale3d, padcrop3d, crop3d
 from image_processing_3d import calc_random_deformation3d, deform3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
 
@@ -24,6 +24,7 @@ class WorkerName(Enum):
     sigmoid_intensity = auto()
     cropping = auto()
     label_normalization = auto()
+    patch = auto()
 
 
 class WorkerType(Enum):
@@ -78,6 +79,8 @@ def create_worker(worker_name):
         return Cropper()
     elif worker_name is WorkerName.label_normalization:
         return LabelNormalizer()
+    elif worker_name is WorkerName.patch:
+        return PatchExtractor(config.patch_shape)
     elif worker_name is WorkerName.translation:
         return Translator(max_trans=config.max_trans)
     elif worker_name is WorkerName.rotation:
@@ -530,3 +533,47 @@ class SigIntChanger(Worker):
             else:
                 results.append(image)
         return tuple(results)
+
+
+class PatchExtractor(Worker):
+    """Extract patch from image randomly
+
+    The patch should be within the image; therefore, the smallest possible start
+    index is 0, and the largest possible start is image_shape - patch_shape. The
+    start is uniformly sampled.
+
+    Attributes:
+        shape (list/tuple of int): The shape of the patch
+        _rand_state (numpy.random.RandomState): Specify random seed
+
+    """
+    def __init__(self, shape):
+        self.shape = shape
+        self._rand_state = np.random.RandomState()
+
+    def process(self, *images):
+        """Extract patch from the images
+
+        Args:
+            image (.images.Image): The image to extract patch from
+
+        Returns:
+            results (tuple of .images.Image): The patches
+
+        """
+        results = list()
+        image_shape = images[0].shape
+        patch_bbox = self._calc_patch_bbox(image_shape)
+        results = list()
+        for image in images:
+            data = crop3d(image.data, patch_bbox)[0]
+            results.append(image.update(data, self.message))
+        return results
+
+    def _calc_patch_bbox(self, image_shape):
+        ind_starts = [0 for s in image_shape]
+        ind_stops = [im - p for im, p in zip(image_shape, self.shape)]
+        starts = [self._rand_state.choice(np.arange(start, stop))
+                  for start, stop in zip(ind_starts, ind_stops)]
+        bbox = [slice(start, start + s) for start, s in zip(starts, self.shape)]
+        return bbox
