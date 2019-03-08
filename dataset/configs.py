@@ -21,6 +21,9 @@ class Config(metaclass=Singleton):
         self._set_default('max_scale', 2)
         self._set_default('def_sigma', 5)
         self._set_default('def_scale', 8)
+        self._set_default('sigmoid_int_klim', (10.0, 20.0))
+        self._set_default('sigmoid_int_blim', (-1, 1))
+        self._set_default('num_sigmoid_int', 5)
         self._set_default('flip_dim', 0)
         self._set_default('binarize', True)
         self._set_default('image_shape', [256, 256, 256])
@@ -34,7 +37,7 @@ class Config(metaclass=Singleton):
         self._set_default('total_addon', ['flipping', 'cropping',
                                           'label_normalization'])
         self._set_default('total_aug', ['translation', 'rotation', 'scaling',
-                                        'deformation'])
+                                        'deformation', 'sigmoid_intensity'])
         self._set_default('verbose', False)
 
     def _set_default(self, key, default):

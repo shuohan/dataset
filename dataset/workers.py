@@ -8,9 +8,10 @@ from enum import Enum, auto
 from py_singleton import Singleton
 from image_processing_3d import rotate3d, scale3d
 from image_processing_3d import calc_random_deformation3d, deform3d
+from image_processing_3d import calc_random_intensity_transform as calc_int
 
 from .configs import Config
-from .images import Mask, Label
+from .images import Mask, Label, Image
 
 
 class WorkerName(Enum):
@@ -19,6 +20,7 @@ class WorkerName(Enum):
     rotation = auto()
     scaling = auto()
     deformation = auto()
+    sigmoid_intensity = auto()
     cropping = auto()
     label_normalization = auto()
 
@@ -82,6 +84,10 @@ def create_worker(worker_name):
     elif worker_name is WorkerName.deformation:
         return Deformer(shape=config.image_shape, sigma=config.def_sigma,
                         scale=config.def_scale)
+    elif worker_name is WorkerName.sigmoid_intensity:
+        return SigmoidIntensity(klim=config.sigmoid_int_klim,
+                                blim=config.sigmoid_int_blim,
+                                num_sigmoid=config.num_sigmoid_int)
     else:
         raise ValueError('Worker "%s" is not in WorkerName')
 
@@ -464,6 +470,37 @@ class LabelNormalizer(Worker):
         for image in images:
             if isinstance(image, Label):
                 results.append(image.normalize())
+            else:
+                results.append(image)
+        return tuple(results)
+
+
+class SigmoidIntensity(Worker):
+    """Use mixture of sigmoids to randomly change image intensity
+
+    Only affect .images.Image rather than label, mask, etc.
+
+    Attributes:
+        klim (tuple): Check image_processing_3d.calc_random_intensity_transform
+        blim (tuple): Check image_processing_3d.calc_random_intensity_transform
+        num_sigmoid (int): Check image_processing_3d
+
+    """
+    message = 'sigmoid_int'
+
+    def __init__(self, klim, blim, num_sigmoid):
+        self.klim = klim
+        self.blim = blim
+        self.num_sigmoid = num_sigmoid
+
+    def process(self, *images):
+        results = list()
+        for image in images:
+            if type(image) is Image:
+                transform = calc_int(klim=self.klim, blim=self.blim,
+                                     num_sigmoid=self.num_sigmoid)
+                data = transform(image.data)
+                results.append(image.update(data, self.message))
             else:
                 results.append(image)
         return tuple(results)
