@@ -59,6 +59,24 @@ class Config(metaclass=Singleton):
                                         'deformation', 'sigmoid_intensity'])
         self._set_default('verbose', False)
 
+
+    def load(self, config_json):
+        """Load .json configurations
+
+        Args:
+            config_json (str): The filepath to the configuration .json file
+
+        Raises:
+            IndexError: .json file has unsupported configurations
+
+        """
+        loaded = self._load_json(config_json)
+        for key, value in loaded.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise IndexError('Configuration does not have field %s' % key)
+
     def _set_default(self, key, default):
         """Set the default value if the setting is not in the loaded json file
 
