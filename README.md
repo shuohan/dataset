@@ -16,18 +16,18 @@ The following **augmentation** methods are supported:
 * _Rotation_
 * _Scaling_: Scale the image alone x, y, and z axes.
 * _Deformation_: Random elastic deformation. It is basically a spatially smoothed per-voxel translation.
-* _Sigmoid intensity_ (**TODO**): Apply a mixture of sigmoid functions to perturb the image intensities.
+* _Sigmoid intensity_ : Apply a mixture of sigmoid functions to perturb the image intensities.
 
 The following **add-on** operations are supported:
 
 * _Flipping_ (left/right): Flipping a brain image left and right can be regarded as creating new samples since the brain is symmetric.
 * _Cropping_: The images can be cropped by a ROI mask to reduce data size.
 * _Label normalizatoin_: The label values are normalized to 0 : number of unique labels.
-* _Patch extraction_ (**TODO**): Extract image patch (sub-regions)
+* _Patch extraction_ : Extract image patch (sub-regions); currently just output one patch per augmentation which is inefficient. **TODO**: add life to Worker so every call of `process` reduce one life and the augmentation can be reused. Need to implement `update`, `cleanup` methods again.
 
 ## Configurations
 
-Check `dataset.configs.Config` for available configurations. **TODO**: load configurations from a `.json` file.
+Check `dataset.configs.Config` for available configurations. It can save and load configurations from a .json file.
 
 # Example
 
@@ -40,7 +40,7 @@ images1, imagse2 = loader.split([0, 1, 2, 3])
 dataset = Dataset(images1)
 
 pipeline = RandomPipeline()
-pipeline.register('scaling', 'rotation', 'cropping')
+pipeline.register('resizing', 'scaling', 'rotation', 'cropping', 'patch')
 dataset.add_pipeline(pipeline)
 
 print(dataset)

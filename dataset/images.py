@@ -125,6 +125,11 @@ class ImageLoader:
                 bbox = image_class(filepath=file['filepath'], **kwargs)
                 self.images[file['name']].append(bbox)
 
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            key = list(self.images.keys())[key]
+        return self.images[key]
+
 
 class Image:
     """Image
@@ -174,11 +179,17 @@ class Image:
 
         """
         if self.on_the_fly:
-            return load(self.filepath, self.dtype)
+            return self._load()
         else:
             if self._data is None:
-                self._data = load(self.filepath, self.dtype)
+                self._data = self._load()
             return self._data
+
+    def _load(self):
+        data = load(self.filepath, self.dtype)
+        if len(data.shape) == 3:
+            data = data[None, ...]
+        return data
 
     @property
     def output(self):

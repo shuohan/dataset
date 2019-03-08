@@ -6,21 +6,25 @@
 import numpy as np
 from enum import Enum, auto
 from py_singleton import Singleton
-from image_processing_3d import rotate3d, scale3d
+from image_processing_3d import rotate3d, scale3d, padcrop3d, crop3d
 from image_processing_3d import calc_random_deformation3d, deform3d
+from image_processing_3d import calc_random_intensity_transform as calc_int
 
 from .configs import Config
-from .images import Mask, Label
+from .images import Mask, Label, Image
 
 
 class WorkerName(Enum):
+    resizing = auto()
     flipping = auto()
     translation = auto()
     rotation = auto()
     scaling = auto()
     deformation = auto()
+    sigmoid_intensity = auto()
     cropping = auto()
     label_normalization = auto()
+    patch = auto()
 
 
 class WorkerType(Enum):
@@ -67,12 +71,16 @@ def create_worker(worker_name):
 
     """
     config = Config()
-    if worker_name is WorkerName.flipping:
+    if worker_name is WorkerName.resizing:
+        return Resizer(shape=config.image_shape)
+    elif worker_name is WorkerName.flipping:
         return Flipper(dim=config.flip_dim)
     elif worker_name is WorkerName.cropping:
         return Cropper()
     elif worker_name is WorkerName.label_normalization:
         return LabelNormalizer()
+    elif worker_name is WorkerName.patch:
+        return PatchExtractor(config.patch_shape)
     elif worker_name is WorkerName.translation:
         return Translator(max_trans=config.max_trans)
     elif worker_name is WorkerName.rotation:
@@ -80,8 +88,10 @@ def create_worker(worker_name):
     elif worker_name is WorkerName.scaling:
         return Scaler(max_scale=config.max_scale)
     elif worker_name is WorkerName.deformation:
-        return Deformer(shape=config.image_shape, sigma=config.def_sigma,
-                        scale=config.def_scale)
+        return Deformer(sigma=config.def_sigma, scale=config.def_scale)
+    elif worker_name is WorkerName.sigmoid_intensity:
+        return SigIntChanger(klim=config.sig_int_klim, blim=config.sig_int_blim,
+                             num_sigmoid=config.sig_int_num)
     else:
         raise ValueError('Worker "%s" is not in WorkerName')
 
@@ -91,9 +101,6 @@ class Worker:
     
     """
     message = ''
-
-    def __init__(self):
-        pass
 
     def process(self, *images):
         """Process a set of .images.Image instances
@@ -122,6 +129,31 @@ class Worker:
         
         """
         raise NotImplementedError
+
+
+class Resizer(Worker):
+    """Resize images by padding or cropping
+
+    Attributes:
+        shape (list/tuple of int): The target image shape
+
+    """
+    message = 'resize'
+
+    def __init__(self, shape):
+        self.shape = shape
+    
+    def _process(self, image):
+        """Resize an image by padding or cropping
+
+        Args:
+            image (.images.Image): The image to resize
+
+        Returns:
+            result (numpy.array): The resized image data
+
+        """
+        return padcrop3d(image.data, self.shape)[0]
 
 
 class Rotator(Worker):
@@ -172,7 +204,7 @@ class Rotator(Worker):
             image (.image.Image): The image to rotate
 
         Returns:
-            result (numpy.data): The rotated image
+            result (numpy.array): The rotated image
 
         """
         return rotate3d(image.data, self._x, self._y, self._z,
@@ -230,7 +262,7 @@ class Scaler(Worker):
             image (.images.Image): The image to scale
 
         Returns:
-            result (numpy.data): The scaled image data
+            result (numpy.array): The scaled image data
         
         """
         return scale3d(image.data, self._x, self._y, self._z,
@@ -343,14 +375,14 @@ class Translator(Worker):
             image (.image.Image): The image to translate
 
         Returns:
-            result (numpy.data): The translated image
+            result (numpy.array): The translated image
 
         """
         data = image.data
         result = np.zeros_like(data)
-        xs, xt = self._calc_index(self._x, data.shape[0])
-        ys, yt = self._calc_index(self._y, data.shape[1])
-        zs, zt = self._calc_index(self._z, data.shape[2])
+        xs, xt = self._calc_index(self._x, result.shape[-3])
+        ys, yt = self._calc_index(self._y, result.shape[-2])
+        zs, zt = self._calc_index(self._z, result.shape[-1])
         result[..., xt, yt, zt] = data[..., xs, ys, zs]
         return result
 
@@ -396,51 +428,54 @@ class Deformer(Worker):
     distribution [0, `self.scale`].
 
     Attributes:
-        shape (tuple of int): The shape of the data to deform
         sigma (float): Control the smoothness of the deformation field. The
             larger the value, the smoother the field
         scale (float): Control the magnitude of the displacement. In pixels,
             i.e. the larget displacement at a pixel along a direction is
             `self.scale`.
         _rand_state (numpy.random.RandomState): Random sampler
-        _x (numpy.array) Pixelwise translation (deformation field) along x axis
-        _x (numpy.array) Pixelwise translation (deformation field) along y axis
-        _x (numpy.array) Pixelwise translation (deformation field) along z axis
 
     """
     message = 'deform'
 
-    def __init__(self, shape, sigma, scale):
-        self.shape = shape
+    def __init__(self, sigma, scale):
         self.sigma = sigma
         self.scale = scale
         self._rand_state = np.random.RandomState()
-        self._x = self._calc_random_deform()
-        self._y = self._calc_random_deform()
-        self._z = self._calc_random_deform()
 
-    def _process(self, image):
-        """Deform an image
-        
+    def process(self, *images):
+        """Deform of .images.Image instances
+
         Args:
-            image (.image.Image): The image to deform
+            image (.images.Image): The image to process
 
         Returns:
-            result (numpy.array): The deformed image
-
+            results (tuple of .images.Image): The processed images
+        
         """
-        return deform3d(image.data, self._x, self._y, self._z,
-                        order=image.interp_order)
+        shape = images[0].shape
+        x_deform = self._calc_random_deform(shape)
+        y_deform = self._calc_random_deform(shape)
+        z_deform = self._calc_random_deform(shape)
+        results = list()
+        for image in images:
+            data = deform3d(image.data, x_deform, y_deform, z_deform,
+                            order=image.interp_order)
+            results.append(image.update(data, self.message))
+        return tuple(results)
 
-    def _calc_random_deform(self):
+    def _calc_random_deform(self, shape):
         """Randomly sample deformation (single axis)
+
+        Args:
+            shape (tuple of int): The shape of the image to apply deformation to
         
         Returns:
             deform (numpy.array): The deformation field along a axis
 
         """
         scale = self._rand_state.rand(1) * self.scale
-        deform = calc_random_deformation3d(self.shape, self.sigma, scale)
+        deform = calc_random_deformation3d(shape, self.sigma, scale)
         return deform
 
 
@@ -467,3 +502,78 @@ class LabelNormalizer(Worker):
             else:
                 results.append(image)
         return tuple(results)
+
+
+class SigIntChanger(Worker):
+    """Use mixture of sigmoids to randomly change image intensity
+
+    Only affect .images.Image rather than label, mask, etc.
+
+    Attributes:
+        klim (tuple): Check image_processing_3d.calc_random_intensity_transform
+        blim (tuple): Check image_processing_3d.calc_random_intensity_transform
+        num_sigmoid (int): Check image_processing_3d
+
+    """
+    message = 'sigmoid_int'
+
+    def __init__(self, klim, blim, num_sigmoid):
+        self.klim = klim
+        self.blim = blim
+        self.num_sigmoid = num_sigmoid
+
+    def process(self, *images):
+        results = list()
+        for image in images:
+            if type(image) is Image:
+                transform = calc_int(klim=self.klim, blim=self.blim,
+                                     num_sigmoid=self.num_sigmoid)
+                data = transform(image.data)
+                results.append(image.update(data, self.message))
+            else:
+                results.append(image)
+        return tuple(results)
+
+
+class PatchExtractor(Worker):
+    """Extract patch from image randomly
+
+    The patch should be within the image; therefore, the smallest possible start
+    index is 0, and the largest possible start is image_shape - patch_shape. The
+    start is uniformly sampled.
+
+    Attributes:
+        shape (list/tuple of int): The shape of the patch
+        _rand_state (numpy.random.RandomState): Specify random seed
+
+    """
+    def __init__(self, shape):
+        self.shape = shape
+        self._rand_state = np.random.RandomState()
+
+    def process(self, *images):
+        """Extract patch from the images
+
+        Args:
+            image (.images.Image): The image to extract patch from
+
+        Returns:
+            results (tuple of .images.Image): The patches
+
+        """
+        results = list()
+        image_shape = images[0].shape[1:]
+        patch_bbox = self._calc_patch_bbox(image_shape)
+        results = list()
+        for image in images:
+            data = crop3d(image.data, patch_bbox)[0]
+            results.append(image.update(data, self.message))
+        return results
+
+    def _calc_patch_bbox(self, image_shape):
+        ind_starts = [0 for s in image_shape]
+        ind_stops = [im - p for im, p in zip(image_shape, self.shape)]
+        starts = [self._rand_state.choice(np.arange(start, stop))
+                  for start, stop in zip(ind_starts, ind_stops)]
+        bbox = [slice(start, start + s) for start, s in zip(starts, self.shape)]
+        return bbox
