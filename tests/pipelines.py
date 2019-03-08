@@ -55,11 +55,7 @@ loader.load('image', 'label', 'bounding_box', 'mask')
 dataset = Dataset(loader.images)
 
 pipeline = RandomPipeline()
-pipeline.register('resizing')
-pipeline.register('scaling')
-pipeline.register('rotation')
-pipeline.register('deformation')
-pipeline.register('cropping')
+pipeline.register('resizing', 'scaling', 'rotation', 'deformation', 'cropping')
 dataset.add_pipeline(pipeline)
 
 image, label, bbox = dataset[image_ind]
@@ -80,8 +76,7 @@ loader.load('image', 'label', 'mask')
 dataset = Dataset(loader.images)
 
 pipeline = RandomPipeline()
-pipeline.register('flipping')
-pipeline.register('cropping')
+pipeline.register('flipping', 'cropping')
 dataset.add_pipeline(pipeline)
 
 image, label = dataset[image_ind]

@@ -39,7 +39,7 @@ class RandomPipeline(Worker):
         self._random_workers = list()
         self._rand_state = np.random.RandomState()
 
-    def register(self, worker_name):
+    def register(self, *worker_names):
         """Register worker in to pool for selection
 
         Args:
@@ -51,14 +51,15 @@ class RandomPipeline(Worker):
 
         """
         mapping = WorkerTypeMapping()
-        worker_name = WorkerName[worker_name]
-        priority = len(self._fixed_workers) + len(self._random_workers)
-        if mapping[worker_name] is WorkerType.aug:
-            self._random_workers.append((priority, worker_name))
-        elif mapping[worker_name] is WorkerType.addon:
-            self._fixed_workers.append((priority, worker_name))
-        else:
-            raise RuntimeError('Worker "%s" does not exist.' % worker_name)
+        for worker_name in worker_names:
+            worker_name = WorkerName[worker_name]
+            priority = len(self._fixed_workers) + len(self._random_workers)
+            if mapping[worker_name] is WorkerType.aug:
+                self._random_workers.append((priority, worker_name))
+            elif mapping[worker_name] is WorkerType.addon:
+                self._fixed_workers.append((priority, worker_name))
+            else:
+                raise RuntimeError('Worker "%s" does not exist.' % worker_name)
 
     def process(self, *images):
         """Process a set of .images.Image instances

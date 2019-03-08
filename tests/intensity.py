@@ -17,8 +17,7 @@ loader.load('mask')
 dataset = Dataset(images=loader.images)
 
 pipeline = RandomPipeline()
-pipeline.register('sigmoid_intensity')
-pipeline.register('cropping')
+pipeline.register('sigmoid_intensity', 'cropping')
 dataset.add_pipeline(pipeline)
 
 image, label = dataset[image_ind]
