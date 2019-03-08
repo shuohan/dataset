@@ -19,7 +19,7 @@ class Config(metaclass=Singleton):
         sig_int_blim (tuple of float): The low and high values for b in random
             mixture of sigmoid intensity transformation
         sig_int_num (int): The number of sigmoids of the mixture for intensity
-        flip_dim (int): The flipping axis (0 is x axis, etc.)
+        flip_dim (int): The flipping axis (1 is x axis, etc. channel first)
         image_shape (list of int): The shape of the images to resize to
         crop_shape (list of int): The cropping shape of ROI using mask
         patch_shape (list of int): The shape of extracted patch
@@ -47,7 +47,7 @@ class Config(metaclass=Singleton):
         self._set_default('sig_int_klim', (10.0, 20.0))
         self._set_default('sig_int_blim', (-1, 1))
         self._set_default('sig_int_num', 5)
-        self._set_default('flip_dim', 0)
+        self._set_default('flip_dim', 1)
         self._set_default('image_shape', [196, 256, 196])
         self._set_default('crop_shape', [160, 96, 96])
         self._set_default('patch_shape', [64, 64, 64])

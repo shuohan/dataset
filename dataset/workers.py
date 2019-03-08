@@ -380,9 +380,9 @@ class Translator(Worker):
         """
         data = image.data
         result = np.zeros_like(data)
-        xs, xt = self._calc_index(self._x, data.shape[0])
-        ys, yt = self._calc_index(self._y, data.shape[1])
-        zs, zt = self._calc_index(self._z, data.shape[2])
+        xs, xt = self._calc_index(self._x, result.shape[-3])
+        ys, yt = self._calc_index(self._y, result.shape[-2])
+        zs, zt = self._calc_index(self._z, result.shape[-1])
         result[..., xt, yt, zt] = data[..., xs, ys, zs]
         return result
 
@@ -562,7 +562,7 @@ class PatchExtractor(Worker):
 
         """
         results = list()
-        image_shape = images[0].shape
+        image_shape = images[0].shape[1:]
         patch_bbox = self._calc_patch_bbox(image_shape)
         results = list()
         for image in images:

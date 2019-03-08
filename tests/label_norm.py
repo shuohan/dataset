@@ -26,20 +26,20 @@ print(norm)
 for i, j in zip(labels.keys(), np.arange(len(labels.keys()))):
     assert np.array_equal(label.data==i, norm.data==j)
 
-shape = norm.shape
+shape = norm.shape[1:]
 plt.figure()
 plt.subplot(2, 3, 1)
-plt.imshow(norm.data[shape[0]//2, :, :])
+plt.imshow(norm.data[0, shape[0]//2, :, :])
 plt.subplot(2, 3, 2)
-plt.imshow(norm.data[:, shape[1]//2, :])
+plt.imshow(norm.data[0, :, shape[1]//2, :])
 plt.subplot(2, 3, 3)
-plt.imshow(norm.data[:, :, shape[2]//2])
+plt.imshow(norm.data[0, :, :, shape[2]//2])
 
 plt.subplot(2, 3, 4)
-plt.imshow(label.data[shape[0]//2, :, :])
+plt.imshow(label.data[0, shape[0]//2, :, :])
 plt.subplot(2, 3, 5)
-plt.imshow(label.data[:, shape[1]//2, :])
+plt.imshow(label.data[0, :, shape[1]//2, :])
 plt.subplot(2, 3, 6)
-plt.imshow(label.data[:, :, shape[2]//2])
+plt.imshow(label.data[0, :, :, shape[2]//2])
 
 plt.show()

@@ -179,11 +179,17 @@ class Image:
 
         """
         if self.on_the_fly:
-            return load(self.filepath, self.dtype)
+            return self._load()
         else:
             if self._data is None:
-                self._data = load(self.filepath, self.dtype)
+                self._data = self._load()
             return self._data
+
+    def _load(self):
+        data = load(self.filepath, self.dtype)
+        if len(data.shape) == 3:
+            data = data[None, ...]
+        return data
 
     @property
     def output(self):
