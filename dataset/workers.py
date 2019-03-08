@@ -82,12 +82,10 @@ def create_worker(worker_name):
     elif worker_name is WorkerName.scaling:
         return Scaler(max_scale=config.max_scale)
     elif worker_name is WorkerName.deformation:
-        return Deformer(shape=config.image_shape, sigma=config.def_sigma,
-                        scale=config.def_scale)
+        return Deformer(sigma=config.def_sigma, scale=config.def_scale)
     elif worker_name is WorkerName.sigmoid_intensity:
-        return SigmoidIntensity(klim=config.sigmoid_int_klim,
-                                blim=config.sigmoid_int_blim,
-                                num_sigmoid=config.num_sigmoid_int)
+        return SigIntChanger(klim=config.sig_int_klim, blim=config.sig_int_blim,
+                             num_sigmoid=config.sig_int_num)
     else:
         raise ValueError('Worker "%s" is not in WorkerName')
 
@@ -402,51 +400,54 @@ class Deformer(Worker):
     distribution [0, `self.scale`].
 
     Attributes:
-        shape (tuple of int): The shape of the data to deform
         sigma (float): Control the smoothness of the deformation field. The
             larger the value, the smoother the field
         scale (float): Control the magnitude of the displacement. In pixels,
             i.e. the larget displacement at a pixel along a direction is
             `self.scale`.
         _rand_state (numpy.random.RandomState): Random sampler
-        _x (numpy.array) Pixelwise translation (deformation field) along x axis
-        _x (numpy.array) Pixelwise translation (deformation field) along y axis
-        _x (numpy.array) Pixelwise translation (deformation field) along z axis
 
     """
     message = 'deform'
 
-    def __init__(self, shape, sigma, scale):
-        self.shape = shape
+    def __init__(self, sigma, scale):
         self.sigma = sigma
         self.scale = scale
         self._rand_state = np.random.RandomState()
-        self._x = self._calc_random_deform()
-        self._y = self._calc_random_deform()
-        self._z = self._calc_random_deform()
 
-    def _process(self, image):
-        """Deform an image
-        
+    def process(self, *images):
+        """Deform of .images.Image instances
+
         Args:
-            image (.image.Image): The image to deform
+            image (.images.Image): The image to process
 
         Returns:
-            result (numpy.array): The deformed image
-
+            results (tuple of .images.Image): The processed images
+        
         """
-        return deform3d(image.data, self._x, self._y, self._z,
-                        order=image.interp_order)
+        shape = images[0].shape
+        x_deform = self._calc_random_deform(shape)
+        y_deform = self._calc_random_deform(shape)
+        z_deform = self._calc_random_deform(shape)
+        results = list()
+        for image in images:
+            data = deform3d(image.data, x_deform, y_deform, z_deform,
+                            order=image.interp_order)
+            results.append(image.update(data, self.message))
+        return tuple(results)
 
-    def _calc_random_deform(self):
+    def _calc_random_deform(self, shape):
         """Randomly sample deformation (single axis)
+
+        Args:
+            shape (tuple of int): The shape of the image to apply deformation to
         
         Returns:
             deform (numpy.array): The deformation field along a axis
 
         """
         scale = self._rand_state.rand(1) * self.scale
-        deform = calc_random_deformation3d(self.shape, self.sigma, scale)
+        deform = calc_random_deformation3d(shape, self.sigma, scale)
         return deform
 
 
@@ -475,7 +476,7 @@ class LabelNormalizer(Worker):
         return tuple(results)
 
 
-class SigmoidIntensity(Worker):
+class SigIntChanger(Worker):
     """Use mixture of sigmoids to randomly change image intensity
 
     Only affect .images.Image rather than label, mask, etc.
