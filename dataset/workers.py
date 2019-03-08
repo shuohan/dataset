@@ -6,7 +6,7 @@
 import numpy as np
 from enum import Enum, auto
 from py_singleton import Singleton
-from image_processing_3d import rotate3d, scale3d
+from image_processing_3d import rotate3d, scale3d, padcrop3d
 from image_processing_3d import calc_random_deformation3d, deform3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
 
@@ -15,6 +15,7 @@ from .images import Mask, Label, Image
 
 
 class WorkerName(Enum):
+    resizing = auto()
     flipping = auto()
     translation = auto()
     rotation = auto()
@@ -69,7 +70,9 @@ def create_worker(worker_name):
 
     """
     config = Config()
-    if worker_name is WorkerName.flipping:
+    if worker_name is WorkerName.resizing:
+        return Resizer(shape=config.image_shape)
+    elif worker_name is WorkerName.flipping:
         return Flipper(dim=config.flip_dim)
     elif worker_name is WorkerName.cropping:
         return Cropper()
@@ -95,9 +98,6 @@ class Worker:
     
     """
     message = ''
-
-    def __init__(self):
-        pass
 
     def process(self, *images):
         """Process a set of .images.Image instances
@@ -126,6 +126,31 @@ class Worker:
         
         """
         raise NotImplementedError
+
+
+class Resizer(Worker):
+    """Resize images by padding or cropping
+
+    Attributes:
+        shape (list/tuple of int): The target image shape
+
+    """
+    message = 'resize'
+
+    def __init__(self, shape):
+        self.shape = shape
+    
+    def _process(self, image):
+        """Resize an image by padding or cropping
+
+        Args:
+            image (.images.Image): The image to resize
+
+        Returns:
+            result (numpy.array): The resized image data
+
+        """
+        return padcrop3d(image.data, self.shape)[0]
 
 
 class Rotator(Worker):
@@ -176,7 +201,7 @@ class Rotator(Worker):
             image (.image.Image): The image to rotate
 
         Returns:
-            result (numpy.data): The rotated image
+            result (numpy.array): The rotated image
 
         """
         return rotate3d(image.data, self._x, self._y, self._z,
@@ -234,7 +259,7 @@ class Scaler(Worker):
             image (.images.Image): The image to scale
 
         Returns:
-            result (numpy.data): The scaled image data
+            result (numpy.array): The scaled image data
         
         """
         return scale3d(image.data, self._x, self._y, self._z,
@@ -347,7 +372,7 @@ class Translator(Worker):
             image (.image.Image): The image to translate
 
         Returns:
-            result (numpy.data): The translated image
+            result (numpy.array): The translated image
 
         """
         data = image.data

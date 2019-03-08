@@ -11,17 +11,19 @@ from dataset import ImageLoader, Dataset, RandomPipeline, Config
 dirname = 'data'
 image_ind = 5
 
+Config().verbose = True
+
 print('no cropping')
 loader = ImageLoader(dirname, id='tmc')
 loader.load('image', 'label', 'mask')
 dataset = Dataset(images=loader.images)
 
 pipeline = RandomPipeline()
+pipeline.register('resizing')
 dataset.add_pipeline(pipeline)
 
-Config().image_shape = dataset[0][0].shape
-
 image, label, mask = dataset[image_ind]
+print(image.shape)
 print(image.dtype, label.dtype, mask.dtype)
 
 shape = image.shape
@@ -45,6 +47,7 @@ loader.load('image', 'label', 'bounding_box', 'mask')
 dataset = Dataset(loader.images)
 
 pipeline = RandomPipeline()
+pipeline.register('resizing')
 pipeline.register('scaling')
 pipeline.register('rotation')
 pipeline.register('deformation')
@@ -52,6 +55,7 @@ pipeline.register('cropping')
 dataset.add_pipeline(pipeline)
 
 image, label, bbox = dataset[image_ind]
+print(image.shape)
 print(image.dtype, label.dtype, bbox.dtype)
 shape = image.shape
 mask = np.zeros(image.shape, dtype=bool)
@@ -85,6 +89,7 @@ pipeline.register('cropping')
 dataset.add_pipeline(pipeline)
 
 image, label = dataset[image_ind]
+print(image.shape)
 shape = image.shape
 plt.figure()
 plt.subplot(1, 3, 1)
@@ -113,6 +118,7 @@ for aug in augmentation:
     dataset.add_pipeline(pipeline)
 
     image, label = dataset[image_ind][:2]
+    print(image.shape)
     shape = image.shape
     plt.figure()
     plt.subplot(1, 3, 1)

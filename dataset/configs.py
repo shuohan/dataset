@@ -20,6 +20,7 @@ class Config(metaclass=Singleton):
             mixture of sigmoid intensity transformation
         sig_int_num (int): The number of sigmoids of the mixture for intensity
         flip_dim (int): The flipping axis (0 is x axis, etc.)
+        image_shape (list of int): The shape of the images to resize to
         crop_shape (list of int): The cropping shape of ROI using mask
         aug_prob (float): The augmentation probability; 1 means always using
             augmentation, 0 means not using
@@ -45,7 +46,7 @@ class Config(metaclass=Singleton):
         self._set_default('sig_int_blim', (-1, 1))
         self._set_default('sig_int_num', 5)
         self._set_default('flip_dim', 0)
-        self._set_default('image_shape', [256, 256, 256])
+        self._set_default('image_shape', [196, 256, 196])
         self._set_default('crop_shape', [160, 96, 96])
         self._set_default('aug_prob', 1)
         self._set_default('image_suffixes', ['image'])
@@ -53,11 +54,12 @@ class Config(metaclass=Singleton):
         self._set_default('mask_suffixes', ['mask'])
         self._set_default('bbox_suffixes', ['bbox', 'mask'])
         self._set_default('label_desc', 'labels.json')
-        self._set_default('total_addon', ['flipping', 'cropping',
-                                          'label_normalization'])
-        self._set_default('total_aug', ['translation', 'rotation', 'scaling',
-                                        'deformation', 'sigmoid_intensity'])
         self._set_default('verbose', False)
+        addons = ['resizing', 'flipping', 'cropping', 'label_normalization']
+        augs = ['translation', 'rotation', 'scaling', 'deformation',
+                'sigmoid_intensity']
+        self._set_default('total_addon', addons)
+        self._set_default('total_aug', augs)
 
 
     def load(self, config_json):
