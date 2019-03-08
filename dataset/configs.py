@@ -12,6 +12,26 @@ class Config(metaclass=Singleton):
         max_trans (int): The maximum translation for augmentation
         max_rot_angle (float): The maximum rotation angle for augmentation
         max_scale (float): The maximum scaling factor for augmentation
+        def_sigma (float): The sigma for generating random deforamtion
+        def_scale (float): The scale for generating random deforamtion
+        sig_int_klim (tuple of float): The low and high values for k in random
+            mixture of sigmoid intensity transformation
+        sig_int_blim (tuple of float): The low and high values for b in random
+            mixture of sigmoid intensity transformation
+        sig_int_num (int): The number of sigmoids of the mixture for intensity
+        flip_dim (int): The flipping axis (0 is x axis, etc.)
+        crop_shape (list of int): The cropping shape of ROI using mask
+        aug_prob (float): The augmentation probability; 1 means always using
+            augmentation, 0 means not using
+        image_suffixes (list of str): The suffixes of image filenames
+        label_suffixes (list of str): The suffixes of label image filenames
+        mask_suffixes (list of str): The suffixes of ROI mask image filenames
+        bbox_suffixes (list of str): The suffixes of bounding box filenames
+        label_desc (str): The basename of the label description .json file in
+            the image directory
+        total_addon (list of str): All add-on image operations
+        total_aug (list of str): All data augmentation operations
+        verbose (bool): Print info if True
 
     """
     def __init__(self, config_json='configs.json'):
@@ -21,9 +41,9 @@ class Config(metaclass=Singleton):
         self._set_default('max_scale', 2)
         self._set_default('def_sigma', 5)
         self._set_default('def_scale', 8)
-        self._set_default('sigmoid_int_klim', (10.0, 20.0))
-        self._set_default('sigmoid_int_blim', (-1, 1))
-        self._set_default('num_sigmoid_int', 5)
+        self._set_default('sig_int_klim', (10.0, 20.0))
+        self._set_default('sig_int_blim', (-1, 1))
+        self._set_default('sig_int_num', 5)
         self._set_default('flip_dim', 0)
         self._set_default('image_shape', [256, 256, 256])
         self._set_default('crop_shape', [160, 96, 96])
