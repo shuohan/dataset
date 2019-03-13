@@ -61,6 +61,7 @@ dataset.add_pipeline(pipeline)
 image, label, bbox = dataset[image_ind]
 print(image.shape)
 print(image.dtype, label.dtype, bbox.dtype)
+bbox = bbox.astype(np.int)
 
 mask = np.zeros(image.shape, dtype=bool)
 mask[..., bbox[0]:bbox[1], bbox[2]:bbox[3], bbox[4]:bbox[5]] = 1
