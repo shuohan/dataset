@@ -10,7 +10,7 @@ from enum import Enum, auto
 from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
-from .configs import Config
+from .config import Config
 from .loads import load, load_label_desc
 
 

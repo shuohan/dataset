@@ -4,7 +4,7 @@
 from dataset.images import ImageLoader
 from dataset.datasets import Dataset
 from dataset.pipelines import RandomPipeline
-from dataset.configs import Config
+from dataset.config import Config
 
 
 dirname = 'data'
