@@ -21,7 +21,8 @@ print(len(dataset2))
 print(dataset2)
 print()
 
-images = images1 + images2
+images = [images1, images2]
+images = sum(images[1:], images[0])
 dataset = Dataset(images)
 
 print(len(dataset))
