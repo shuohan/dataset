@@ -10,7 +10,7 @@ from image_processing_3d import rotate3d, scale3d, padcrop3d, crop3d
 from image_processing_3d import calc_random_deformation3d, deform3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
 
-from .configs import Config
+from .config import Config
 from .images import Mask, Label, Image
 
 

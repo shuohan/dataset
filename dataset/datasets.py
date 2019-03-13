@@ -5,7 +5,7 @@
 import numpy as np
 from collections import defaultdict
 
-from .configs import Config
+from .config import Config
 
 
 class Dataset:

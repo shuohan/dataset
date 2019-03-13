@@ -4,7 +4,7 @@
 from dataset.images import ImageLoader
 from dataset.datasets import Dataset
 from dataset.pipelines import RandomPipeline
-from dataset.configs import Config
+from dataset.config import Config
 
 
 dirname = 'data'
@@ -21,7 +21,8 @@ print(len(dataset2))
 print(dataset2)
 print()
 
-images = images1 + images2
+images = [images1, images2]
+images = sum(images[1:], images[0])
 dataset = Dataset(images)
 
 print(len(dataset))

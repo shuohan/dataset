@@ -10,7 +10,7 @@ from enum import Enum, auto
 from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
-from .configs import Config
+from .config import Config
 from .loads import load, load_label_desc
 
 
@@ -135,7 +135,8 @@ class Image:
     """Image
 
     Attributes:
-        dtype (type): Data type such as np.float32 and np.uint8
+        load_dtype (type): Data type of the internal storage
+        output_dtype (type): Data type of the output
         filepath (str): The path to the file to load
         data (numpy.array): The image data
         on_the_fly (bool): If load the data on the fly
@@ -144,7 +145,8 @@ class Image:
         _data (numpy.array): Internal reference to the data; used for on the fly
          
     """
-    dtype = np.float32
+    load_dtype = np.float32
+    output_dtype = np.float32
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
         """Initialize
@@ -186,7 +188,7 @@ class Image:
             return self._data
 
     def _load(self):
-        data = load(self.filepath, self.dtype)
+        data = load(self.filepath, self.load_dtype)
         if len(data.shape) == 3:
             data = data[None, ...]
         return data
@@ -202,7 +204,7 @@ class Image:
             result (numpy.array): The output of the image
 
         """
-        return self.data
+        return self.data.astype(self.output_dtype)
 
     def __str__(self):
         return ' '.join([os.path.basename(self.filepath)] + self.message)
@@ -227,7 +229,8 @@ class Label(Image):
         pairs (list): Each is a pair of left/right corresponding labels
 
     """
-    dtype = np.uint8
+    load_dtype = np.uint8
+    output_dtype = np.int64
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
                  labels=dict(), pairs=list()):
@@ -265,7 +268,8 @@ class Mask(Image):
         cropping_shape (list of int): The shape of the cropped
 
     """
-    dtype = np.uint8
+    load_dtype = np.uint8
+    output_dtype = np.int64
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
                  cropping_shape=[128, 96, 96]):
@@ -319,7 +323,8 @@ class BoundingBox(Image):
         support loading from .csv file
 
     """
-    dtype = np.uint8
+    load_dtype = np.uint8
+    output_dtype = np.float32
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
         super().__init__(filepath, data, on_the_fly, message)
@@ -331,4 +336,4 @@ class BoundingBox(Image):
         output = list()
         for b in bbox:
             output.extend((b.start, b.stop))
-        return np.array(output)
+        return np.array(output, dtype=self.output_dtype)

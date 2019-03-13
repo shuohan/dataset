@@ -10,18 +10,27 @@ from torch.utils.data import DataLoader
 from dataset.images import ImageLoader
 from dataset.datasets import Dataset
 from dataset.pipelines import RandomPipeline
-from dataset.configs import Config
+from dataset.config import Config
 
 dirname = 'data'
 image_ind = 5
 
 loader = ImageLoader(dirname, id='tmc')
-loader.load('image', 'label')
+loader.load('image', 'label', 'mask', 'bounding_box')
 dataset = Dataset(images=loader.images)
 pipeline = RandomPipeline()
+pipeline.register('resizing', 'scaling', 'cropping')
 dataset.add_pipeline(pipeline)
 data_loader = DataLoader(dataset)
+
+print('dataset')
+for d in dataset.images['tmc/at1000']:
+    print(d.data.dtype)
+    print(d.data.shape)
+
+print('data loader')
 for data in data_loader:
-    print(type(data[0]))
-    print(data[1].shape)
+    for d in data:
+        print(d.dtype)
+        print(d.shape)
     break
