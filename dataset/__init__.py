@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 
+from enum import Enum, auto
+
 from .config import Config
-from .datasets import Dataset
+from .datasets import Dataset, WrapperDataset
 from .images import ImageLoader
 from .pipelines import RandomPipeline
+
+
+class DatasetType(Enum):
+    dataset = auto()
+    wrapper_dataset = auto()
 
 
 class DatasetFactory:
@@ -101,8 +108,8 @@ class DatasetFactory:
         """Create training and validation datsets
 
         Returns:
-            t_dataset (.datasets.Dataset): The training dataset
-            v_dataset (.datasets.Dataset): The validation dataset
+            t_dataset (.datasets.Dataset_): The training dataset
+            v_dataset (.datasets.Dataset_): The validation dataset
 
         """
         t_dataset = self._create(self._t_images, self.training_operations)
@@ -111,7 +118,10 @@ class DatasetFactory:
 
     def _create(self, images, operations):
         images = sum(images[1:], images[0])
-        dataset = Dataset(images)
+        if DatasetType[Config().dataset_type] is DatasetType.dataset:
+            dataset = Dataset(images)
+        elif DatasetType[Config().dataset_type] is DatasetType.wrapper_dataset:
+            dataset = WrapperDataset(images)
         pipeline = RandomPipeline()
         pipeline.register(*operations)
         dataset.add_pipeline(pipeline)

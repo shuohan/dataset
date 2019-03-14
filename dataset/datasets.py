@@ -9,7 +9,7 @@ from .config import Config
 from .images import Label
 
 
-class Dataset:
+class Dataset_:
     """Dataset for yielding data
 
     The length of the dataset will be the number of pipelines times the number
@@ -89,4 +89,19 @@ class Dataset:
             for p in processed:
                 print(p)
             print('-' * 80)
-        return [p.output for p in processed]
+        return self._compose(processed)
+
+    def _compose(self, images):
+        """Abstract to compose processed images"""
+        raise NotImplementedError
+
+
+class Dataset(Dataset_):
+    def _compose(self, images):
+        return [im.output for im in images]
+
+
+class WrapperDataset(Dataset_):
+    """Output .images.Image instead of numpy arrays"""
+    def _compose(self, images):
+        return images

@@ -63,3 +63,4 @@ class Config(Config_):
                 'sigmoid_intensity']
         self._set_default('total_addon', addons)
         self._set_default('total_aug', augs)
+        self._set_default('dataset_type', 'dataset')
