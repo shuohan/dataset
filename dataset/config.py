@@ -2,10 +2,10 @@
 
 import os
 import json
-from py_singleton import Singleton
+from config import Config_
 
 
-class Config(metaclass=Singleton):
+class Config(Config_):
     """Global configurations
 
     Attributes:
@@ -37,8 +37,7 @@ class Config(metaclass=Singleton):
 
     """
     def __init__(self, config_json='configs.json'):
-        self._loaded = self._load_json(config_json)
-        self._attrs = list()
+        super().__init__(config_json)
         self._set_default('max_trans', 30)
         self._set_default('max_rot_angle', 15)
         self._set_default('max_scale', 2)
@@ -64,67 +63,3 @@ class Config(metaclass=Singleton):
                 'sigmoid_intensity']
         self._set_default('total_addon', addons)
         self._set_default('total_aug', augs)
-
-
-    def load(self, config_json):
-        """Load .json configurations
-
-        Args:
-            config_json (str): The filepath to the configuration .json file
-
-        Raises:
-            IndexError: .json file has unsupported configurations
-
-        """
-        loaded = self._load_json(config_json)
-        for key, value in loaded.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                raise IndexError('Configuration does not have field %s' % key)
-
-    def save(self, config_json):
-        """Save configurations into a .json file
-
-        Args:
-            config_json (str): Filepath to the target file
-
-        """
-        configs = {key: getattr(self, key) for key in self._attrs}
-        with open(config_json, 'w') as jfile:
-            json.dump(configs, jfile, indent=4)
-
-    def _set_default(self, key, default):
-        """Set the default value if the setting is not in the loaded json file
-
-        Args:
-            key (str): The attribute name
-            default (anything): The default value of this attribute
-
-        """
-        value = self._loaded[key] if key in self._loaded else default
-        setattr(self, key, value)
-        self._attrs.append(key)
-
-    def _load_json(self, filename):
-        """Load json from file
-
-        Args:
-            filename (str): The path to the file to load
-
-        """
-        loaded = dict()
-        if os.path.isfile(filename):
-            with open(filename) as json_file:
-                loaded = json.load(json_file)
-        return loaded
-
-    def __str__(self):
-        max_attr_len = max([len(a) for a in self._attrs])
-        contents = list()
-        contents.append('Configurations')
-        for key in self._attrs:
-            k = (key+':').ljust(max_attr_len + 1)
-            v = str(getattr(self, key))
-            contents.append('    %s %s' % (k, v))
-        return '\n'.join(contents)
