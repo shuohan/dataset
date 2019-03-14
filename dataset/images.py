@@ -305,7 +305,15 @@ class Mask(Image):
             self.calc_bbox()
         cropped = crop3d(image.data, self._bbox)[0]
         message =  image.message + ['crop']
-        new_image = image.__class__(image.filepath, cropped, False, message)
+        #TODO
+        if isinstance(image, Label):
+            new_image = image.__class__(image.filepath, cropped, False, message,
+                                        labels=image.labels, pairs=image.pairs)
+        elif isinstance(image, Mask):
+            new_image = image.__class__(image.filepath, cropped, False, message,
+                                        cropping_shape=image.cropping_shape)
+        else:
+            new_image = image.__class__(image.filepath, cropped, False, message)
         return new_image
 
     @property
