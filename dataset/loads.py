@@ -65,3 +65,13 @@ def load_label_desc(filepath):
         labels, pairs = dict(), list()
     labels = {int(k): v for k, v in labels.items()}
     return labels, pairs
+
+
+#TODO
+def load_label_hierachy(filepath):
+    if os.path.isfile(filepath):
+        with open(filepath) as jfile:
+            hierachy = json.load(jfile)
+    else:
+        hierachy = dict()
+    return hierachy

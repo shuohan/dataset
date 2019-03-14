@@ -56,6 +56,7 @@ class Config(Config_):
         self._set_default('mask_suffixes', ['mask'])
         self._set_default('bbox_suffixes', ['bbox', 'mask'])
         self._set_default('label_desc', 'labels.json')
+        self._set_default('label_hierachy', 'hierachy.json')
         self._set_default('verbose', False)
         addons = ['resizing', 'flipping', 'cropping', 'label_normalization',
                   'patch']
