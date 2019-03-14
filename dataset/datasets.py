@@ -6,6 +6,7 @@ import numpy as np
 from collections import defaultdict
 
 from .config import Config
+from .images import Label
 
 
 class Dataset:
@@ -26,6 +27,14 @@ class Dataset:
         self.images = images
         self.verbose = Config().verbose
         self.pipelines = list()
+
+    @property
+    def labels(self):
+        """Get label image label definitions if available"""
+        image_group = self.images[0]
+        for image in image_group:
+            if isinstance(image, Label):
+                return image.labels
 
     def add_pipeline(self, *pipelines):
         """Add pipelines for image processing
