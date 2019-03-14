@@ -53,6 +53,12 @@ class ImageCollection(defaultdict):
     def copy(self):
         return self.__class__(self)
 
+    def __getitem__(self, key):
+        """Support return by index"""
+        if key not in self and isinstance(key, int):
+            key = list(self.keys())[key]
+        return super().__getitem__(key)
+
     def __add__(self, other):
         """Merge two image collections
 
