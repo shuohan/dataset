@@ -64,7 +64,7 @@ def load_label_desc(filepath):
         labels, pairs = contents['labels'], contents['pairs']
     else:
         labels, pairs = dict(), list()
-    labels = {int(k): v for k, v in labels.items()}
+    # labels = {int(k): v for k, v in labels.items()}
     return labels, pairs
 
 
@@ -81,17 +81,16 @@ def load_label_hierachy(filepath):
 
 class Region:
 
-    def __init__(self, value):
-        self._value = value
+    def __init__(self, name):
+        self.name = name
         self.print_level = 0
 
     @property
-    def value(self):
-        return [self._value]
-
+    def regions(self):
+        return [self.name]
 
     def __str__(self):
-        return self._get_space() + ', '.join([str(v) for v in self.value])
+        return self._get_space() + '- ' + self.regions[0]
 
     def _get_space(self):
         return '|   ' * self.print_level
@@ -106,16 +105,16 @@ class Hierachy(Region):
 
     @staticmethod
     def create_child(child):
-        if 'value' in child:
-            return Region(child['value'])
-        else:
+        if 'children' in child:
             return Hierachy(child['name'], child['children'])
+        else:
+            return Region(child['name'])
 
     @property
-    def value(self):
+    def regions(self):
         results = list()
         for child in self.children:
-            results.extend(child.value)
+            results.extend(child.regions)
         return results
 
     def __str__(self):

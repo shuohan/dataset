@@ -265,7 +265,7 @@ class Label(Image):
         if len(self.labels) == 0:
             labels = np.unique(self.data)
         else:
-            labels = sorted(self.labels.keys())
+            labels = sorted(self.labels.values())
         data = np.digitize(self.data, labels, right=True)
         result = self.update(data, 'label_norm')
         return result

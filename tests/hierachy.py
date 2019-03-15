@@ -4,7 +4,6 @@
 import numpy as np
 from dataset import DatasetFactory, Config
 
-Config().verbose = True
 Config().dataset_type = 'wrapper_dataset'
 # t_ops = ('resizing', 'translation', 'scaling', 'deformation', 'rotation',
 #          'sigmoid_intensity', 'cropping', 'label_normalization')
@@ -24,6 +23,7 @@ t_keys = ['1/at1006', '2/at1025', '2/at1029', '3/at1034', '3/at1040']
 v_keys = ['1/at1000', '1/at1007', '3/at1033']
 assert list(t_dataset.images.keys()) == t_keys
 assert list(v_dataset.images.keys()) == v_keys
-values = t_dataset[0][1].hierachy.value
-assert sorted(values) == sorted(list(t_dataset.labels.keys()))
+regions = t_dataset[0][1].hierachy.regions
+regions.remove('Vermis Anterior')
+assert sorted(regions) == sorted(list(t_dataset.labels.keys()))
 print(t_dataset[0][1].hierachy)
