@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 """Functions loading data from hard drive to memory
 
 """
@@ -71,7 +72,56 @@ def load_label_desc(filepath):
 def load_label_hierachy(filepath):
     if os.path.isfile(filepath):
         with open(filepath) as jfile:
-            hierachy = json.load(jfile)
+            contents = json.load(jfile)
+        hierachy = Hierachy.create_child(contents)
     else:
-        hierachy = dict()
+        hierachy = Region(value=None)
     return hierachy
+
+
+class Region:
+
+    def __init__(self, value):
+        self._value = value
+        self.print_level = 0
+
+    @property
+    def value(self):
+        return [self._value]
+
+
+    def __str__(self):
+        return self._get_space() + ', '.join([str(v) for v in self.value])
+
+    def _get_space(self):
+        return '|   ' * self.print_level
+
+
+class Hierachy(Region):
+
+    def __init__(self, name, children):
+        self.name = name
+        self.children = [self.create_child(child) for child in children]
+        self.print_level = 0
+
+    @staticmethod
+    def create_child(child):
+        if 'value' in child:
+            return Region(child['value'])
+        else:
+            return Hierachy(child['name'], child['children'])
+
+    @property
+    def value(self):
+        results = list()
+        for child in self.children:
+            results.extend(child.value)
+        return results
+
+    def __str__(self):
+        result = list()
+        result.append(self._get_space() + '- ' + self.name)
+        for child in self.children:
+            child.print_level = self.print_level + 1
+            result.append(child.__str__())
+        return '\n'.join(result)

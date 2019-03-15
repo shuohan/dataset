@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import numpy as np
 from dataset import DatasetFactory, Config
 
 Config().verbose = True
@@ -23,4 +24,6 @@ t_keys = ['1/at1006', '2/at1025', '2/at1029', '3/at1034', '3/at1040']
 v_keys = ['1/at1000', '1/at1007', '3/at1033']
 assert list(t_dataset.images.keys()) == t_keys
 assert list(v_dataset.images.keys()) == v_keys
+values = t_dataset[0][1].hierachy.value
+assert sorted(values) == sorted(list(t_dataset.labels.keys()))
 print(t_dataset[0][1].hierachy)
