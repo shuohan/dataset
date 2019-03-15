@@ -1,0 +1,180 @@
+{
+    "name": "Root",
+    "children": [
+        {
+            "name": "Background"
+        },
+        {
+            "name": "Cerebellum",
+            "children": [
+                {
+                    "name": "Corpus Medullare"
+                },
+                {
+                    "name": "Gray Matter",
+                    "children": [
+                        {
+                            "name": "Anterior Lobe",
+                            "children": [
+                                {
+                                    "name": "Left Anterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Left I-III"
+                                        },
+                                        {
+                                            "name": "Left IV"
+                                        },
+                                        {
+                                            "name": "Left V"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Anterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Right I-III"
+                                        },
+                                        {
+                                            "name": "Right IV"
+                                        },
+                                        {
+                                            "name": "Right V"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Vermis Anterior"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Superior Posterior Lobe",
+                            "children": [
+                                {
+                                    "name": "Left Superior Posterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Left VI"
+                                        },
+                                        {
+                                            "name": "Left Crus I"
+                                        },
+                                        {
+                                            "name": "Left Crus II / VIIB",
+                                            "children": [
+                                                {
+                                                    "name": "Left Crus II"
+                                                },
+                                                {
+                                                    "name": "Left VIIB"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Superior Posterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Right VI"
+                                        },
+                                        {
+                                            "name": "Right Crus I"
+                                        },
+                                        {
+                                            "name": "Right Crus II / VIIB",
+                                            "children": [
+                                                {
+                                                    "name": "Right Crus II"
+                                                },
+                                                {
+                                                    "name": "Right VIIB"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Vermis Superior Posterior",
+                                    "children": [
+                                        {
+                                            "name": "Vermis VI"
+                                        },
+                                        {
+                                            "name": "Vermis VII"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Inferior Posterior Lobe",
+                            "children": [
+                                {
+                                    "name": "Left Inferior Posterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Left VIII",
+                                            "children": [
+                                                {
+                                                    "name": "Left VIIIA"
+                                                },
+                                                {
+                                                    "name": "Left VIIIB"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "Left IX"
+                                        },
+                                        {
+                                            "name": "Left X"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Inferior Posterior Lobe",
+                                    "children": [
+                                        {
+                                            "name": "Right VIII",
+                                            "children": [
+                                                {
+                                                    "name": "Right VIIIA"
+                                                },
+                                                {
+                                                    "name": "Right VIIIB"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "Right IX"
+                                        },
+                                        {
+                                            "name": "Right X"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Vermis Inferior Posterior",
+                                    "children": [
+                                        {
+                                            "name": "Vermis VIII"
+                                        },
+                                        {
+                                            "name": "Vermis IX"
+                                        },
+                                        {
+                                            "name": "Vermis X"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
