@@ -24,3 +24,6 @@ image = t_dataset[0][1]
 regions = image.hierachy.regions
 assert sorted(regions) == sorted(list(t_dataset.labels.keys()))
 image.print_hierachy()
+
+tensor_tree = image.get_tensor_tree()
+print(tensor_tree)

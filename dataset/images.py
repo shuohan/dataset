@@ -12,6 +12,7 @@ from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
 from .loads import load, load_label_desc, load_label_hierachy, Hierachy
+from .tensor_tree import TensorTree, TensorLeaf
 
 
 class ImageType(Enum):
@@ -300,7 +301,7 @@ class HierachicalLabel(Label):
         self._print_hierachy(self.hierachy)
 
     def _print_hierachy(self, hierachy):
-        values = [str(v) for v in self._get_region_values(hierachy)]
+        values = [str(v) for v in self._get_values(hierachy)]
         string = hierachy._name_to_print + ' ' + ', '.join(values)
         string = string + (' (%d)' % len(values))
         print(string)
@@ -308,8 +309,31 @@ class HierachicalLabel(Label):
             for region in hierachy.children:
                 self._print_hierachy(region)
 
-    def _get_region_values(self, hierachy):
+    def _get_values(self, hierachy):
         return [self.labels[r] for r in hierachy.regions]
+
+    def get_tensor_tree(self):
+        return self._get_tensor_tree(self.hierachy)
+
+    def _get_tensor_tree(self, hierachy, level=0):
+        name = hierachy.name
+        if isinstance(hierachy, Hierachy):
+            subtrees = list()
+            for region in hierachy.children:
+                subtrees.append(self._get_tensor_tree(region, level=level+1))
+            data = self._get_masks(hierachy)
+            tensor_leaf = TensorTree(name, data, subtrees, level=level)
+        else:
+            tensor_leaf = TensorLeaf(name, level=level)
+        return tensor_leaf
+
+    def _get_masks(self, hierachy):
+        masks = list()
+        for region in hierachy.children:
+            values = self._get_values(region)
+            masks.append(np.logical_or.reduce([self.data==v for v in values]))
+        masks = np.vstack(masks).astype(self.output_dtype)
+        return masks
 
 
 class Mask(Image):
