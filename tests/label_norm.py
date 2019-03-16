@@ -15,15 +15,16 @@ label = Label(filepath, on_the_fly=False)
 mask = Mask('data/at1000_mask.nii.gz')
 label = mask.crop(label)
 norm = label.normalize()
-print(norm)
-for i, j in zip(labels.keys(), np.arange(len(labels.keys()))):
+for i, j in zip(labels.values(), np.arange(len(labels.values()))):
     assert np.array_equal(label.data==i, norm.data==j)
 
 label = Label(filepath, labels=labels, pairs=pairs, on_the_fly=False)
 label = mask.crop(label)
 norm = label.normalize()
 print(norm)
-for i, j in zip(labels.keys(), np.arange(len(labels.keys()))):
+print(np.unique(norm.data))
+print(labels.values())
+for i, j in zip(labels.values(), np.arange(len(labels.values()))):
     assert np.array_equal(label.data==i, norm.data==j)
 
 shape = norm.shape[1:]
