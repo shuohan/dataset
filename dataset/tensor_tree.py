@@ -12,9 +12,9 @@ class TensorLeaf:
         self._indent_pattern (str): The indentation pattern to print
 
     """
-    def __init__(self, name):
+    def __init__(self, name, level=0):
         self.name = name
-        self.print_level = 0
+        self.level = level
         self._indent_pattern = '|   '
         self._name_prefix = '- '
 
@@ -24,7 +24,7 @@ class TensorLeaf:
         return '%s%s' % (indent, name) 
 
     def _get_indent(self):
-        return self._indent_pattern * self.print_level
+        return self._indent_pattern * self.level
 
 
 class TensorTree(TensorLeaf):
@@ -34,16 +34,16 @@ class TensorTree(TensorLeaf):
         subtrees (list of TensorLeaf): The children tensors
 
     """
-    def __init__(self, name, data, subtrees):
+    def __init__(self, name, data, subtrees, level=0):
         super().__init__(name)
         self.data = data
+        self.level = level
         self.subtrees = subtrees
 
     def __str__(self):
         results = list()
         results.append(super().__str__() + self._desc_data())
         for subtree in self.subtrees:
-            subtree.print_level = self.print_level + 1
             results.append(subtree.__str__())
         return '\n'.join(results)
 
