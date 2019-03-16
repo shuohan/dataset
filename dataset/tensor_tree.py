@@ -6,7 +6,7 @@ class TensorLeaf:
 
     Attributes:
         name (str): The identifier
-        data (torch.Tensor): The tensor data
+        data (numpy.array): The tensor data
         print_level (int): The level of printing
 
         self._indent_pattern (str): The indentation pattern to print
@@ -49,6 +49,6 @@ class TensorTree(TensorLeaf):
 
     def _desc_data(self):
         dataid = id(self.data)
-        dtype = self.data.type()
+        dtype = self.data.dtype
         shape = self.data.shape.__str__()
         return ': %d, %s, %s' % (dataid, dtype, shape)

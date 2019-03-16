@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import torch
+import numpy as np
 
 from dataset.loads import load_label_hierachy, Hierachy
 from dataset.tensor_tree import TensorLeaf, TensorTree
@@ -14,7 +14,7 @@ data_shape = (1, 20, 160, 96, 96)
 def create_sample(data_shape, hierachy, level=0):
     name = hierachy.name
     if isinstance(hierachy, Hierachy):
-        data = torch.rand(data_shape).float()
+        data = np.random.rand(*data_shape).astype(np.int64)
         subtrees = list()
         for region in hierachy.children:
             subtrees.append(create_sample(data_shape, region, level=level+1))
