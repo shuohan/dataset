@@ -287,10 +287,13 @@ class HierachicalLabel(Label):
         super().__init__(filepath, data, on_the_fly, message, labels, pairs)
         self.hierachy = hierachy
 
-    def update(self, data, message):
+    #TODO
+    def update(self, data, message, labels=None, pairs=None):
+        labels = self.labels if labels is None else labels
+        pairs = self.pairs if pairs is None else pairs
         message =  self.message + [message]
         new_image = self.__class__(self.filepath, data, False, message,
-                                   self.labels, self.pairs, self.hierachy)
+                                   labels, pairs, self.hierachy)
         return new_image
 
     def print_hierachy(self):
