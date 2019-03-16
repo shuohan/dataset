@@ -291,16 +291,16 @@ class HierachicalLabel(Label):
         self._print_hierachy(self.hierachy)
 
     def _print_hierachy(self, hierachy):
+        values = [str(v) for v in self._get_region_values(hierachy)]
+        string = hierachy._name_to_print + ' ' + ', '.join(values)
+        string = string + (' (%d)' % len(values))
+        print(string)
         if isinstance(hierachy, Hierachy):
-            values = [str(self.labels[r]) for r in hierachy.regions]
-            string = hierachy._name_to_print + ' ' + ', '.join(values)
-            string = string + (' (%d)' % len(values))
-            print(string)
             for region in hierachy.children:
                 self._print_hierachy(region)
-        else:
-            value = self.labels[hierachy.name]
-            print(hierachy.__str__(), str(value) + ' (1)')
+
+    def _get_region_values(self, hierachy):
+        return [self.labels[r] for r in hierachy.regions]
 
 
 class Mask(Image):
