@@ -81,34 +81,39 @@ def load_label_hierachy(filepath):
 
 class Region:
 
-    def __init__(self, name):
+    def __init__(self, name, level=0):
         self.name = name
-        self.print_level = 0
+        self.level = level
 
     @property
     def regions(self):
         return [self.name]
 
     def __str__(self):
-        return self._get_space() + '- ' + self.regions[0]
+        return self._name_to_print
+
+    @property
+    def _name_to_print(self):
+        return self._get_space() + '- ' + self.name
 
     def _get_space(self):
-        return '|   ' * self.print_level
+        return '|   ' * self.level
 
 
 class Hierachy(Region):
 
-    def __init__(self, name, children):
+    def __init__(self, name, children, level=0):
         self.name = name
-        self.children = [self.create_child(child) for child in children]
-        self.print_level = 0
+        self.level = level
+        self.children = [self.create_child(child, self.level + 1)
+                         for child in children]
 
     @staticmethod
-    def create_child(child):
+    def create_child(child, level=0):
         if 'children' in child:
-            return Hierachy(child['name'], child['children'])
+            return Hierachy(child['name'], child['children'], level=level)
         else:
-            return Region(child['name'])
+            return Region(child['name'], level=level)
 
     @property
     def regions(self):
@@ -119,8 +124,7 @@ class Hierachy(Region):
 
     def __str__(self):
         result = list()
-        result.append(self._get_space() + '- ' + self.name)
+        result.append(self._name_to_print)
         for child in self.children:
-            child.print_level = self.print_level + 1
             result.append(child.__str__())
         return '\n'.join(result)
