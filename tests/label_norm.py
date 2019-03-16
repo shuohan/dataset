@@ -27,6 +27,14 @@ print(labels.values())
 for i, j in zip(labels.values(), np.arange(len(labels.values()))):
     assert np.array_equal(label.data==i, norm.data==j)
 
+print(norm.labels)
+sorted_labels = sorted(labels.items(), key=lambda l: l[1])
+for i, (key, value) in enumerate(labels.items()):
+    assert norm.labels[key] == i
+
+for pair in norm.pairs:
+    print(pair)
+
 shape = norm.shape[1:]
 plt.figure()
 plt.subplot(2, 3, 1)

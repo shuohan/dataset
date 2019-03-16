@@ -253,10 +253,12 @@ class Label(Image):
         self.labels = labels
         self.pairs = pairs
 
-    def update(self, data, message):
+    def update(self, data, message, labels=None, pairs=None):
+        labels = self.labels if labels is None else labels
+        pairs = self.pairs if pairs is None else pairs
         message =  self.message + [message]
         new_image = self.__class__(self.filepath, data, False, message,
-                                   self.labels, self.pairs)
+                                   labels, pairs)
         return new_image
 
     def normalize(self):
@@ -267,11 +269,15 @@ class Label(Image):
 
         """
         if len(self.labels) == 0:
-            labels = np.unique(self.data)
+            label_values = np.unique(self.data)
         else:
-            labels = sorted(self.labels.values())
-        data = np.digitize(self.data, labels, right=True)
-        result = self.update(data, 'label_norm')
+            label_values = sorted(self.labels.values())
+        data = np.digitize(self.data, label_values, right=True)
+        new_label_values = np.arange(len(label_values))
+        mapping = {o: n for o, n in zip(label_values, new_label_values)}
+        labels = {k: mapping[v] for k, v in self.labels.items()}
+        pairs = [[mapping[p] for p in pair] for pair in self.pairs]
+        result = self.update(data, 'label_norm', labels=labels, pairs=pairs)
         return result
 
 
