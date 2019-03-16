@@ -53,6 +53,7 @@ class Config(Config_):
         self._set_default('aug_prob', 1)
         self._set_default('image_suffixes', ['image'])
         self._set_default('label_suffixes', ['label'])
+        self._set_default('hierachical_label_suffixes', ['label'])
         self._set_default('mask_suffixes', ['mask'])
         self._set_default('bbox_suffixes', ['bbox', 'mask'])
         self._set_default('label_desc', 'labels.json')

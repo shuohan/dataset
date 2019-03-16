@@ -11,7 +11,7 @@ from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
-from .loads import load, load_label_desc, load_label_hierachy
+from .loads import load, load_label_desc, load_label_hierachy, Hierachy
 
 
 class ImageType(Enum):
@@ -19,6 +19,7 @@ class ImageType(Enum):
     label = auto()
     mask = auto()
     bounding_box = auto()
+    hierachical_label = auto()
 
 
 class ImageCollection(defaultdict):
@@ -117,11 +118,15 @@ class ImageLoader:
                 self._load(config.image_suffixes, Image)
             elif ImageType[type] is ImageType.label:
                 desc_filepath = os.path.join(self.dirname, config.label_desc)
-                h_filepath = os.path.join(self.dirname, config.label_hierachy)
                 l, p = load_label_desc(desc_filepath)
+                self._load(config.label_suffixes, Label, labels=l, pairs=p)
+            elif ImageType[type] is ImageType.hierachical_label:
+                desc_filepath = os.path.join(self.dirname, config.label_desc)
+                h_filepath = os.path.join(self.dirname, config.label_hierachy)
+                labels, pairs = load_label_desc(desc_filepath)
                 hierachy = load_label_hierachy(h_filepath)
-                self._load(config.label_suffixes, Label, labels=l, pairs=p,
-                           hierachy=hierachy)
+                self._load(config.hierachical_label_suffixes, HierachicalLabel,
+                           labels=labels, pairs=pairs, hierachy=hierachy)
             elif ImageType[type] is ImageType.mask:
                 self._load(config.mask_suffixes, Mask,
                            cropping_shape=config.crop_shape)
@@ -242,17 +247,16 @@ class Label(Image):
     output_dtype = np.int64
 
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 labels=dict(), pairs=list(), hierachy=dict()):
+                 labels=dict(), pairs=list()):
         super().__init__(filepath, data, on_the_fly, message)
         self.interp_order = 0
         self.labels = labels
         self.pairs = pairs
-        self.hierachy = hierachy
 
     def update(self, data, message):
         message =  self.message + [message]
         new_image = self.__class__(self.filepath, data, False, message,
-                                   self.labels, self.pairs, self.hierachy)
+                                   self.labels, self.pairs)
         return new_image
 
     def normalize(self):
@@ -269,6 +273,34 @@ class Label(Image):
         data = np.digitize(self.data, labels, right=True)
         result = self.update(data, 'label_norm')
         return result
+
+
+class HierachicalLabel(Label):
+    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
+                 labels=dict(), pairs=list(), hierachy=None):
+        super().__init__(filepath, data, on_the_fly, message, labels, pairs)
+        self.hierachy = hierachy
+
+    def update(self, data, message):
+        message =  self.message + [message]
+        new_image = self.__class__(self.filepath, data, False, message,
+                                   self.labels, self.pairs, self.hierachy)
+        return new_image
+
+    def print_hierachy(self):
+        self._print_hierachy(self.hierachy)
+
+    def _print_hierachy(self, hierachy):
+        if isinstance(hierachy, Hierachy):
+            values = [str(self.labels[r]) for r in hierachy.regions]
+            string = hierachy._name_to_print + ' ' + ', '.join(values)
+            string = string + (' (%d)' % len(values))
+            print(string)
+            for region in hierachy.children:
+                self._print_hierachy(region)
+        else:
+            value = self.labels[hierachy.name]
+            print(hierachy.__str__(), str(value) + ' (1)')
 
 
 class Mask(Image):
@@ -310,10 +342,13 @@ class Mask(Image):
         cropped = crop3d(image.data, self._bbox)[0]
         message =  image.message + ['crop']
         #TODO
-        if isinstance(image, Label):
+        if isinstance(image, HierachicalLabel):
             new_image = image.__class__(image.filepath, cropped, False, message,
                                         labels=image.labels, pairs=image.pairs,
                                         hierachy=image.hierachy)
+        elif isinstance(image, Label):
+            new_image = image.__class__(image.filepath, cropped, False, message,
+                                        labels=image.labels, pairs=image.pairs)
         elif isinstance(image, Mask):
             new_image = image.__class__(image.filepath, cropped, False, message,
                                         cropping_shape=image.cropping_shape)
