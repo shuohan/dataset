@@ -42,7 +42,9 @@ class TensorTree(TensorLeaf):
 
     def __str__(self):
         results = list()
-        results.append(super().__str__() + self._desc_data())
+        string = super().__str__() + self._desc_data()
+        string = string + (' (#subtrees %d)' % len(self.subtrees))
+        results.append(string)
         for subtree in self.subtrees:
             results.append(subtree.__str__())
         return '\n'.join(results)
