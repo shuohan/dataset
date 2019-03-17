@@ -69,17 +69,16 @@ def load_label_desc(filepath):
 
 
 #TODO
-def load_label_hierachy(filepath):
+def load_region_tree(filepath):
     if os.path.isfile(filepath):
         with open(filepath) as jfile:
-            contents = json.load(jfile)
-        hierachy = Hierachy.create_child(contents)
+            regions = json.load(jfile)
+        return RegionTree.create_subtree(regions)
     else:
-        hierachy = Region(value=None)
-    return hierachy
+        return RegionLeaf('Root')
 
 
-class Region:
+class RegionLeaf:
 
     def __init__(self, name, level=0):
         self.name = name
@@ -100,31 +99,37 @@ class Region:
         return '|   ' * self.level
 
 
-class Hierachy(Region):
+class RegionTree(RegionLeaf):
 
-    def __init__(self, name, children, level=0):
+    def __init__(self, name, subregions, level=0):
+        """Initialize
+
+        Attributes:
+            subregions (dict)
+
+        """
         self.name = name
         self.level = level
-        self.children = [self.create_child(child, self.level + 1)
-                         for child in children]
+        self.subtrees = [self.create_subtree(subregion, self.level + 1)
+                         for subregion in subregions]
 
     @staticmethod
-    def create_child(child, level=0):
-        if 'children' in child:
-            return Hierachy(child['name'], child['children'], level=level)
+    def create_subtree(region, level=0):
+        if 'subregions' in region:
+            return RegionTree(region['name'], region['subregions'], level=level)
         else:
-            return Region(child['name'], level=level)
+            return RegionLeaf(region['name'], level=level)
 
     @property
     def regions(self):
         results = list()
-        for child in self.children:
-            results.extend(child.regions)
+        for subtree in self.subtrees:
+            results.extend(subtree.regions)
         return results
 
     def __str__(self):
         result = list()
         result.append(self._name_to_print)
-        for child in self.children:
-            result.append(child.__str__())
+        for subtree in self.subtrees:
+            result.append(subtree.__str__())
         return '\n'.join(result)

@@ -1,24 +1,24 @@
 {
     "name": "Root",
-    "children": [
+    "subregions": [
         {
             "name": "Background"
         },
         {
             "name": "Cerebellum",
-            "children": [
+            "subregions": [
                 {
                     "name": "Corpus Medullare"
                 },
                 {
                     "name": "Gray Matter",
-                    "children": [
+                    "subregions": [
                         {
                             "name": "Anterior Lobe",
-                            "children": [
+                            "subregions": [
                                 {
                                     "name": "Left Anterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Left I-III"
                                         },
@@ -32,7 +32,7 @@
                                 },
                                 {
                                     "name": "Right Anterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Right I-III"
                                         },
@@ -51,10 +51,10 @@
                         },
                         {
                             "name": "Superior Posterior Lobe",
-                            "children": [
+                            "subregions": [
                                 {
                                     "name": "Left Superior Posterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Left VI"
                                         },
@@ -63,7 +63,7 @@
                                         },
                                         {
                                             "name": "Left Crus II / VIIB",
-                                            "children": [
+                                            "subregions": [
                                                 {
                                                     "name": "Left Crus II"
                                                 },
@@ -76,7 +76,7 @@
                                 },
                                 {
                                     "name": "Right Superior Posterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Right VI"
                                         },
@@ -85,7 +85,7 @@
                                         },
                                         {
                                             "name": "Right Crus II / VIIB",
-                                            "children": [
+                                            "subregions": [
                                                 {
                                                     "name": "Right Crus II"
                                                 },
@@ -98,7 +98,7 @@
                                 },
                                 {
                                     "name": "Vermis Superior Posterior",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Vermis VI"
                                         },
@@ -111,13 +111,13 @@
                         },
                         {
                             "name": "Inferior Posterior Lobe",
-                            "children": [
+                            "subregions": [
                                 {
                                     "name": "Left Inferior Posterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Left VIII",
-                                            "children": [
+                                            "subregions": [
                                                 {
                                                     "name": "Left VIIIA"
                                                 },
@@ -136,10 +136,10 @@
                                 },
                                 {
                                     "name": "Right Inferior Posterior Lobe",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Right VIII",
-                                            "children": [
+                                            "subregions": [
                                                 {
                                                     "name": "Right VIIIA"
                                                 },
@@ -158,7 +158,7 @@
                                 },
                                 {
                                     "name": "Vermis Inferior Posterior",
-                                    "children": [
+                                    "subregions": [
                                         {
                                             "name": "Vermis VIII"
                                         },

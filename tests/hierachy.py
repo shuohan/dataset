@@ -21,7 +21,7 @@ assert list(t_dataset.images.keys()) == t_keys
 assert list(v_dataset.images.keys()) == v_keys
 
 image = t_dataset[0][1]
-regions = image.hierachy.regions
+regions = image.region_tree.regions
 assert sorted(regions) == sorted(list(t_dataset.labels.keys()))
 image.print_hierachy()
 

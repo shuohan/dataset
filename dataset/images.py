@@ -11,7 +11,8 @@ from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
-from .loads import load, load_label_desc, load_label_hierachy, Hierachy
+from .loads import load, load_label_desc, load_region_tree
+from .loads import RegionLeaf, RegionTree
 from .tensor_tree import TensorTree, TensorLeaf
 
 
@@ -125,9 +126,9 @@ class ImageLoader:
                 desc_filepath = os.path.join(self.dirname, config.label_desc)
                 h_filepath = os.path.join(self.dirname, config.label_hierachy)
                 labels, pairs = load_label_desc(desc_filepath)
-                hierachy = load_label_hierachy(h_filepath)
+                region_tree = load_region_tree(h_filepath)
                 self._load(config.hierachical_label_suffixes, HierachicalLabel,
-                           labels=labels, pairs=pairs, hierachy=hierachy)
+                           labels=labels, pairs=pairs, region_tree=region_tree)
             elif ImageType[type] is ImageType.mask:
                 self._load(config.mask_suffixes, Mask,
                            cropping_shape=config.crop_shape)
@@ -284,9 +285,9 @@ class Label(Image):
 
 class HierachicalLabel(Label):
     def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 labels=dict(), pairs=list(), hierachy=None):
+                 labels=dict(), pairs=list(), region_tree=RegionLeaf('Root')):
         super().__init__(filepath, data, on_the_fly, message, labels, pairs)
-        self.hierachy = hierachy
+        self.region_tree = region_tree
 
     #TODO
     def update(self, data, message, labels=None, pairs=None):
@@ -294,42 +295,42 @@ class HierachicalLabel(Label):
         pairs = self.pairs if pairs is None else pairs
         message =  self.message + [message]
         new_image = self.__class__(self.filepath, data, False, message,
-                                   labels, pairs, self.hierachy)
+                                   labels, pairs, self.region_tree)
         return new_image
 
     def print_hierachy(self):
-        self._print_hierachy(self.hierachy)
+        self._print_hierachy(self.region_tree)
 
-    def _print_hierachy(self, hierachy):
-        values = [str(v) for v in self._get_values(hierachy)]
-        string = hierachy._name_to_print + ' ' + ', '.join(values)
+    def _print_hierachy(self, region_tree):
+        values = [str(v) for v in self._get_values(region_tree)]
+        string = region_tree._name_to_print + ' ' + ', '.join(values)
         string = string + (' (%d)' % len(values))
         print(string)
-        if isinstance(hierachy, Hierachy):
-            for region in hierachy.children:
-                self._print_hierachy(region)
+        if isinstance(region_tree, RegionTree):
+            for subtree in region_tree.subtrees:
+                self._print_hierachy(subtree)
 
-    def _get_values(self, hierachy):
-        return [self.labels[r] for r in hierachy.regions]
+    def _get_values(self, region_tree):
+        return [self.labels[region] for region in region_tree.regions]
 
     def get_tensor_tree(self):
-        return self._get_tensor_tree(self.hierachy)
+        return self._get_tensor_tree(self.region_tree)
 
-    def _get_tensor_tree(self, hierachy, level=0):
-        name = hierachy.name
-        if isinstance(hierachy, Hierachy):
+    def _get_tensor_tree(self, region_tree, level=0):
+        name = region_tree.name
+        if isinstance(region_tree, RegionTree):
             subtrees = list()
-            for region in hierachy.children:
-                subtrees.append(self._get_tensor_tree(region, level=level+1))
-            data = self._get_masks(hierachy)
+            for subtree in region_tree.subtrees:
+                subtrees.append(self._get_tensor_tree(subtree, level=level+1))
+            data = self._get_masks(region_tree)
             tensor_leaf = TensorTree(name, data, subtrees, level=level)
         else:
             tensor_leaf = TensorLeaf(name, level=level)
         return tensor_leaf
 
-    def _get_masks(self, hierachy):
+    def _get_masks(self, region_tree):
         masks = list()
-        for region in hierachy.children:
+        for region in region_tree.subtrees:
             values = self._get_values(region)
             masks.append(np.logical_or.reduce([self.data==v for v in values]))
         masks = np.vstack(masks).astype(self.output_dtype)
@@ -378,7 +379,7 @@ class Mask(Image):
         if isinstance(image, HierachicalLabel):
             new_image = image.__class__(image.filepath, cropped, False, message,
                                         labels=image.labels, pairs=image.pairs,
-                                        hierachy=image.hierachy)
+                                        region_tree=image.region_tree)
         elif isinstance(image, Label):
             new_image = image.__class__(image.filepath, cropped, False, message,
                                         labels=image.labels, pairs=image.pairs)
