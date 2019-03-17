@@ -11,8 +11,10 @@ from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
-from .loads import load, load_label_desc, load_region_tree
-from .loads import RegionLeaf, RegionTree
+from .loads import load, load_label_desc
+from .loads import load_tree as load_region_tree
+from .loads import Leaf as RegionLeaf
+from .loads import Tree as RegionTree
 from .tensor_tree import TensorTree, TensorLeaf
 
 

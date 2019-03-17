@@ -6,6 +6,8 @@
 import os
 import json
 
+from .trees import Leaf, Tree
+
 
 def load(filepath, dtype):
     """Wrapper
@@ -68,68 +70,16 @@ def load_label_desc(filepath):
     return labels, pairs
 
 
-#TODO
-def load_region_tree(filepath):
+def load_tree(filepath):
     if os.path.isfile(filepath):
         with open(filepath) as jfile:
-            regions = json.load(jfile)
-        return RegionTree.create_subtree(regions)
+            tree = json.load(jfile)
+        return _create_tree(tree)
+
+def _create_tree(tree, level=0):
+    if 'subregions' in tree:
+        subtrees = {sub['name']: _create_tree(sub, level=level+1)
+                    for sub in tree['subregions']}
+        return Tree(subtrees, level=level)
     else:
-        return RegionLeaf('Root')
-
-
-class RegionLeaf:
-
-    def __init__(self, name, level=0):
-        self.name = name
-        self.level = level
-
-    @property
-    def regions(self):
-        return [self.name]
-
-    def __str__(self):
-        return self._name_to_print
-
-    @property
-    def _name_to_print(self):
-        return self._get_space() + '- ' + self.name
-
-    def _get_space(self):
-        return '|   ' * self.level
-
-
-class RegionTree(RegionLeaf):
-
-    def __init__(self, name, subregions, level=0):
-        """Initialize
-
-        Attributes:
-            subregions (dict)
-
-        """
-        self.name = name
-        self.level = level
-        self.subtrees = [self.create_subtree(subregion, self.level + 1)
-                         for subregion in subregions]
-
-    @staticmethod
-    def create_subtree(region, level=0):
-        if 'subregions' in region:
-            return RegionTree(region['name'], region['subregions'], level=level)
-        else:
-            return RegionLeaf(region['name'], level=level)
-
-    @property
-    def regions(self):
-        results = list()
-        for subtree in self.subtrees:
-            results.extend(subtree.regions)
-        return results
-
-    def __str__(self):
-        result = list()
-        result.append(self._name_to_print)
-        for subtree in self.subtrees:
-            result.append(subtree.__str__())
-        return '\n'.join(result)
+        return Leaf(level=level+1)
