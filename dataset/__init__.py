@@ -4,7 +4,7 @@ from enum import Enum, auto
 
 from .config import Config
 from .datasets import Dataset, WrapperDataset
-from .images import ImageLoader
+from .images import ImageLoader, ImageCollection
 from .pipelines import RandomPipeline
 
 
@@ -69,7 +69,7 @@ class DatasetFactory:
                 loader = ImageLoader(dirname, id=dataset_id)
                 loader.load(*self.image_types)
                 if val_ind is None:
-                    t_images, v_images = loader.images, dict()
+                    t_images, v_images = loader.images, ImageCollection()
                 else:
                     v_images, t_images = loader.images.split(val_ind)
                 self._t_images.append(t_images)
