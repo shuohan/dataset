@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+INDENT_PATTERN = '|   '
+NAME_PREFIX = '- '
+
+
 class Leaf:
     """
 
@@ -24,19 +28,49 @@ class Tree(Leaf):
     def __init__(self, subtrees, level=0):
         super().__init__(level)
         self.subtrees = subtrees
-        self._indent_pattern = '|   '
-        self._name_prefix = '- '
 
     def __str__(self):
         string = list()
-        string.append('(#subtrees %d)' % len(self.subtrees))
+        num_subtrees = len(self.subtrees)
+        string.append('(#subtrees %d) %s' % (num_subtrees, self._tree_info))
         for name, subtree in self.subtrees.items():
             substring = list()
             substring = self._get_indent()
-            substring += '%s%s' % (self._name_prefix, name)
+            substring += '%s%s' % (NAME_PREFIX, name)
             substring += ' ' + subtree.__str__()
             string.append(substring)
         return '\n'.join(string)
 
     def _get_indent(self):
-        return self._indent_pattern * self.level
+        return INDENT_PATTERN * self.level
+
+    @property
+    def _tree_info(self):
+        return ''
+
+
+class RegionLeaf(Leaf):
+    def __init__(self, value, level=0):
+        super().__init__(level)
+        self._value = value
+
+    @property
+    def value(self):
+        return [self._value]
+
+    def __str__(self):
+        return '[%d]' % self._value
+
+
+class RegionTree(Tree):
+
+    @property
+    def value(self):
+        value = list()
+        for tree in self.subtrees.values():
+            value.extend(tree.value)
+        return value
+
+    @property
+    def _tree_info(self):
+        return '[%s]' % ', '.join([str(v) for v in self.value])
