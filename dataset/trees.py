@@ -149,7 +149,7 @@ class RefTensorLeaf(Leaf):
 
     @property
     def data(self):
-        return self._data[indices, ...]
+        return self._data[self.indices, ...]
 
     def __str__(self):
         return desc_ind_data(self._data, self.indices)
@@ -166,6 +166,10 @@ class RefTensorTree(Tree):
         self.indices = indices
         for tree in subtrees.values():
             assert tree._data is self._data
+
+    @property
+    def data(self):
+        return self._data[self.indices, ...]
 
     @property
     def _tree_info(self):
