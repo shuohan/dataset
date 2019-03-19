@@ -7,7 +7,7 @@ import nibabel as nib
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from dataset import DatasetFactory, Config
-from dataset.trees import Tree, TensorTree
+from dataset.trees import Tree, TensorTree, RefTensorTree
 
 
 ref_obj = nib.load('data/at1000_label.nii.gz')
@@ -108,38 +108,51 @@ mapping2 = {
     'Vermis Anterior': [17]
 }
 
-
-
-image1 = t_dataset[0][1]
+image1, label1 = t_dataset[0]
+image2, label2 = t_dataset[len(t_dataset)-1]
 
 def get_ref(image_path, label_path, mask_path):
     image = nib.load(image_path).get_data()
     label = nib.load(label_path).get_data()
     mask = nib.load(mask_path).get_data()
     bbox = resize_bbox3d(calc_bbox3d(mask), (160, 96, 96))
-    image = crop3d(image, bbox)[0][None, ...]
-    label = crop3d(label, bbox)[0][None, ...]
+    image = crop3d(image, bbox)[0]
+    label = crop3d(label, bbox)[0]
     return image, label
 
-def check(tree, ref_label, mapping):
-    if isinstance(tree, Tree):
-        for name, subtree in tree.subtrees.items():
-            values = mapping[name]
-            mask = np.logical_or.reduce([ref_label==v for v in values])
-            mask = mask.astype(np.int64)
-            assert np.array_equal(mask, subtree.data)
-            check(subtree, ref_label, mapping)
+def check(s_image_tree, s_label_tree, ref_images, ref_labels, mappings,
+          name=None):
+    if name is not None:
+        indices = s_image_tree.indices
+        for i in range(len(indices)):
+            print(name, i)
+            ind = indices[i]
+            ref_masks = [ref_labels[ind]==v for v in mappings[ind][name]]
+            ref_mask = np.logical_or.reduce(ref_masks).astype(np.int64)
+            ref_image = ref_images[ind]
+            image = s_image_tree.data[i, ...].squeeze()
+            label = s_label_tree.data[i, ...].squeeze()
+            assert np.array_equal(image, ref_image)
+            assert np.array_equal(label, ref_mask)
+    if isinstance(s_image_tree, Tree):
+        for name, sub_imt in s_image_tree.subtrees.items():
+            sub_lat = s_label_tree.subtrees[name]
+            check(sub_imt, sub_lat, ref_images, ref_labels, mappings, name)
 
 ref_image1, ref_label1 = get_ref('data/at1000_image.nii.gz',
                                  'data/at1000_label.nii.gz',
                                  'data/at1000_mask.nii.gz')
-check(image1, ref_label1, mapping1)
-
-ref_iamge2, ref_label2 = get_ref('ped_data/2873_image.nii.gz',
+ref_image2, ref_label2 = get_ref('ped_data/2873_image.nii.gz',
                                  'ped_data/2873_label.nii.gz',
                                  'ped_data/2873_mask.nii.gz')
-image2 = t_dataset[len(t_dataset)-1][1]
-check(image2, ref_label2, mapping2)
+
+s_label_tree = TensorTree.stack((label1, label2))
+s_image_tree = RefTensorTree.create((image1, image2), (label1, label2))
+check(s_image_tree, s_label_tree, (ref_image1, ref_image2),
+      (ref_label1, ref_label2), (mapping1, mapping2))
+
+print(s_image_tree)
+print(s_label_tree)
 
 # dirname = 'results'
 # if not os.path.isdir(dirname):
