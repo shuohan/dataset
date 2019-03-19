@@ -307,7 +307,8 @@ class HierachicalLabel(Label):
                                    labels, pairs, self.region_tree)
         return new_image
 
-    def get_tensor_tree(self):
+    @property
+    def output(self):
         return self._get_tensor_tree(self.region_tree)
 
     def _get_tensor_tree(self, region_tree, level=0):

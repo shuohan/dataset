@@ -4,7 +4,7 @@
 import numpy as np
 from dataset import DatasetFactory, Config
 
-Config().dataset_type = 'wrapper_dataset'
+# Config().dataset_type = 'wrapper_dataset'
 t_ops = ('cropping', 'label_normalization')
 v_ops = ('cropping', 'label_normalization')
 
@@ -22,7 +22,3 @@ assert list(v_dataset.images.keys()) == v_keys
 
 image = t_dataset[0][1]
 print(image)
-print(image.region_tree)
-
-tensor_tree = image.get_tensor_tree()
-print(tensor_tree)
