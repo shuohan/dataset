@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import numpy as np
+from collections import defaultdict
+
+
 INDENT_PATTERN = '|   '
 NAME_PREFIX = '- '
+STACK_DIM = 0
 
 
 class Leaf:
@@ -100,3 +105,30 @@ class TensorTree(Tree):
     @property
     def _tree_info(self):
         return desc_data(self.data)
+
+    @classmethod
+    def stack(cls, tensor_trees):
+        """
+
+        Args:
+            tensor_trees (list of TensorTree): The tensor_tree to stack
+
+        """
+        level = tensor_trees[0].level
+        for tree in tensor_trees:
+            assert tree.level == level
+
+        data = np.stack([tree.data for tree in tensor_trees], axis=STACK_DIM)
+
+        subtrees = defaultdict(list)
+        for tree in tensor_trees:
+            if isinstance(tree, TensorTree):
+                for name, subtree in tree.subtrees.items():
+                    subtrees[name].append(subtree)
+
+        if len(subtrees) > 0: # at least one subtree
+            for name, trees in subtrees.items():
+                subtrees[name] = TensorTree.stack(trees)
+            return TensorTree(subtrees, data, level=level)
+        else:
+            return TensorLeaf(data, level=level)
