@@ -5,7 +5,7 @@ import numpy as np
 from dataset import DatasetFactory, Config
 from dataset.trees import TensorTree
 
-Config().dataset_type = 'wrapper_dataset'
+# Config().dataset_type = 'wrapper_dataset'
 t_ops = ('cropping', 'label_normalization')
 v_ops = ('cropping', 'label_normalization')
 
@@ -17,6 +17,7 @@ factory.add_training_operation(*t_ops)
 t_dataset, v_dataset = factory.create()
 
 indices = [0, 1, len(t_dataset) - 1]
-tensor_trees = [t_dataset[ind][1].get_tensor_tree() for ind in indices]
+tensor_trees = [t_dataset[ind][1] for ind in indices]
+print(tensor_trees[-1])
 tensor_tree = TensorTree.stack(tensor_trees)
 print(tensor_tree)

@@ -7,7 +7,7 @@ import nibabel as nib
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from dataset import DatasetFactory, Config
-from dataset.trees import Tree
+from dataset.trees import Tree, TensorTree
 
 
 ref_obj = nib.load('data/at1000_label.nii.gz')
@@ -110,7 +110,7 @@ mapping2 = {
 
 
 
-image = t_dataset[0][1]
+image1 = t_dataset[0][1]
 # print(image)
 
 label_filename = 'data/at1000_label.nii.gz'
@@ -127,7 +127,7 @@ def check(tree, ref_label, mapping):
             mask = np.logical_or.reduce([label==v for v in values]).astype(np.int64)
             assert np.array_equal(mask, subtree.data)
             check(subtree, ref_label, mapping)
-check(image, label, mapping1)
+check(image1, label, mapping1)
 
 label_filename = 'ped_data/2873_label.nii.gz'
 mask_filename = 'ped_data/2873_label.nii.gz'
@@ -136,12 +136,15 @@ mask = nib.load(mask_filename).get_data()
 bbox = resize_bbox3d(calc_bbox3d(mask), (160, 96, 96))
 label = crop3d(label, bbox)[0][None, ...]
 
-image = t_dataset[len(t_dataset)-1][1]
-check(image, label, mapping2)
+image2 = t_dataset[len(t_dataset)-1][1]
+check(image2, label, mapping2)
 
 dirname = 'results'
 if not os.path.isdir(dirname):
     os.makedirs(dirname)
+
+images = (image1, image2)
+image = 
 
 def save(tree, filename=os.path.join(dirname, 'root.nii.gz')):
     print(filename)
