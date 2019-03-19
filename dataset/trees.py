@@ -136,10 +136,8 @@ class TensorTree(Tree):
 
 def desc_ind_data(data, indices):
     dataid = id(data)
-    dtype = data.dtype.__str__()
-    shape = data.shape.__str__()
     indices = ', '.join([str(ind) for ind in indices])
-    return '%d %s %s [%s]' % (dataid, dtype, shape, indices)
+    return '%d [%s]' % (dataid, indices)
 
 
 class RefTensorLeaf(Leaf):
@@ -155,6 +153,9 @@ class RefTensorLeaf(Leaf):
 
     def __str__(self):
         return desc_ind_data(self._data, self.indices)
+
+    def update_data(self, data):
+        self._data = data
 
 
 class RefTensorTree(Tree):
@@ -172,8 +173,9 @@ class RefTensorTree(Tree):
 
     def update_data(self, data):
         self._data = data
-        for tree in self.subtrees.values():
-            tree._data = data
+        if isinstance(self, RefTensorTree):
+            for tree in self.subtrees.values():
+                tree.update_data(data)
 
     @classmethod
     def create(cls, data, trees):
