@@ -82,4 +82,4 @@ def _create_tree(tree, level=0):
                     for sub in tree['subregions']}
         return Tree(subtrees, level=level)
     else:
-        return Leaf(level=level+1)
+        return Leaf(level=level)
