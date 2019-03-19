@@ -23,5 +23,10 @@ images = [t_dataset[ind][0].output for ind in image_indices]
 tree = RefTensorTree.create(images, trees)
 print(tree)
 
-tree.update_data(np.stack(images, axis=0))
-print(tree)
+def check(tree):
+    data = tree.data
+    assert np.array_equal(np.stack(images, axis=0)[tree.indices, ...], data)
+    if isinstance(tree, RefTensorTree):
+        for name, subtree in tree.subtrees.items():
+            check(subtree)
+check(tree)
