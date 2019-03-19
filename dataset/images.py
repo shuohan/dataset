@@ -314,12 +314,11 @@ class HierachicalLabel(Label):
     def _get_tensor_tree(self, region_tree, level=0):
         mask = self._get_data_mask(region_tree)
         if isinstance(region_tree, Tree):
-            subtrees = dict()
-            for name, subtree in region_tree.subtrees.items():
-                subtrees[name] = self._get_tensor_tree(subtree, level=level+1)
+            subtrees = {name: self._get_tensor_tree(subtree, level=level+1)
+                        for name, subtree in region_tree.subtrees.items()}
             return TensorTree(subtrees, mask, level=level)
         else:
-            return TensorLeaf(mask, level=level+1)
+            return TensorLeaf(mask, level=level)
 
     def _get_data_mask(self, region_tree):
         mask = np.logical_or.reduce([self.data==v for v in region_tree.value])
