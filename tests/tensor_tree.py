@@ -3,26 +3,24 @@
 
 import numpy as np
 
-from dataset.loads import load_label_hierachy, Hierachy
-from dataset.tensor_tree import TensorLeaf, TensorTree
+from dataset.loads import load_tree
+from dataset.trees import TensorLeaf, TensorTree, Tree
 
 
-hierachy = load_label_hierachy('data/hierachy.json')
-hierachy = hierachy.children[1].children[1].children[1]
-data_shape = (1, 20, 160, 96, 96)
+tree = load_tree('data/hierachy.json')
+data_shape = (2, 80, 32, 16)
 
-def create_sample(data_shape, hierachy, level=0):
-    name = hierachy.name
-    if isinstance(hierachy, Hierachy):
+def create_sample(data_shape, tree, level=0):
+    subtrees = dict()
+    data = np.random.rand(*data_shape).astype(np.int64)
+    for name, sub in tree.subtrees.items():
         data = np.random.rand(*data_shape).astype(np.int64)
-        subtrees = list()
-        for region in hierachy.children:
-            subtrees.append(create_sample(data_shape, region, level=level+1))
-        tensor_leaf = TensorTree(name, data, subtrees, level=level)
-    else:
-        tensor_leaf = TensorLeaf(name, level=level)
-    return tensor_leaf
+        if isinstance(sub, Tree):
+            subtrees[name] = create_sample(data_shape, sub, level=level+1)
+        else:
+            subtrees[name] = TensorLeaf(data, level=level+1)
+    return TensorTree(subtrees, data, level=level)
 
-print(hierachy)
-tensor_tree = create_sample(data_shape, hierachy)
+print(tree)
+tensor_tree = create_sample(data_shape, tree)
 print(tensor_tree)

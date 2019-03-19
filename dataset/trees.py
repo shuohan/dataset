@@ -74,3 +74,29 @@ class RegionTree(Tree):
     @property
     def _tree_info(self):
         return '[%s]' % ', '.join([str(v) for v in self.value])
+
+
+def desc_data(data):
+    dtype = data.dtype.__str__()
+    shape = data.shape.__str__()
+    return '%s %s' % (dtype, shape)
+
+
+class TensorLeaf(Leaf):
+
+    def __init__(self, data, level=0):
+        super().__init__(level)
+        self.data = data
+
+    def __str__(self):
+        return desc_data(self.data)
+
+
+class TensorTree(Tree):
+    def __init__(self, subtrees, data, level=0):
+        super().__init__(subtrees, level)
+        self.data = data
+
+    @property
+    def _tree_info(self):
+        return desc_data(self.data)

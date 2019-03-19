@@ -13,8 +13,7 @@ from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 from .config import Config
 from .loads import load, load_label_desc
 from .loads import load_tree
-from .trees import RegionLeaf, RegionTree, Leaf, Tree
-from .tensor_tree import TensorTree, TensorLeaf
+from .trees import TensorTree, TensorLeaf, RegionLeaf, RegionTree, Leaf, Tree
 
 
 class ImageType(Enum):
@@ -308,28 +307,23 @@ class HierachicalLabel(Label):
                                    labels, pairs, self.region_tree)
         return new_image
 
-    # def get_tensor_tree(self):
-    #     return self._get_tensor_tree(self.region_tree)
+    def get_tensor_tree(self):
+        return self._get_tensor_tree(self.region_tree)
 
-    # def _get_tensor_tree(self, region_tree, level=0):
-    #     name = region_tree.name
-    #     if isinstance(region_tree, RegionTree):
-    #         subtrees = list()
-    #         for subtree in region_tree.subtrees:
-    #             subtrees.append(self._get_tensor_tree(subtree, level=level+1))
-    #         data = self._get_masks(region_tree)
-    #         tensor_leaf = TensorTree(name, data, subtrees, level=level)
-    #     else:
-    #         tensor_leaf = TensorLeaf(name, level=level)
-    #     return tensor_leaf
+    def _get_tensor_tree(self, region_tree, level=0):
+        subtrees = dict()
+        mask = self._get_data_mask(region_tree)
+        for name, subtree in region_tree.subtrees.items():
+            mask = self._get_data_mask(subtree)
+            if isinstance(subtree, Tree):
+                subtrees[name] = self._get_tensor_tree(subtree, level=level+1)
+            else:
+                subtrees[name] = TensorLeaf(mask, level=level+1)
+        return TensorTree(subtrees, mask, level=level)
 
-    # def _get_masks(self, region_tree):
-    #     masks = list()
-    #     for region in region_tree.subtrees:
-    #         values = self._get_values(region)
-    #         masks.append(np.logical_or.reduce([self.data==v for v in values]))
-    #     masks = np.vstack(masks).astype(self.output_dtype)
-    #     return masks
+    def _get_data_mask(self, region_tree):
+        mask = np.logical_or.reduce([self.data==v for v in region_tree.value])
+        return mask.astype(self.output_dtype)
 
 
 class Mask(Image):

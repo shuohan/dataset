@@ -23,8 +23,6 @@ assert list(v_dataset.images.keys()) == v_keys
 image = t_dataset[0][1]
 print(image)
 print(image.region_tree)
-# assert sorted(regions) == sorted(list(t_dataset.labels.keys()))
-# image.print_hierachy()
-# 
-# tensor_tree = image.get_tensor_tree()
-# print(tensor_tree)
+
+tensor_tree = image.get_tensor_tree()
+print(tensor_tree)
