@@ -132,3 +132,73 @@ class TensorTree(Tree):
             return TensorTree(subtrees, data, level=level)
         else:
             return TensorLeaf(data, level=level)
+
+
+def desc_ind_data(data, indices):
+    dataid = id(data)
+    dtype = data.dtype.__str__()
+    shape = data.shape.__str__()
+    indices = ', '.join([str(ind) for ind in indices])
+    return '%d %s %s [%s]' % (dataid, dtype, shape, indices)
+
+
+class RefTensorLeaf(Leaf):
+
+    def __init__(self, data, indices, level=0):
+        super().__init__(level)
+        self._data = data
+        self.indices = indices
+
+    @property
+    def data(self):
+        return self._data[indices, ...]
+
+    def __str__(self):
+        return desc_ind_data(self._data, self.indices)
+
+
+class RefTensorTree(Tree):
+
+    def __init__(self, subtrees, data, indices, level=0):
+        super().__init__(subtrees, level)
+        self._data = data
+        self.indices = indices
+        for tree in subtrees.values():
+            assert tree._data is self._data
+
+    @property
+    def _tree_info(self):
+        return desc_ind_data(self._data, self.indices)
+
+    def update_data(self, data):
+        self._data = data
+        for tree in self.subtrees.values():
+            tree._data = data
+
+    @classmethod
+    def create(cls, data, trees):
+        assert len(data) == len(trees)
+        stacked = np.stack(data, axis=STACK_DIM)
+        indices = list(range(len(trees)))
+        return cls._create(stacked, trees, indices)
+
+    @classmethod
+    def _create(cls, stacked, trees, indices):
+        level = trees[0].level
+        for tree in trees:
+            assert tree.level == level
+
+        subtrees = defaultdict(list)
+        subind = defaultdict(list)
+        for tree, ind in zip(trees, indices):
+            if isinstance(tree, Tree):
+                for name, subtree in tree.subtrees.items():
+                    subtrees[name].append(subtree)
+                    subind[name].append(ind)
+
+        if len(subtrees) > 0: # at least one subtree
+            for n, subt in subtrees.items():
+                subtrees[n]= RefTensorTree._create(stacked, subt, subind[n])
+            return RefTensorTree(subtrees, stacked, indices, level=level)
+        else:
+            return RefTensorLeaf(stacked, indices, level=level)
