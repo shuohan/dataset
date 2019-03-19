@@ -111,48 +111,50 @@ mapping2 = {
 
 
 image1 = t_dataset[0][1]
-# print(image)
 
-label_filename = 'data/at1000_label.nii.gz'
-mask_filename = 'data/at1000_label.nii.gz'
-label = nib.load(label_filename).get_data()
-mask = nib.load(mask_filename).get_data()
-bbox = resize_bbox3d(calc_bbox3d(mask), (160, 96, 96))
-label = crop3d(label, bbox)[0][None, ...]
+def get_ref(image_path, label_path, mask_path):
+    image = nib.load(image_path).get_data()
+    label = nib.load(label_path).get_data()
+    mask = nib.load(mask_path).get_data()
+    bbox = resize_bbox3d(calc_bbox3d(mask), (160, 96, 96))
+    image = crop3d(image, bbox)[0][None, ...]
+    label = crop3d(label, bbox)[0][None, ...]
+    return image, label
 
 def check(tree, ref_label, mapping):
     if isinstance(tree, Tree):
         for name, subtree in tree.subtrees.items():
             values = mapping[name]
-            mask = np.logical_or.reduce([label==v for v in values]).astype(np.int64)
+            mask = np.logical_or.reduce([ref_label==v for v in values])
+            mask = mask.astype(np.int64)
             assert np.array_equal(mask, subtree.data)
             check(subtree, ref_label, mapping)
-check(image1, label, mapping1)
 
-label_filename = 'ped_data/2873_label.nii.gz'
-mask_filename = 'ped_data/2873_label.nii.gz'
-label = nib.load(label_filename).get_data()
-mask = nib.load(mask_filename).get_data()
-bbox = resize_bbox3d(calc_bbox3d(mask), (160, 96, 96))
-label = crop3d(label, bbox)[0][None, ...]
+ref_image1, ref_label1 = get_ref('data/at1000_image.nii.gz',
+                                 'data/at1000_label.nii.gz',
+                                 'data/at1000_mask.nii.gz')
+check(image1, ref_label1, mapping1)
 
+ref_iamge2, ref_label2 = get_ref('ped_data/2873_image.nii.gz',
+                                 'ped_data/2873_label.nii.gz',
+                                 'ped_data/2873_mask.nii.gz')
 image2 = t_dataset[len(t_dataset)-1][1]
-check(image2, label, mapping2)
+check(image2, ref_label2, mapping2)
 
-dirname = 'results'
-if not os.path.isdir(dirname):
-    os.makedirs(dirname)
-
-images = (image1, image2)
-image = 
-
-def save(tree, filename=os.path.join(dirname, 'root.nii.gz')):
-    print(filename)
-    obj = nib.Nifti1Image(tree.data, ref_obj.affine, ref_obj.header)
-    obj.to_filename(filename)
-    if isinstance(tree, Tree):
-        for name, subtree in tree.subtrees.items():
-            name = name.replace(' ', '_').replace('/', '-')
-            filename = os.path.join(dirname, name + '.nii.gz')
-            save(subtree, filename=filename)
+# dirname = 'results'
+# if not os.path.isdir(dirname):
+#     os.makedirs(dirname)
+# 
+# image = TensorTree.stack((image1, image2))
+# def save(tree, filename=os.path.join(dirname, 'root')):
+#     for i, data in enumerate(tree.data):
+#         filepath = '%s_%d.nii.gz' % (filename, i)
+#         print(filepath)
+#         obj = nib.Nifti1Image(data.squeeze(), ref_obj.affine, ref_obj.header)
+#         obj.to_filename(filepath)
+#     if isinstance(tree, Tree):
+#         for name, subtree in tree.subtrees.items():
+#             name = name.replace(' ', '_').replace('/', '-')
+#             filename = os.path.join(dirname, name)
+#             save(subtree, filename=filename)
 # save(image)
