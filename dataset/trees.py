@@ -151,7 +151,8 @@ class RefTensorLeaf(Leaf):
 
     @property
     def data(self):
-        return self._data[self.indices, ...]
+        # return self._data[self.indices, ...]
+        return self._data
 
     def __str__(self):
         return desc_ind_data(self._data, self.indices)
@@ -171,7 +172,10 @@ class RefTensorTree(Tree):
 
     @property
     def data(self):
-        return self._data[self.indices, ...]
+        # return self._data[self.indices, ...]
+        return self._data # indexing in back prob is super slow
+        # therefore currently version only support batch size = 1 for different
+        # dataset
 
     @property
     def _tree_info(self):
