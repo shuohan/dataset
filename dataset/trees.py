@@ -93,6 +93,14 @@ class TensorLeaf(Leaf):
         super().__init__(level)
         self.data = data
 
+    def exec_data_attr(self, attr):
+        self.data = getattr(self.data, attr)()
+        return self
+
+    def apply_to_data(self, func):
+        self.data = func(self.data)
+        return self
+
     def __str__(self):
         return desc_data(self.data)
 
@@ -101,6 +109,18 @@ class TensorTree(Tree):
     def __init__(self, subtrees, data, level=0):
         super().__init__(subtrees, level)
         self.data = data
+
+    def exec_data_attr(self, attr):
+        self.data = getattr(self.data, attr)()
+        for subtree in self.subtrees.values():
+            subtree.exec_data_attr(attr)
+        return self
+
+    def apply_to_data(self, func):
+        self.data = func(self.data)
+        for subtree in self.subtrees.values():
+            subtree.apply_to_data(func)
+        return self
 
     @property
     def _tree_info(self):
@@ -154,11 +174,18 @@ class RefTensorLeaf(Leaf):
         # return self._data[self.indices, ...]
         return self._data
 
+    def exec_data_attr(self, attr):
+        return self.update_data(getattr(self._data, attr)())
+
+    def apply_to_data(self, func):
+        return self.update_data(func(self._data))
+
     def __str__(self):
         return desc_ind_data(self._data, self.indices)
 
     def update_data(self, data):
         self._data = data
+        return self
 
 
 class RefTensorTree(Tree):
@@ -183,9 +210,15 @@ class RefTensorTree(Tree):
 
     def update_data(self, data):
         self._data = data
-        if isinstance(self, RefTensorTree):
-            for tree in self.subtrees.values():
-                tree.update_data(data)
+        for subtree in self.subtrees.values():
+            subtree.update_data(data)
+        return self
+
+    def exec_data_attr(self, attr):
+        return self.update_data(getattr(self._data, attr)())
+
+    def apply_to_data(self, func):
+        return self.update_data(func(self._data))
 
     @classmethod
     def create(cls, data, trees):
