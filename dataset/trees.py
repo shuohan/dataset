@@ -97,8 +97,8 @@ class TensorLeaf(Leaf):
         self.data = getattr(self.data, attr)()
         return self
 
-    def apply_to_data(self, func):
-        self.data = func(self.data)
+    def apply_to_data(self, func, *args, **kwargs):
+        self.data = func(self.data, *args, **kwargs)
         return self
 
     def __str__(self):
@@ -116,10 +116,10 @@ class TensorTree(Tree):
             subtree.exec_data_attr(attr)
         return self
 
-    def apply_to_data(self, func):
-        self.data = func(self.data)
+    def apply_to_data(self, func, *args, **kwargs):
+        self.data = func(self.data, *args, **kwargs)
         for subtree in self.subtrees.values():
-            subtree.apply_to_data(func)
+            subtree.apply_to_data(func, *args, **kwargs)
         return self
 
     @property
