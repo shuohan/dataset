@@ -45,7 +45,13 @@
                                     ]
                                 },
                                 {
-                                    "name": "Vermis Anterior"
+                                    "name": "Left Anterior Lobe KKI"
+                                },
+                                {
+                                    "name": "Right Anterior Lobe KKI"
+                                },
+                                {
+                                    "name": "Vermis Anterior KKI"
                                 }
                             ]
                         },

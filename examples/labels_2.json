@@ -1,0 +1,32 @@
+{    
+    "labels": {
+        "Background":                 0,
+        "Right Anterior Lobe KKI":    3,
+        "Right VI":                   4,
+        "Right Crus I":               5,
+        "Right Crus II / VIIB":       6,
+        "Right VIII":                 7,
+        "Right IX":                   8,
+        "Right X":                    9,
+        "Left Anterior Lobe KKI":    10,
+        "Left VI":                   11,
+        "Left Crus I":               12,
+        "Left Crus II / VIIB":       13,
+        "Left VIII":                 14,
+        "Left IX":                   15,
+        "Left X":                    16,
+        "Vermis Anterior KKI":       17,
+        "Vermis Superior Posterior": 18,
+        "Vermis Inferior Posterior": 19,
+        "Corpus Medullare":          20   
+    },
+    "pairs": [
+       [3, 10],
+       [4, 11],
+       [5, 12],
+       [6, 13],
+       [7, 14],
+       [8, 15],
+       [9, 16]
+    ]
+}
