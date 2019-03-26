@@ -61,26 +61,28 @@ class DatasetFactory:
             v_dirname (str): The directory of the validation dataset
 
         """
-        if t_dirname is None or v_dirname is None:
-            if dirname is None:
-                message = 't_dirname/v_dirname and dirname cannot be all None'
-                raise RuntimeError(message)
+        if dirname is not None:
+            loader = ImageLoader(dirname, id=dataset_id)
+            loader.load(*self.image_types)
+            if val_ind is None:
+                t_images, v_images = loader.images, ImageCollection()
             else:
-                loader = ImageLoader(dirname, id=dataset_id)
-                loader.load(*self.image_types)
-                if val_ind is None:
-                    t_images, v_images = loader.images, ImageCollection()
-                else:
-                    v_images, t_images = loader.images.split(val_ind)
-                self._t_images.append(t_images)
-                self._v_images.append(v_images)
-        else:
+                v_images, t_images = loader.images.split(val_ind)
+            self._t_images.append(t_images)
+            self._v_images.append(v_images)
+        elif t_dirname is not None:
             t_loader = ImageLoader(t_dirname, id=dataset_id)
-            v_loader = ImageLoader(v_dirname, id=dataset_id)
             t_loader.load(*self.image_types)
-            v_loader.load(*self.image_types)
             self._t_images.append(t_loader.images)
-            self._v_images.append(v_loader.images)
+            if v_dirname is not None:
+                v_loader = ImageLoader(v_dirname, id=dataset_id)
+                v_loader.load(*self.image_types)
+                self._v_images.append(v_loader.images)
+            else:
+                self._v_images.append(ImageCollection())
+        else:
+            message = 't_dirname/v_dirname and dirname cannot be all None'
+            raise RuntimeError(message)
 
     def add_training_operation(self, *operations):
         """Add an operation to training dataset pipeline

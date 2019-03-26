@@ -34,6 +34,14 @@ class ImageCollection(defaultdict):
     def __init__(self, *args, **kwargs):
         super().__init__(list, *args, **kwargs)
 
+    def get_dataset_indices(self):
+        # TODO
+        indices = defaultdict(list)
+        for i, key in enumerate(self.keys()):
+            dataset_id = key.split(os.sep)[0]
+            indices[dataset_id].append(i)
+        return indices.values()
+
     def split(self, indicies):
         """Split images into two instances of ImageCollection
 
