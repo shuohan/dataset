@@ -92,6 +92,15 @@ class TensorLeaf(Leaf):
     def __init__(self, data, level=0):
         super().__init__(level)
         self.data = data
+        self._desc_func = desc_data
+
+    @property
+    def desc_func(self):
+        return self._desc_func
+
+    @desc_func.setter
+    def desc_func(self, func):
+        self._desc_func = func
 
     def exec_data_attr(self, attr):
         self.data = getattr(self.data, attr)()
@@ -102,13 +111,24 @@ class TensorLeaf(Leaf):
         return self
 
     def __str__(self):
-        return desc_data(self.data)
+        return self._desc_func(self.data)
 
 
 class TensorTree(Tree):
     def __init__(self, subtrees, data, level=0):
         super().__init__(subtrees, level)
         self.data = data
+        self._desc_func = desc_data
+    
+    @property
+    def desc_func(self):
+        return self._desc_func
+
+    @desc_func.setter
+    def desc_func(self, func):
+        self._desc_func = func
+        for subtree in self.subtrees.values():
+            subtree.desc_func = func
 
     def exec_data_attr(self, attr):
         self.data = getattr(self.data, attr)()
@@ -124,7 +144,7 @@ class TensorTree(Tree):
 
     @property
     def _tree_info(self):
-        return desc_data(self.data)
+        return self._desc_func(self.data)
 
     @classmethod
     def stack(cls, tensor_trees):
