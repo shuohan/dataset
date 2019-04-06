@@ -7,7 +7,7 @@ import nibabel as nib
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from dataset import DatasetFactory, Config
-from dataset.trees import Tree, TensorTree, RefTensorTree
+from dataset.trees import Tree, TensorTree
 
 
 ref_obj = nib.load('data/at1000_label.nii.gz')
@@ -147,12 +147,11 @@ ref_image2, ref_label2 = get_ref('ped_data/2873_image.nii.gz',
                                  'ped_data/2873_mask.nii.gz')
 
 s_label_tree = TensorTree.stack((label1, label2))
-s_image_tree = RefTensorTree.create((image1, image2), (label1, label2))
-check(s_image_tree, s_label_tree, (ref_image1, ref_image2),
-      (ref_label1, ref_label2), (mapping1, mapping2))
-
-print(s_image_tree)
-print(s_label_tree)
+# check(s_image_tree, s_label_tree, (ref_image1, ref_image2),
+#       (ref_label1, ref_label2), (mapping1, mapping2))
+# 
+# print(s_image_tree)
+# print(s_label_tree)
 
 # dirname = 'results'
 # if not os.path.isdir(dirname):
