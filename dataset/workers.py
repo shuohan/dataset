@@ -25,6 +25,7 @@ class WorkerName(Enum):
     cropping = auto()
     label_normalization = auto()
     patch = auto()
+    mask_extraction = auto()
 
 
 class WorkerType(Enum):
@@ -79,6 +80,8 @@ def create_worker(worker_name):
         return Cropper()
     elif worker_name is WorkerName.label_normalization:
         return LabelNormalizer()
+    elif worker_name is WorkerName.mask_extraction:
+        return MaskExtractor(config.mask_label_val)
     elif worker_name is WorkerName.patch:
         return PatchExtractor(config.patch_shape)
     elif worker_name is WorkerName.translation:
@@ -502,6 +505,30 @@ class LabelNormalizer(Worker):
             else:
                 results.append(image)
         return tuple(results)
+
+
+class MaskExtractor(Worker):
+
+    message = 'mask_extract'
+
+    def __init__(self, label_value):
+        self.label_value = label_value
+
+    def _process(self, image):
+        """Translate an image
+        
+        Args:
+            image (.image.Image): The image to translate
+
+        Returns:
+            result (numpy.array): The translated image
+
+        """
+        data = image.data
+        if isinstance(image, Label):
+            return (data == self.label_value).astype(data.dtype)
+        else:
+            return data
 
 
 class SigIntChanger(Worker):
