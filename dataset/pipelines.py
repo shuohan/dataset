@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 
-"""Implement Pipeline to assemble .workers.Worker to process .images.Image
+"""Pipelines to process images.
+
+A pipeline assembles multiple :class:`.workers.Worker` in order to process
+instances of :class:`.images.Image`.
+
+Todo:
+    * Use a queue; only process images if the queue is empty otherwise pop.
+    * Add more pipelines.
 
 """
 from collections import OrderedDict
@@ -13,7 +20,7 @@ from .config import Config
 
 
 class RandomPipeline(Worker):
-    """Pipeline to select workers to process the images
+    """Select one augmentation worker randomly to process the images
 
     The workers in the self._fixed_workers will be always used while only one of
     the workers in self._random_workers will be selected with probability

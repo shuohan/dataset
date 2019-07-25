@@ -16,8 +16,8 @@ from .images import Mask, Label, Image
 
 
 class WorkerType(Enum):
-    aug = auto()
-    addon = auto()
+    AUG = auto()
+    ADDON = auto()
 
 
 class WorkerTypeMapping(metaclass=Singleton):
@@ -29,8 +29,6 @@ class WorkerTypeMapping(metaclass=Singleton):
     """
     def __init__(self):
         config = Config()
-        if not set(config.total_addon).isdisjoint(config.total_aug):
-            raise RunTimeError('Addon and aug workers overlap in config')
         self._mapping = {WorkerName[worker_name]: WorkerType.addon
                          for worker_name in config.total_addon}
         self._mapping.update({WorkerName[worker_name]: WorkerType.aug
@@ -87,9 +85,27 @@ class WorkerCreator(metaclass=Singleton):
         Args:
             name (str): The name of the worker.
             worker (:class:`Worker`): The worker class to register.
+
+        Raises:
+            RuntimeError: Worker types are incorrect in config.
         
         """
+        if self._config_is_correct():
+            message = 'Addon and augmentation workers overlap in configurations'
+            raise RuntimeError(message)
+        if name in Config().worker_types['addon']:
+            worker.worker_type = WorkerType.ADDON
+        elif name in Config().worker_types['aug']:
+            worker.worker_type = WorkerType.AUG
+        else:
+            raise RuntimeError('Worker %s is not in the config.' % name)
         self._workers[name] = worker
+
+    def _config_is_correct(self):
+        """Returns if aug and addon workers are correctly written in config."""
+        addon = Config().worker_types['addon']
+        aug = Config().worker_types['aug']
+        return not set(addon).isdisjoint(aug)
 
     def unregister(self, name):
         """Unregisters a worker."""
@@ -99,8 +115,9 @@ class WorkerCreator(metaclass=Singleton):
         message = ['Registered workers:']
         length = max([len(k) for k in self._workers.keys()])
         for k, v in self._workers.items():
-            message.append(('    %%%ds: %%s' % length) % (k, v))
-        return message
+            t = WorkerType(v.worker_type)
+            message.append(('    %%%ds: %%s, %%s' % length) % (k, v, t.name))
+        return '\n'.join(message)
 
 
 class Worker:
@@ -111,6 +128,7 @@ class Worker:
     
     """
     message = ''
+    worker_type = WorkerType.ADDON
 
     def process(self, *images):
         """Processes a set of :class:`images.Image` instances.
@@ -160,6 +178,7 @@ class Resizer_(Worker):
 
     """
     message = 'resize'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, shape):
         self.shape = shape
@@ -189,6 +208,7 @@ class Rotator_(RandomWorker):
 
     """
     message = 'rotate'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_angle=5, point=None):
         """Initialize
@@ -235,6 +255,7 @@ class Scaler_(RandomWorker):
 
     """
     message  = 'scale'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_scale=2, point=None):
         """Initialize
@@ -280,6 +301,7 @@ class Flipper_(Worker):
 
     """
     message = 'flip'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, dim=0):
         self.dim = dim
@@ -309,6 +331,9 @@ class Cropper(Worker):
         :class:`Mask` instances will be removed from the outputs.
 
     """
+    message = 'crop'
+    worker_type = WorkerType.ADDON
+
     def process(self, *images):
         others = list()
         for image in images:
@@ -334,6 +359,7 @@ class Translator_(RandomWorker):
 
     """
     message = 'translate'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_trans=30):
         super().__init__()
@@ -380,6 +406,7 @@ class Deformer_(RandomWorker):
         
     """
     message = 'deform'
+    worker_type = WorkerType.AUG
 
     def __init__(self, sigma, scale):
         self.sigma = sigma
@@ -427,6 +454,7 @@ class LabelNormalizer(Worker):
 
     """
     message = 'norm_label'
+    worker_type = WorkerType.ADDON
 
     def process(self, *images):
         results = list()
@@ -449,6 +477,7 @@ class MaskExtractor_(Worker):
 
     """
     message = 'extract_mask'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, label_value):
         self.label_value = label_value
@@ -487,6 +516,7 @@ class PatchExtractor_(RandomWorker):
 
     """
     message = 'extract_patches'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, patch_shape=(10, 10, 10), num_patches=1):
         super().__init__()

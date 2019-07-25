@@ -60,10 +60,9 @@ class Config(Config_):
         self._set_default('label_hierachy', 'hierachy.json')
         self._set_default('mask_label_val', 1)
         self._set_default('verbose', False)
-        addons = ['resizing', 'flipping', 'cropping', 'label_normalization',
-                  'patch', 'mask_extraction']
-        augs = ['translation', 'rotation', 'scaling', 'deformation',
-                'sigmoid_intensity']
-        self._set_default('total_addon', addons)
-        self._set_default('total_aug', augs)
         self._set_default('dataset_type', 'dataset')
+
+        worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label',
+                                  'extract_mask', 'extract_patches'],
+                        'aug': ['translate', 'rotate', 'scale', 'deform']}
+        self._set_default('worker_types', worker_types)

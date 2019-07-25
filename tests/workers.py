@@ -47,6 +47,7 @@ images = (image1, image2, label, mask)
 labels, pairs = load_label_desc('data/labels.json')
 
 creator = WorkerCreator()
+print(creator)
 
 # cropper
 cropper = creator.create('crop')
