@@ -8,8 +8,8 @@ import numpy as np
 from heapq import heappush, heappop
 
 from .config import Config
-from .workers import Worker, WorkerName, WorkerType, WorkerTypeMapping
-from .workers import create_worker
+# from .workers import Worker, WorkerName, WorkerType, WorkerTypeMapping
+# from .workers import create_worker
 
 
 class RandomPipeline(Worker):

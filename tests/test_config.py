@@ -7,5 +7,5 @@ config = Config()
 print(config)
 assert config.image_suffixes == ['image']
 config.load('input.json')
-assert Config().image_suffixes == ['image', 'hello']
+assert config.image_suffixes == ['image', 'hello']
 config.save('output.json')

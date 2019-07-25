@@ -3,6 +3,7 @@
 """Implement Worker to process Image
 
 """
+from enum import Enum, auto
 import time
 import numpy as np
 from py_singleton import Singleton
@@ -207,8 +208,9 @@ class Rotator_(RandomWorker):
         return angle
 
     def _process(self, image):
+        print(image, image.interp_order)
         return rotate3d(image.data, self.x, self.y, self.z,
-                        point=self.point, order=image.interp_order)
+                        pivot=self.point, order=image.interp_order)
 
 
 class Rotator(Rotator_):
@@ -249,19 +251,19 @@ class Scaler_(RandomWorker):
         """Returns random scaling factor from a uniform distributionr."""
         scale = self.rand_state.rand(1)
         scale = float(scale * (self.max_scale - 1) + 1)
-        if self._rand_state.choice([-1, 1]) < 0:
+        if self.rand_state.choice([-1, 1]) < 0:
             scale = 1 / scale
         return scale
 
     def _process(self, image):
         return scale3d(image.data, self.x, self.y, self.z,
-                       point=self.point, order=image.interp_order)
+                       pivot=self.point, order=image.interp_order)
 
 
 class Scaler(Scaler_):
     """Wrapper of :class:`Scaler_`."""
     def __init__(self):
-        super.__init__(max_scale=Config().max_scale)
+        super().__init__(max_scale=Config().max_scale)
 
 
 class Flipper_(Worker):
@@ -296,7 +298,7 @@ class Flipper_(Worker):
 class Flipper(Flipper_):
     """Wrapper of Flipper_."""
     def __init__(self):
-        return Flipper(dim=Config().flip_dim)
+        super().__init__(dim=Config().flip_dim)
 
 
 class Cropper(Worker):
@@ -467,7 +469,6 @@ class MaskExtractor(MaskExtractor_):
 
 class PatchExtractor_(RandomWorker):
     """Extracts patches from image randomly.
-.
     The patch should be within the image; therefore, the smallest possible start
     index is 0, and the largest possible start is image_shape - patch_shape. The
     start is uniformly sampled.
@@ -488,6 +489,7 @@ class PatchExtractor_(RandomWorker):
     message = 'extract_patches'
 
     def __init__(self, patch_shape=(10, 10, 10), num_patches=1):
+        super().__init__()
         self.patch_shape = patch_shape
         self.num_patches = num_patches
 
@@ -495,6 +497,7 @@ class PatchExtractor_(RandomWorker):
         results = list()
         image_shape = images[0].shape[-3:]
         for i in range(self.num_patches):
+            # TODO: without replacement
             patch_bbox = self._calc_patch_bbox(image_shape)
             for image in images:
                 data = crop3d(image.data, patch_bbox)[0]
@@ -516,5 +519,5 @@ class PatchExtractor_(RandomWorker):
 class PatchExtractor(PatchExtractor_):
     """Wrapper of :class:`PatchExtractor_`."""
     def __init__(self):
-        super().__init_(patch_shape=Config().patch_shape,
+        super().__init__(patch_shape=Config().patch_shape,
                         num_patches=Config().num_patches)
