@@ -9,28 +9,7 @@ from dataset.loads import load_label_desc
 from dataset.images import Image, Label, Mask
 from dataset.workers import WorkerCreator
 
-
-def imshow(orig_images, processed_images):
-    plt.figure()
-    num_images = len(processed_images)
-    for i, (oim, pim) in enumerate(zip(orig_images, processed_images)):
-        if isinstance(oim, Label):
-            cmap = 'gnuplot2'
-            alpha = 0.3
-            for im1, im2 in zip(orig_images, processed_images):
-                if type(im1) is Image:
-                    plt.subplot(2, num_images, num_images * 0 + i + 1)
-                    plt.imshow(im1.data[0, :, :, im2.data.shape[-1]//2], cmap='gray')
-                    plt.subplot(2, num_images, num_images * 1 + i + 1)
-                    plt.imshow(im2.data[0, :, :, im2.data.shape[-1]//2], cmap='gray')
-                    break
-        else:
-            cmap = 'gray'
-            alpha = 1
-        plt.subplot(2, num_images, num_images * 0 + i + 1)
-        plt.imshow(oim.data[0, :, :, oim.data.shape[-1]//2], alpha=alpha, cmap=cmap)
-        plt.subplot(2, num_images, num_images * 1 + i + 1)
-        plt.imshow(pim.data[0, :, :, pim.data.shape[-1]//2], alpha=alpha, cmap=cmap)
+from plot import imshow
 
 
 image1_filepath = 'data/at1000_image.nii.gz'
@@ -49,16 +28,24 @@ labels, pairs = load_label_desc('data/labels.json')
 creator = WorkerCreator()
 print(creator)
 
+# resize
+resizer = creator.create('resize')
+results = resizer.process(*images)
+imshow(images, results)
+plt.gcf().suptitle('resize')
+
 # cropper
 cropper = creator.create('crop')
 cropped = cropper.process(*images)
-# imshow(images, cropped)
+imshow(images, cropped)
+plt.gcf().suptitle('crop')
 
 # rotate
 # rotator = creator.create('rotate')
 # results = cropper.process(*rotator.process(*images))
 # print(np.unique(results[2].data))
 # imshow(cropped, results)
+# plt.gcf().suptitle('rotate')
 
 # deform
 # config = Config()
@@ -66,21 +53,25 @@ cropped = cropper.process(*images)
 # deformer = creator.create('deform')
 # results = cropper.process(*deformer.process(*images))
 # imshow(cropped, results)
+# plt.gcf().suptitle('deform')
 
 # scale
 # scaler = creator.create('scale')
 # results = cropper.process(*scaler.process(*images))
 # imshow(cropped, results)
+# plt.gcf().suptitle('scale')
 
 # flip
 # flipper = creator.create('flip')
 # results = cropper.process(*flipper.process(*images))
 # imshow(cropped, results)
+# plt.gcf().suptitle('flip')
 
 # translate
 # translator = creator.create('translate')
 # results = translator.process(*images)
 # imshow(images, results)
+# plt.gcf().suptitle('translate')
 
 # extract mask
 # config = Config()
@@ -88,6 +79,7 @@ cropped = cropper.process(*images)
 # extractor = creator.create('extract_mask')
 # results = cropper.process(*extractor.process(*images))
 # imshow(cropped, results)
+# plt.gcf().suptitle('extract mask')
 
 # extract patches
 config = Config()
@@ -95,11 +87,13 @@ config.patch_shape = [100, 100, 100]
 config.num_patches = 3
 extractor = creator.create('extract_patches')
 results = extractor.process(*images)
-imshow(results, results)
+imshow(results)
+plt.gcf().suptitle('extract patches')
 
 # norm label image
 norm = creator.create('norm_label')
 results = cropper.process(*norm.process(*images))
 imshow(cropped, results)
+plt.gcf().suptitle('norm labels')
 
 plt.show()

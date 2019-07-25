@@ -111,6 +111,10 @@ class WorkerCreator(metaclass=Singleton):
         """Unregisters a worker."""
         self._workers.pop(name)
 
+    def get_type(self, name):
+        """Returns the type of worker."""
+        return self._workers[name].worker_type
+
     def __str__(self):
         message = ['Registered workers:']
         length = max([len(k) for k in self._workers.keys()])
@@ -228,7 +232,6 @@ class Rotator_(RandomWorker):
         return angle
 
     def _process(self, image):
-        print(image, image.interp_order)
         return rotate3d(image.data, self.x, self.y, self.z,
                         pivot=self.point, order=image.interp_order)
 
