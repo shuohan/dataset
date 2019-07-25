@@ -8,9 +8,8 @@ from scipy.ndimage.morphology import binary_dilation
 
 
 Config().verbose = True
-t_ops = ('resizing', 'translation', 'scaling', 'deformation', 'rotation',
-         'sigmoid_intensity', 'cropping', 'label_normalization')
-v_ops = ('resizing', 'cropping', 'label_normalization')
+t_ops = ('resize', 'translate', 'scale', 'deform', 'rotate', 'crop', 'norm_label')
+v_ops = ('resize', 'crop', 'norm_label')
 
 # val_ind
 factory = DatasetFactory()
