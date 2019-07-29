@@ -6,9 +6,9 @@
 import os
 import numpy as np
 from glob import glob
-from enum import Enum, auto
 from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
+from py_singleton import Singleton
 
 from .config import Config
 from .loads import load, load_label_desc
@@ -16,143 +16,103 @@ from .loads import load_tree
 from .trees import TensorTree, TensorLeaf, RegionLeaf, RegionTree, Leaf, Tree
 
 
-class ImageType(Enum):
-    image = auto()
-    label = auto()
-    mask = auto()
-    bounding_box = auto()
-    hierachical_label = auto()
 
-
-class ImageCollection(defaultdict):
-    """Image collection
-
-    Each key corresponds images of the same subject, the value is a list of
-    Image instances
-
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(list, *args, **kwargs)
-
-    def get_dataset_indices(self):
-        # TODO
-        indices = defaultdict(list)
-        for i, key in enumerate(self.keys()):
-            dataset_id = key.split(os.sep)[0]
-            indices[dataset_id].append(i)
-        return indices.values()
-
-    def split(self, indicies):
-        """Split images into two instances of ImageCollection
-
-        Args:
-            indicies (list of int): The indices in self for the first collection 
-
-        Returns:
-            collection1 (ImageCollection): The collection of images
-                corresponding to the input arg `indicies`
-            collection2 (ImageCollection): The collection of images
-                corresponding to the rest
-
-        """
-        indicies2 = sorted(list(set(range(len(self))) - set(indicies)))
-        keys = np.array(list(self.keys()))
-        collection1 = self.__class__({k: self[k] for k in keys[indicies]})
-        collection2 = self.__class__({k: self[k] for k in keys[indicies2]})
-        return collection1, collection2
-
-    def copy(self):
-        return self.__class__(self)
+class ImageCollection(dict):
 
     def __getitem__(self, key):
-        """Support return by index"""
-        if key not in self and isinstance(key, int):
-            key = list(self.keys())[key]
+        if key not in self:
+            self[key] = list()
         return super().__getitem__(key)
 
-    def __add__(self, other):
-        """Merge two image collections
+    def __add__(self, images):
+        new_images = ImageCollection()
+        for old_images in (self, images):
+            for key in old_images.keys():
+                new_images[key].extend(old_images[key])
+        return new_images
 
-        Args:
-            other (ImageCollection): The other collection to merge
 
-        Returns:
-            result (ImageCollection): Merged collection
+class _FileInfo:
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.dirname = os.path.dirname(filepath)
+        self.basename = os.path.basename(filepath)
+        self.ext = self._get_ext()
+        self.parts = self._get_parts()
+        self.suffix = self.parts[-1]
 
-        """
-        result = self.copy()
-        result.update(other)
-        return result
+    def _get_ext(self):
+        if self.basename.endswith('.nii.gz'):
+            return '.nii.gz'
+        else:
+            return '.' + self.basename.split('.')[-1]
+
+    def _get_parts(self):
+        return self.basename.replace(self.ext, '').split('_')
+
+
+class Loader:
+    def __init__(self, files):
+        self.files = files
+        self.images = ImageCollection()
+
+    def load(self):
+        for f in self.files:
+            if self._is_correct_type(f):
+                self.images[f.name].append(self._create(f))
+
+    def _create(self, f):
+        raise NotImplementedError
+
+    def _is_correct_type(self, f):
+        raise NotImplementedError
 
 
 class ImageLoader:
-    """Load images
 
-    Call self.load and access loaded images via self.images
+    def _create(self, f):
+        return Image(filepath=f.filepath)
 
-    Attributes:
-        dirname (str): The directory to the files
-        ext (str): The extension name of the files
-        id (str): The identifier of the dataset
-        images (ImageCollection): The loaded images        
-        _files (list of dict): The list of dict with file information. 'name':
-            the name of the file; 'suffix': the suffix of the filename;
-            'filepath': the path to the file
+    def _is_correct_type(self, f):
+        return f.suffix in Config().image_suffixes
 
-    """
-    def __init__(self, dirname, id='', ext='.nii.gz'):
-        self.dirname = dirname
-        self.id = id
-        self.ext = ext
-        self.images = ImageCollection()
-        self._files = self._gather_files()
 
-    def _gather_files(self):
-        files = list()
-        for filepath in sorted(glob(os.path.join(self.dirname, '*'+self.ext))):
-            parts = os.path.basename(filepath).replace(self.ext, '').split('_')
-            name = os.path.join(self.id, parts[0])
-            files.append(dict(name=name, suffix=parts[-1], filepath=filepath))
-        return files
+class LabelLoader:
 
-    def load(self, *image_types):
-        """Load images
+    def __init__(self, files, labels, pairs):
+        super().__init__(files)
+        self.labels = labels
+        self.pairs = pairs
 
-        Args:
-            image_type (str): The type of the images to load
+    def _create(self, f):
+        return Label(filepath=f.filepath, labels=self.labels, pairs=self.pairs)
 
-        """
-        config = Config()
-        for type in image_types:
-            if ImageType[type] is ImageType.image:
-                self._load(config.image_suffixes, Image)
-            elif ImageType[type] is ImageType.label:
-                desc_filepath = os.path.join(self.dirname, config.label_desc)
-                l, p = load_label_desc(desc_filepath)
-                self._load(config.label_suffixes, Label, labels=l, pairs=p)
-            elif ImageType[type] is ImageType.hierachical_label:
-                desc_filepath = os.path.join(self.dirname, config.label_desc)
-                h_filepath = os.path.join(self.dirname, config.label_hierachy)
-                labels, pairs = load_label_desc(desc_filepath)
-                tree = load_tree(h_filepath)
-                self._load(config.hierachical_label_suffixes, HierachicalLabel,
-                           labels=labels, pairs=pairs, tree=tree)
-            elif ImageType[type] is ImageType.mask:
-                self._load(config.mask_suffixes, Mask,
-                           cropping_shape=config.crop_shape)
-            elif ImageType[type] is ImageType.bounding_box:
-                self._load(config.bbox_suffixes, BoundingBox)
+    def _is_correct_type(self, f):
+        return f.suffix in Config().label_suffixes
 
-    def _load(self, suffixes, image_class, **kwargs):
-        for file in self._files:
-            if file['suffix'] in suffixes:
-                bbox = image_class(filepath=file['filepath'], **kwargs)
-                self.images[file['name']].append(bbox)
 
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            key = list(self.images.keys())[key]
-        return self.images[key]
+class MaskLoader:
+
+    def _create(self, f):
+        return Mask(filepath=f.filepath, cropping_shape=Config().crop_shape)
+
+    def _is_correct_type(self, f):
+        return f.suffix in Config().mask_suffixes
+
+
+class BoundingBoxLoader:
+
+    def _create(self, f):
+        return BoundingBox(filepath=f.filepath)
+
+    def _is_correct_type(self, f):
+        return f.suffix in Config().bbox_suffixes
+
+
+# def __getitem__(self, key):
+#     if isinstance(key, int):
+#         key = list(self.images.keys())[key]
+#     return self.images[key]
 
 
 class Image:
@@ -289,48 +249,6 @@ class Label(Image):
         pairs = [[mapping[p] for p in pair] for pair in self.pairs]
         result = self.update(data, 'label_norm', labels=labels, pairs=pairs)
         return result
-
-
-class HierachicalLabel(Label):
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
-                 labels=dict(), pairs=list(), tree=Leaf(0)):
-        super().__init__(filepath, data, on_the_fly, message, labels, pairs)
-        self.region_tree = self._create_region_tree(tree, level=tree.level)
-
-    def _create_region_tree(self, tree, level=0):
-        subtrees = dict()
-        for name, sub in tree.subtrees.items():
-            if isinstance(sub, Tree):
-                subtrees[name] = self._create_region_tree(sub, level=level+1)
-            else:
-                subtrees[name] = RegionLeaf(self.labels[name], level=level+1)
-        return RegionTree(subtrees, level=level)
-
-    #TODO
-    def update(self, data, message, labels=None, pairs=None):
-        labels = self.labels if labels is None else labels
-        pairs = self.pairs if pairs is None else pairs
-        message =  self.message + [message]
-        new_image = self.__class__(self.filepath, data, False, message,
-                                   labels, pairs, self.region_tree)
-        return new_image
-
-    @property
-    def output(self):
-        return self._get_tensor_tree(self.region_tree)
-
-    def _get_tensor_tree(self, region_tree, level=0):
-        mask = self._get_data_mask(region_tree)
-        if isinstance(region_tree, Tree):
-            subtrees = {name: self._get_tensor_tree(subtree, level=level+1)
-                        for name, subtree in region_tree.subtrees.items()}
-            return TensorTree(subtrees, mask, level=level)
-        else:
-            return TensorLeaf(mask, level=level)
-
-    def _get_data_mask(self, region_tree):
-        mask = np.logical_or.reduce([self.data==v for v in region_tree.value])
-        return mask.astype(self.output_dtype)
 
 
 class Mask(Image):
