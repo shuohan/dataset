@@ -6,16 +6,19 @@ import numpy as np
 from collections import defaultdict
 
 from .config import Config
-from .images import Label
+from .images import Label, FileSearcher
 from .images import ImageLoader, LabelLoader, MaskLoader, BoundingBoxLoader
+from .pipelines import RandomPipeline
 
 
 class DatasetCreator:
 
     def __init__(self):
-        self.images = list()
         self.image_types = list()
+        self.operations = list()
         self.loaders = dict()
+        self.dataset = None
+        self._datasets = list()
 
         self.register_loader('image', ImageLoader)
         self.register_loader('label', LabelLoader)
@@ -26,11 +29,12 @@ class DatasetCreator:
         self.image_types.extend(image_types)
 
     def add_dataset(self, dirname, dataset_id='data'):
-        file_searcher = FileSearcher(dirname)
+        file_searcher = FileSearcher(dirname).search()
         for image_type in self.image_types:
-            Loader = self.loaders[image_types]
-            self.images.append({'dataset_id': dataset_id, 'dirname': dirname,
-                                'images': Loader(file_searcher).load()})
+            Loader = self.loaders[image_type]
+            images = Loader(file_searcher).load().images
+            self._datasets.append({'dataset_id': dataset_id, 'dirname': dirname,
+                                   'images': images})
 
     def register_loader(self, name, Loader):
         self.loaders[name] = Loader
@@ -58,11 +62,13 @@ class DatasetCreator:
             v_dataset (.datasets.Dataset_): The validation dataset
 
         """
-        dataset = Dataset(sum(self.images))
+        images = [v['images'] for v in self._datasets]
+        images = sum(images[1:], images[0])
+        self.dataset = Dataset(images)
         pipeline = RandomPipeline()
-        pipeline.register(*operations)
-        dataset.add_pipeline(pipeline)
-        return dataset
+        pipeline.register(*self.operations)
+        self.dataset.add_pipeline(pipeline)
+        return self
 
     def __str__(self):
         message = list()
@@ -70,14 +76,15 @@ class DatasetCreator:
         message.append('    ' + ', '.join(self.image_types))
         message.append('Operation types:')
         message.append('    ' + ', '.join(self.operations))
-        message.append('Dataset')
+        message.append('Dataset:')
+        message.append(self.dataset.__str__())
         message.append('Registered loaders:')
         str_len = max([len(key) for key in self.loaders.keys()])
         message.extend([('    %%%ds: %%s' % str_len) % (k, v)
                         for k, v in self.loaders.items()])
+        return '\n'.join(message)
 
-
-class Dataset_:
+class Dataset:
     """Dataset for yielding data
 
     The length of the dataset will be the number of pipelines times the number
