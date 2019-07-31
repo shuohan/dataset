@@ -20,29 +20,6 @@ class WorkerType(Enum):
     ADDON = auto()
 
 
-class WorkerTypeMapping(metaclass=Singleton):
-    """Map the worker name and its type
-
-    Attributes:
-        _mapping (dict): Internal strurcture keeping the mapping
-
-    """
-    def __init__(self):
-        config = Config()
-        self._mapping = {WorkerName[worker_name]: WorkerType.addon
-                         for worker_name in config.total_addon}
-        self._mapping.update({WorkerName[worker_name]: WorkerType.aug
-                              for worker_name in config.total_aug})
-
-    def __getitem__(self, worker):
-        if type(worker) is str:
-            worker = WorkerName[worker]
-        return self._mapping[worker]
-
-    def items(self):
-        return self._mapping.items()
-
-
 class WorkerCreator(metaclass=Singleton):
     """Creates a concerete worker to process the images.
 

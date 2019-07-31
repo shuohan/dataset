@@ -7,6 +7,74 @@ from collections import defaultdict
 
 from .config import Config
 from .images import Label
+from .images import ImageLoader, LabelLoader, MaskLoader, BoundingBoxLoader
+
+
+class DatasetCreator:
+
+    def __init__(self)
+        self.images = list()
+        self.image_types = list()
+        self.loaders = dict()
+
+        self.register_loader('image', ImageLoader)
+        self.register_loader('label', LabelLoader)
+        self.register_loader('mask', MaskLoader)
+        self.register_loader('bbox', BoundingBoxLoader)
+
+    def add_image_type(self, *image_types):
+        self.image_types.extend(image_types)
+
+    def add_dataset(self, dirname, dataset_id='data'):
+        file_searcher = FileSearcher(dirname)
+        for image_type in self.image_types:
+            Loader = self.loaders[image_types]
+            self.images.append({'dataset_id': dataset_id, 'dirname': dirname,
+                                'images': Loader(file_searcher).load()})
+
+    def register_loader(self, name, Loader):
+        self.loaders[name] = Loader
+
+    def remove_loader(self, name):
+        if name in self.loaders:
+            self.loaders.pop(name)
+
+    def add_operation(self, *operations):
+        """Add an operation to training dataset pipeline
+        
+        The order of operations are preserved
+
+        operation (str): A add-on operation (such as cropping)
+            and augmentation
+
+        """
+        self.operations.extend(operations)
+
+    def create(self):
+        """Create training and validation datsets
+
+        Returns:
+            t_dataset (.datasets.Dataset_): The training dataset
+            v_dataset (.datasets.Dataset_): The validation dataset
+
+        """
+        dataset = Dataset(sum(self.images))
+        pipeline = RandomPipeline()
+        pipeline.register(*operations)
+        dataset.add_pipeline(pipeline)
+        return dataset
+
+    def __str__(self):
+        message = list()
+        message.append('Image types:')
+        message.append('    ' + ', '.join(self.image_types))
+        message.append('Operation types:')
+        message.append('    ' + ', '.join(self.operations))
+        message.append('Dataset')
+        message.append('Registered loaders:')
+        str_len = max([len(key) for key in self.loaders.keys()])
+        message.extend([('    %%%ds: %%s' % str_len) % (k, v)
+                        for k, v in self.loaders.items()])
 
 
 class Dataset_:
@@ -92,16 +160,6 @@ class Dataset_:
         return self._compose(processed)
 
     def _compose(self, images):
-        """Abstract to compose processed images"""
-        raise NotImplementedError
-
-
-class Dataset(Dataset_):
-    def _compose(self, images):
+        """Compose processed images"""
         return [im.output for im in images]
-
-
-class WrapperDataset(Dataset_):
-    """Output .images.Image instead of numpy arrays"""
-    def _compose(self, images):
-        return images
+        # return images

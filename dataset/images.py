@@ -24,6 +24,9 @@ class ImageCollection(dict):
             self[key] = list()
         return super().__getitem__(key)
 
+    def append(self, image):
+        self[image.info.name].append(image)
+
     def __add__(self, images):
         new_images = ImageCollection()
         for old_images in (self, images):
@@ -32,14 +35,15 @@ class ImageCollection(dict):
         return new_images
 
 
-class _FileInfo:
+class FileInfo:
     def __init__(self, filepath):
         self.filepath = filepath
         self.dirname = os.path.dirname(filepath)
         self.basename = os.path.basename(filepath)
         self.ext = self._get_ext()
-        self.parts = self._get_parts()
-        self.suffix = self.parts[-1]
+        self._parts = self._get_parts()
+        self.name = self._parts[0]
+        self.suffix = self._parts[-1]
 
     def _get_ext(self):
         if self.basename.endswith('.nii.gz'):
@@ -59,7 +63,7 @@ class Loader:
     def load(self):
         for f in self.files:
             if self._is_correct_type(f):
-                self.images[f.name].append(self._create(f))
+                self.images.append(self._create(f))
 
     def _create(self, f):
         raise NotImplementedError
@@ -68,7 +72,7 @@ class Loader:
         raise NotImplementedError
 
 
-class ImageLoader:
+class ImageLoader(Loader):
 
     def _create(self, f):
         return Image(filepath=f.filepath)
@@ -77,7 +81,7 @@ class ImageLoader:
         return f.suffix in Config().image_suffixes
 
 
-class LabelLoader:
+class LabelLoader(Loader):
 
     def __init__(self, files, labels, pairs):
         super().__init__(files)
@@ -91,7 +95,7 @@ class LabelLoader:
         return f.suffix in Config().label_suffixes
 
 
-class MaskLoader:
+class MaskLoader(Loader):
 
     def _create(self, f):
         return Mask(filepath=f.filepath, cropping_shape=Config().crop_shape)
@@ -100,7 +104,7 @@ class MaskLoader:
         return f.suffix in Config().mask_suffixes
 
 
-class BoundingBoxLoader:
+class BoundingBoxLoader(Loader):
 
     def _create(self, f):
         return BoundingBox(filepath=f.filepath)
