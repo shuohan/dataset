@@ -5,7 +5,7 @@
 """
 import os
 import numpy as np
-from glob import glob
+from pathlib import Path
 from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 from py_singleton import Singleton
@@ -15,6 +15,51 @@ from .loads import load, load_label_desc
 from .loads import load_tree
 from .trees import TensorTree, TensorLeaf, RegionLeaf, RegionTree, Leaf, Tree
 
+
+IMAGE_EXT = '.nii*'
+
+
+class FileSearcher:
+
+    def __init__(self, dirname):
+        self.dirname = dirname
+        self.files = None
+        self.label_file = None
+
+    def search(self):
+        filepaths = sorted(Path(self.dirname).glob('*' + IMAGE_EXT))
+        self.files = [FileInfo(fp) for fp in filepaths]
+        self.label_file = os.path.join(self.dirname, Config().label_desc)
+        return self
+
+
+class FileInfo:
+    def __init__(self, filepath=''):
+        self.filepath = filepath
+        self.dirname = os.path.dirname(self.filepath)
+        self.basename = os.path.basename(self.filepath)
+        self.ext = self._get_ext()
+        self._parts = self._get_parts()
+        self.name = self._parts[0] if self._parts else ''
+        self.suffix = self._parts[-1] if self._parts else ''
+
+    def _get_ext(self):
+        if self.basename.endswith('.nii.gz'):
+            return '.nii.gz'
+        else:
+            return '.' + self.basename.split('.')[-1]
+
+    def _get_parts(self):
+        return self.basename.replace(self.ext, '').split('_')
+
+    def __str__(self):
+        fields = ['filepath', 'dirname', 'basename', 'ext', 'name', 'suffix']
+        str_len = max([len(f) for f in fields])
+        message = list()
+        for field in fields:
+            pattern = '%%%ds: %%s' % str_len
+            message.append(pattern % (field, getattr(self, field)))
+        return '\n'.join(message)
 
 
 class ImageCollection(dict):
@@ -34,36 +79,20 @@ class ImageCollection(dict):
                 new_images[key].extend(old_images[key])
         return new_images
 
-
-class FileInfo:
-    def __init__(self, filepath):
-        self.filepath = filepath
-        self.dirname = os.path.dirname(filepath)
-        self.basename = os.path.basename(filepath)
-        self.ext = self._get_ext()
-        self._parts = self._get_parts()
-        self.name = self._parts[0]
-        self.suffix = self._parts[-1]
-
-    def _get_ext(self):
-        if self.basename.endswith('.nii.gz'):
-            return '.nii.gz'
-        else:
-            return '.' + self.basename.split('.')[-1]
-
-    def _get_parts(self):
-        return self.basename.replace(self.ext, '').split('_')
+    def __radd__(self, images):
+        return self.__add__(images)
 
 
 class Loader:
-    def __init__(self, files):
-        self.files = files
+    def __init__(self, file_searcher):
+        self.file_searcher = file_searcher
         self.images = ImageCollection()
 
     def load(self):
-        for f in self.files:
+        for f in self.file_searcher.files:
             if self._is_correct_type(f):
                 self.images.append(self._create(f))
+        return self
 
     def _create(self, f):
         raise NotImplementedError
@@ -75,7 +104,7 @@ class Loader:
 class ImageLoader(Loader):
 
     def _create(self, f):
-        return Image(filepath=f.filepath)
+        return Image(info=f)
 
     def _is_correct_type(self, f):
         return f.suffix in Config().image_suffixes
@@ -83,13 +112,12 @@ class ImageLoader(Loader):
 
 class LabelLoader(Loader):
 
-    def __init__(self, files, labels, pairs):
-        super().__init__(files)
-        self.labels = labels
-        self.pairs = pairs
+    def __init__(self, file_searcher):
+        super().__init__(file_searcher)
+        self.labels, self.pairs = load_label_desc(self.file_searcher.label_file)
 
     def _create(self, f):
-        return Label(filepath=f.filepath, labels=self.labels, pairs=self.pairs)
+        return Label(info=f, labels=self.labels, pairs=self.pairs)
 
     def _is_correct_type(self, f):
         return f.suffix in Config().label_suffixes
@@ -98,7 +126,7 @@ class LabelLoader(Loader):
 class MaskLoader(Loader):
 
     def _create(self, f):
-        return Mask(filepath=f.filepath, cropping_shape=Config().crop_shape)
+        return Mask(info=f, cropping_shape=Config().crop_shape)
 
     def _is_correct_type(self, f):
         return f.suffix in Config().mask_suffixes
@@ -107,7 +135,7 @@ class MaskLoader(Loader):
 class BoundingBoxLoader(Loader):
 
     def _create(self, f):
-        return BoundingBox(filepath=f.filepath)
+        return BoundingBox(info=f)
 
     def _is_correct_type(self, f):
         return f.suffix in Config().bbox_suffixes
@@ -136,7 +164,7 @@ class Image:
     load_dtype = np.float32
     output_dtype = np.float32
 
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
+    def __init__(self, info=None, data=None, on_the_fly=True, message=[]):
         """Initialize
 
         Raises:
@@ -147,14 +175,14 @@ class Image:
                 be False
 
         """
-        if filepath is None and data is None:
-            raise RuntimeError('"filepath" and "data" should not be both None')
+        if info is None and data is None:
+            raise RuntimeError('"info" and "data" should not be both None')
 
         if data is not None and on_the_fly:
             error = '"on_the_fly" should be False if initialize from data'
             raise RuntimeError(error)
 
-        self.filepath = filepath
+        self.info = info
         self.on_the_fly = on_the_fly
         self._data = data
         self.message = message
@@ -176,7 +204,7 @@ class Image:
             return self._data
 
     def _load(self):
-        data = load(self.filepath, self.load_dtype)
+        data = load(self.info.filepath, self.load_dtype)
         if len(data.shape) == 3:
             data = data[None, ...]
         return data
@@ -195,12 +223,13 @@ class Image:
         return self.data.astype(self.output_dtype)
 
     def __str__(self):
-        return ' '.join([os.path.basename(self.filepath)] + self.message)
+        message = ['%s %s:' % (self.info.name, self.info.suffix)] + self.message
+        return ' '.join(message)
 
     def update(self, data, message):
         """Create a new instance with data"""
         message =  self.message + [message]
-        new_image = self.__class__(self.filepath, data, False, message)
+        new_image = self.__class__(self.info, data, False, message)
         return new_image
 
     @property
@@ -220,9 +249,9 @@ class Label(Image):
     load_dtype = np.uint8
     output_dtype = np.int64
 
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
+    def __init__(self, info=None, data=None, on_the_fly=True, message=[],
                  labels=dict(), pairs=list()):
-        super().__init__(filepath, data, on_the_fly, message)
+        super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
         self.labels = labels
         self.pairs = pairs
@@ -231,7 +260,7 @@ class Label(Image):
         labels = self.labels if labels is None else labels
         pairs = self.pairs if pairs is None else pairs
         message =  self.message + [message]
-        new_image = self.__class__(self.filepath, data, False, message,
+        new_image = self.__class__(self.info, data, False, message,
                                    labels, pairs)
         return new_image
 
@@ -265,9 +294,9 @@ class Mask(Image):
     load_dtype = np.uint8
     output_dtype = np.int64
 
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[],
+    def __init__(self, info=None, data=None, on_the_fly=True, message=[],
                  cropping_shape=[128, 96, 96]):
-        super().__init__(filepath, data, on_the_fly, message)
+        super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
         self.cropping_shape = cropping_shape
         self._bbox = None
@@ -295,17 +324,17 @@ class Mask(Image):
         message =  image.message + ['crop']
         #TODO
         if isinstance(image, HierachicalLabel):
-            new_image = image.__class__(image.filepath, cropped, False, message,
+            new_image = image.__class__(image.info, cropped, False, message,
                                         labels=image.labels, pairs=image.pairs,
                                         tree=image.region_tree)
         elif isinstance(image, Label):
-            new_image = image.__class__(image.filepath, cropped, False, message,
+            new_image = image.__class__(image.info, cropped, False, message,
                                         labels=image.labels, pairs=image.pairs)
         elif isinstance(image, Mask):
-            new_image = image.__class__(image.filepath, cropped, False, message,
+            new_image = image.__class__(image.info, cropped, False, message,
                                         cropping_shape=image.cropping_shape)
         else:
-            new_image = image.__class__(image.filepath, cropped, False, message)
+            new_image = image.__class__(image.info, cropped, False, message)
         return new_image
 
     @property
@@ -314,7 +343,7 @@ class Mask(Image):
 
     def update(self, data, message):
         message =  self.message + [message]
-        new_image = self.__class__(self.filepath, data, False, message,
+        new_image = self.__class__(self.info, data, False, message,
                                    cropping_shape=self.cropping_shape)
         return new_image
 
@@ -332,8 +361,8 @@ class BoundingBox(Image):
     load_dtype = np.uint8
     output_dtype = np.float32
 
-    def __init__(self, filepath=None, data=None, on_the_fly=True, message=[]):
-        super().__init__(filepath, data, on_the_fly, message)
+    def __init__(self, info=None, data=None, on_the_fly=True, message=[]):
+        super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
 
     @property

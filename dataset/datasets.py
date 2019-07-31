@@ -12,7 +12,7 @@ from .images import ImageLoader, LabelLoader, MaskLoader, BoundingBoxLoader
 
 class DatasetCreator:
 
-    def __init__(self)
+    def __init__(self):
         self.images = list()
         self.image_types = list()
         self.loaders = dict()
