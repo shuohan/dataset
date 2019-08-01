@@ -154,6 +154,21 @@ class Dataset:
             key (int): The index of the item to get
 
         """
+        processed = self.get_processed_image_group(key)
+        return tuple(im.output for im in processed)
+
+    def get_processed_image_group(self, key):
+        self._check_key(key)
+        pipeline_ind = key // len(self.images)
+        image_ind = key % len(self.images)
+        pipeline = self.pipelines[pipeline_ind]
+        images = self.images.at(image_ind)
+        processed = pipeline.process(*images)
+        if self.verbose:
+            self._print_image(*processed)
+        return tuple(processed)
+
+    def _check_key(self, key):
         if len(self) == 0:
             raise IndexError('No images or no pipeline')
         if key >= len(self):
@@ -161,21 +176,8 @@ class Dataset:
         elif key < 0:
             raise IndexError('Index %d is smaller than 0' % (key,))
 
-        pipeline_ind = key // len(self.images)
-        image_ind = key % len(self.images)
-        pipeline = self.pipelines[pipeline_ind]
-        images = list(self.images.values())[image_ind]
-        processed = pipeline.process(*images)
-        if self.verbose:
-            print('-' * 80)
-            for p in processed:
-                print(p)
-            print('-' * 80)
-        return self._compose(processed)
-
-    def _compose(self, images):
-        """Compose processed images"""
-        return tuple(im.output for im in images)
-        # return images
-
-    def _process(self, 
+    def _print_image(self, *images):
+        print('-' * 80)
+        for p in images:
+            print(p)
+        print('-' * 80)

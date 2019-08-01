@@ -11,6 +11,7 @@ from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
+from .loads import load
 
 
 IMAGE_EXT = '.nii*'
@@ -32,7 +33,7 @@ class FileSearcher:
 
 class FileInfo:
     def __init__(self, filepath=''):
-        self.filepath = filepath
+        self.filepath = str(filepath)
         self.dirname = os.path.dirname(self.filepath)
         self.basename = os.path.basename(self.filepath)
         self.ext = self._get_ext()
@@ -109,13 +110,30 @@ class LabelInfo:
     def __eq__(self, label_info):
         return hash(self) == hash(label_info)
 
+    def __str__(self):
+        message = ['Labels:']
+        str_len = max([len(key) for key in self.labels.keys()])
+        for key, value in self.labels.items():
+            message.append(('%%%ds: %%s' % str_len) % (key, value))
+        message.append('Pairs:')
+        for pair in self.pairs:
+            message.append('%d, %d' % pair)
+        return '\n'.join(message)
+
 
 class ImageCollection(dict):
 
     def __getitem__(self, key):
+        if type(key) is not str:
+            raise RuntimeError('The key can only be str')
         if key not in self:
             self[key] = list()
         return super().__getitem__(key)
+
+    def at(self, index):
+        if type(index) is not int:
+            raise RuntimeError('The index can only be int')
+        return list(self.values())[index]
 
     def append(self, image):
         self[image.info.name].append(image)
@@ -159,9 +177,6 @@ class ImageLoader(Loader):
 
 
 class LabelLoader(Loader):
-
-    def __init__(self, file_searcher):
-        super().__init__(file_searcher)
 
     def _create(self, f):
         label_info = LabelInfo(self.file_searcher.label_file)
@@ -301,7 +316,7 @@ class Label(Image):
                  label_info=None):
         super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
-        if isinstance(label_info, LabelInfo):
+        if not isinstance(label_info, LabelInfo):
             label_info = self._get_default_label_info()
         self.label_info = label_info
 
@@ -309,11 +324,12 @@ class Label(Image):
         label_values = np.unique(self.data)
         labels = {str(l): l  for l in label_values}
         pairs = tuple()
-        return LabelInfo(labels=labels, pairs=pairs)
+        label_info = LabelInfo(labels=labels, pairs=pairs)
+        return label_info
 
     @property
     def normalized_label_info(self):
-        label_values = sorted(self.label_info.labels.values())
+        label_values = self._get_label_values()
         norm_label_values = np.arange(len(label_values))
         mapping = {o: n for o, n in zip(label_values, norm_label_values)}
         labels = {k: mapping[v] for k, v in self.label_info.labels.items()}
@@ -328,10 +344,14 @@ class Label(Image):
         return new_image
 
     def normalize(self):
+        label_values = self._get_label_values()
         data = np.digitize(self.data, label_values, right=True)
         label_info = self.normalized_label_info
         result = self.update(data, 'norm_label', label_info=label_info)
         return result
+
+    def _get_label_values(self):
+        return sorted(self.label_info.labels.values())
 
 
 class Mask(Image):
