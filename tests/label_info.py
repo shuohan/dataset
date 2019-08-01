@@ -20,3 +20,6 @@ print(info1 == info2)
 print(info1 is info2)
 
 print(set((info1, info2, info3, info4, info5)))
+
+a = {info1:1, info2:2}
+print(a)

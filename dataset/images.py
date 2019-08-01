@@ -9,12 +9,8 @@ import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
-from py_singleton import Singleton
 
 from .config import Config
-from .loads import load
-from .loads import load_tree
-from .trees import TensorTree, TensorLeaf, RegionLeaf, RegionTree, Leaf, Tree
 
 
 IMAGE_EXT = '.nii*'
@@ -73,24 +69,32 @@ class LabelMapping(dict):
 
 class LabelInfo:
 
-    def __init__(self, filepath):
+    def __init__(self, filepath=None, labels=None, pairs=None):
         self.filepath = filepath
-        self._load()
-
-    def _load(self):
-        if os.path.isfile(self.filepath):
-            labels, pairs = self._load_json()
+        if self.filepath is None:
+            if labels is None or pairs is None:
+                message = ('"labels" or "pairs" cannot be both None when '
+                           '"filepath" is None.')
+                raise RuntimeError(message)
+            else:
+                self.labels = labels
+                self.pairs = pairs
         else:
-            labels, pairs = dict(), list()
-        self.labels = LabelMapping(**labels)
-        self.pairs = tuple(tuple(p) for p in pairs)
+            self.labels = self._load_labels()
+            self.pairs = self._load_pairs()
+
+    def _load_labels(self):
+        labels = self._load_json()['labels']
+        return LabelMapping(**labels)
+
+    def _load_pairs(self):
+        pairs = self._load_json()['pairs']
+        return tuple(tuple(p) for p in pairs)
 
     def _load_json(self):
         with open(self.filepath) as jfile:
             contents = json.load(jfile)
-        labels = contents['labels']
-        pairs = contents['pairs']
-        return labels, pairs
+        return contents
 
     def __hash__(self):
         labels = tuple(self.labels.keys()) + tuple(self.labels.values())
@@ -288,7 +292,7 @@ class Label(Image):
     output_dtype = np.int64
 
     def __init__(self, info=None, data=None, on_the_fly=True, message=[],
-                 labels=dict(), pairs=list()):
+                 label_info=None):
         super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
         self.labels = labels
@@ -320,6 +324,16 @@ class Label(Image):
         pairs = [[mapping[p] for p in pair] for pair in self.pairs]
         result = self.update(data, 'label_norm', labels=labels, pairs=pairs)
         return result
+
+    @property
+    def normalized_label_info(self):
+        pass
+
+    def _get_label_values(self):
+        pass
+
+    def _get_default_label_info(self):
+        label_values =  np.unique(self.data)
 
 
 class Mask(Image):

@@ -2,7 +2,6 @@
 """Implement Datasets to handel image iteration
 
 """
-import numpy as np
 from collections import defaultdict
 
 from .config import Config
@@ -105,11 +104,19 @@ class Dataset:
 
     @property
     def labels(self):
-        """Get label image label definitions if available"""
-        image_group = self.images[0]
-        for image in image_group:
-            if isinstance(image, Label):
-                return image.labels
+        return self._get_labels(self.images)
+
+    @property
+    def normalized_labels(self):
+        pass
+
+    def _get_labels(self, images):
+        labels = defaultdict()
+        for image_group in images:
+            for image in image_group:
+                if type(image) is Label:
+                    labels[image.label_info].append(image)
+        return labels
 
     def add_pipeline(self, *pipelines):
         """Add pipelines for image processing
@@ -168,5 +175,7 @@ class Dataset:
 
     def _compose(self, images):
         """Compose processed images"""
-        return [im.output for im in images]
+        return tuple(im.output for im in images)
         # return images
+
+    def _process(self, 
