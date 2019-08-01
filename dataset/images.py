@@ -77,18 +77,24 @@ class LabelInfo:
                            '"filepath" is None.')
                 raise RuntimeError(message)
             else:
-                self.labels = labels
-                self.pairs = pairs
+                self.labels = self._convert_labels(labels)
+                self.pairs = self._convert_pairs(pairs)
         else:
             self.labels = self._load_labels()
             self.pairs = self._load_pairs()
 
     def _load_labels(self):
         labels = self._load_json()['labels']
+        return self._convert_labels(labels)
+
+    def _convert_labels(self, labels):
         return LabelMapping(**labels)
 
     def _load_pairs(self):
         pairs = self._load_json()['pairs']
+        return self._convert_pairs(pairs)
+
+    def _convert_pairs(self, pairs):
         return tuple(tuple(p) for p in pairs)
 
     def _load_json(self):
@@ -295,45 +301,37 @@ class Label(Image):
                  label_info=None):
         super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
-        self.labels = labels
-        self.pairs = pairs
+        if isinstance(label_info, LabelInfo):
+            label_info = self._get_default_label_info()
+        self.label_info = label_info
 
-    def update(self, data, message, labels=None, pairs=None):
-        labels = self.labels if labels is None else labels
-        pairs = self.pairs if pairs is None else pairs
-        message =  self.message + [message]
-        new_image = self.__class__(self.info, data, False, message,
-                                   labels, pairs)
-        return new_image
-
-    def normalize(self):
-        """Convert label values into 0 : num_labels
-
-        Returns:
-            result (Label): The normalized label image
-
-        """
-        if len(self.labels) == 0:
-            label_values = np.unique(self.data)
-        else:
-            label_values = sorted(self.labels.values())
-        data = np.digitize(self.data, label_values, right=True)
-        new_label_values = np.arange(len(label_values))
-        mapping = {o: n for o, n in zip(label_values, new_label_values)}
-        labels = {k: mapping[v] for k, v in self.labels.items()}
-        pairs = [[mapping[p] for p in pair] for pair in self.pairs]
-        result = self.update(data, 'label_norm', labels=labels, pairs=pairs)
-        return result
+    def _get_default_label_info(self):
+        label_values = np.unique(self.data)
+        labels = {str(l): l  for l in label_values}
+        pairs = tuple()
+        return LabelInfo(labels=labels, pairs=pairs)
 
     @property
     def normalized_label_info(self):
-        pass
+        label_values = sorted(self.label_info.labels.values())
+        norm_label_values = np.arange(len(label_values))
+        mapping = {o: n for o, n in zip(label_values, norm_label_values)}
+        labels = {k: mapping[v] for k, v in self.label_info.labels.items()}
+        pairs = [[mapping[p] for p in pair] for pair in self.label_info.pairs]
+        norm_label_info = LabelInfo(labels=labels, pairs=pairs)
+        return norm_label_info
 
-    def _get_label_values(self):
-        pass
+    def update(self, data, message, label_info=None):
+        label_info = self.label_info if label_info is None else label_info
+        message =  self.message + [message]
+        new_image = self.__class__(self.info, data, False, message, label_info)
+        return new_image
 
-    def _get_default_label_info(self):
-        label_values =  np.unique(self.data)
+    def normalize(self):
+        data = np.digitize(self.data, label_values, right=True)
+        label_info = self.normalized_label_info
+        result = self.update(data, 'norm_label', label_info=label_info)
+        return result
 
 
 class Mask(Image):
