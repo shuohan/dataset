@@ -49,27 +49,6 @@ def _load_nii(filepath, dtype):
     return nib.load(filepath).get_data().astype(dtype)
 
 
-def load_label_desc(filepath):
-    """Load label description
-
-    Args:
-        filepath (str): The path to the description json file
-
-    Returns:
-        labels (dict): The label value and name
-        pairs (list of list): Each is a pair of left/right corresponding labels
-
-    """
-    if os.path.isfile(filepath):
-        with open(filepath) as jfile:
-            contents = json.load(jfile)
-        labels, pairs = contents['labels'], contents['pairs']
-    else:
-        labels, pairs = dict(), list()
-    # labels = {int(k): v for k, v in labels.items()}
-    return labels, pairs
-
-
 def load_tree(filepath):
     if os.path.isfile(filepath):
         with open(filepath) as jfile:

@@ -4,6 +4,7 @@
 
 """
 import os
+import json
 import numpy as np
 from pathlib import Path
 from collections import defaultdict
@@ -11,7 +12,7 @@ from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 from py_singleton import Singleton
 
 from .config import Config
-from .loads import load, load_label_desc
+from .loads import load
 from .loads import load_tree
 from .trees import TensorTree, TensorLeaf, RegionLeaf, RegionTree, Leaf, Tree
 
@@ -60,6 +61,43 @@ class FileInfo:
             pattern = '%%%ds: %%s' % str_len
             message.append(pattern % (field, getattr(self, field)))
         return '\n'.join(message)
+
+
+class LabelMapping(dict):
+    def __setitem__(self, key, val):
+        raise RuntimeError('class Labels does not support changing contents')
+    def __getattr__(self, key):
+        if key not in self.__dict__:
+            return self[key]
+
+
+class LabelInfo:
+
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self._load()
+
+    def _load(self):
+        if os.path.isfile(self.filepath):
+            labels, pairs = self._load_json()
+        else:
+            labels, pairs = dict(), list()
+        self.labels = LabelMapping(**labels)
+        self.pairs = tuple(tuple(p) for p in pairs)
+
+    def _load_json(self):
+        with open(self.filepath) as jfile:
+            contents = json.load(jfile)
+        labels = contents['labels']
+        pairs = contents['pairs']
+        return labels, pairs
+
+    def __hash__(self):
+        labels = tuple(self.labels.keys()) + tuple(self.labels.values())
+        return hash(labels + self.pairs)
+
+    def __eq__(self, label_info):
+        return hash(self) == hash(label_info)
 
 
 class ImageCollection(dict):
@@ -114,10 +152,10 @@ class LabelLoader(Loader):
 
     def __init__(self, file_searcher):
         super().__init__(file_searcher)
-        self.labels, self.pairs = load_label_desc(self.file_searcher.label_file)
 
     def _create(self, f):
-        return Label(info=f, labels=self.labels, pairs=self.pairs)
+        label_info = LabelInfo(self.file_searcher.label_file)
+        return Label(info=f, label_info=label_info)
 
     def _is_correct_type(self, f):
         return f.suffix in Config().label_suffixes
