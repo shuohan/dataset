@@ -13,4 +13,5 @@ setup(name='dataset',
                    'operations'),
       author='Shuo Han',
       author_email='shan50@jhu.edu',
+      install_requires=['nibabel', 'numpy'],
       packages=['dataset'])
