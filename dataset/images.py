@@ -391,20 +391,7 @@ class Mask(Image):
         if self._bbox is None:
             self.calc_bbox()
         cropped = crop3d(image.data, self._bbox)[0]
-        message =  image.message + ['crop']
-        #TODO
-        if isinstance(image, HierachicalLabel):
-            new_image = image.__class__(image.info, cropped, False, message,
-                                        labels=image.labels, pairs=image.pairs,
-                                        tree=image.region_tree)
-        elif isinstance(image, Label):
-            new_image = image.__class__(image.info, cropped, False, message,
-                                        labels=image.labels, pairs=image.pairs)
-        elif isinstance(image, Mask):
-            new_image = image.__class__(image.info, cropped, False, message,
-                                        cropping_shape=image.cropping_shape)
-        else:
-            new_image = image.__class__(image.info, cropped, False, message)
+        new_image = image.update(cropped, 'crop')
         return new_image
 
     @property
