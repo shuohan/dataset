@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""Implement Image to handle data
+"""Images handling the data.
 
 """
 import os
 import json
 import numpy as np
 from pathlib import Path
-from collections import defaultdict
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
@@ -18,13 +17,32 @@ IMAGE_EXT = '.nii*'
 
 
 class FileSearcher:
+    """Searches files in a directory.
 
+    Call :meth:`search` to search the files, then use :attr:`files` and
+    :attr:`label_file` to get the resutls.
+
+    Attributes:
+        dirname (str): The name of the directory to search.
+        files (list[FileInfo]): The searched files.
+        label_file (str): The file specifies the delineation labels.
+
+    """
     def __init__(self, dirname):
         self.dirname = dirname
         self.files = None
         self.label_file = None
 
     def search(self):
+        """Searches the files.
+
+        Use :attr:`files` and :attr:`label_file` to access the searching
+        results.
+
+        Returns:
+            FileSearcher: The instance itself.
+
+        """
         filepaths = sorted(Path(self.dirname).glob('*' + IMAGE_EXT))
         self.files = [FileInfo(fp) for fp in filepaths]
         self.label_file = os.path.join(self.dirname, Config().label_desc)
@@ -32,6 +50,23 @@ class FileSearcher:
 
 
 class FileInfo:
+    """Stores the information of a file.
+
+    The image file should be Nifti (.nii or .nii.gz). The basename contains the
+    subject identifier (:attr:`name`) and image type (:attr:`suffix`) separated
+    by "_", for example, "subj1_image.nii.gz".
+
+    Attributes:
+        filepath (str): The path to the file.
+        dirname (str): The directory of the file.
+        basename (str): The basename of the file.
+        ext (str): The extension of the file.
+        name (str): The name identifying the file. :class:`FileInfo` of the same
+            subject should be the same.
+        suffix (str): The suffix specifying the image type such as "mask",
+            "image", etc.
+
+    """
     def __init__(self, filepath=''):
         self.filepath = str(filepath)
         self.dirname = os.path.dirname(self.filepath)
@@ -61,6 +96,14 @@ class FileInfo:
 
 
 class LabelMapping(dict):
+    """Maps label name to label value.
+
+    This class is an immutable dict. It also supports accessing with a key via
+    "." like a class attribute if the key is in it. Initialize an instance as:
+
+    >>> LabelMapping(**dict_contents)
+    
+    """
     def __setitem__(self, key, val):
         raise RuntimeError('class Labels does not support changing contents')
     def __getattr__(self, key):
@@ -69,7 +112,28 @@ class LabelMapping(dict):
 
 
 class LabelInfo:
+    """Handles label information.
 
+    This class can be compared. Two instances of this class equal each other
+    when the :attr:`labels` and :attr:`pairs` are the same, respectively. This
+    class can also be used as a :class:`dict` key or in :class:`set`.
+
+    This class can be iniatilzed by only :attr:`filepath` or the already loaded
+    ``labels`` and ``pairs``. Since the class performs type conversion,
+    ``labels`` and ``pairs`` can be :class:`dict` and any iterable of iterable
+    of :class:`int`, respectively.
+
+    Attributes:
+        filepath (str): The path to the label description .json file.
+        labels (LabelMapping): The label name and value mapping.
+        pairs (tuple[tuple[int]]): The pair of left and right labels. For
+            example, the brain has left and right temporal lobes.
+
+    Raises:
+        RuntimeError: the input ``filepath`` is ``None`` and any of ``labels``
+            and ``pairs`` is ``None``.
+
+    """
     def __init__(self, filepath=None, labels=None, pairs=None):
         self.filepath = filepath
         if self.filepath is None:
@@ -122,20 +186,30 @@ class LabelInfo:
 
 
 class ImageCollection(dict):
+    """Holds a collection of :class:`Image`.
 
+    This class inherits from :class:`dict`. However, a key can only be
+    :class:`str`. Each value is a :class:`list` of :class:`Image` belonging to
+    the same subject. The images can also be accsessed by an integer index via
+    :meth:`at`.  Adding two instances of this class will concatenate the images
+    of the same key and join the the keys of the both instances.
+
+    """
     def __getitem__(self, key):
         if type(key) is not str:
-            raise RuntimeError('The key can only be str')
+            raise RuntimeError('The key can only be str.')
         if key not in self:
             self[key] = list()
         return super().__getitem__(key)
 
     def at(self, index):
+        """Returns an image group at an integer index."""
         if type(index) is not int:
             raise RuntimeError('The index can only be int')
         return list(self.values())[index]
 
     def append(self, image):
+        """Appends an image to the key ``image.info.name``."""
         self[image.info.name].append(image)
 
     def __add__(self, images):
@@ -150,78 +224,97 @@ class ImageCollection(dict):
 
 
 class Loader:
+    """Abstract class loading :class:`Image`.
+
+    Rewrite :meth:`create` and :meth:`is_correct_type` to load different child
+    classes of :class:`Image`.
+
+    Attributes:
+        file_searcher (FileSearcher): Searches the files.
+        images (ImageCollection): The loaded images.
+
+    """
     def __init__(self, file_searcher):
         self.file_searcher = file_searcher
         self.images = ImageCollection()
 
     def load(self):
+        """Loads images found by :attr:`file_searcher`.
+        
+        Use :attr:`images` to access the loaded images after calling this
+        method.
+        
+        Returns:
+            Loader: The instance itself.
+
+        """
         for f in self.file_searcher.files:
-            if self._is_correct_type(f):
-                self.images.append(self._create(f))
+            if self.is_correct_type(f):
+                self.images.append(self.create(f))
         return self
 
-    def _create(self, f):
+    def create(self, f):
+        """Implements how to create an instance of :class:`Image`.
+
+        Args:
+            f (FileInfo): The file to load.
+        
+        """
         raise NotImplementedError
 
-    def _is_correct_type(self, f):
+    def is_correct_type(self, f):
+        """Implements how to determine the correct image type.
+        
+        Args:
+            f (FileInfo): The file to load.
+        
+        """
         raise NotImplementedError
 
 
 class ImageLoader(Loader):
-
-    def _create(self, f):
+    """Loads :class:`Image`."""
+    def create(self, f):
         return Image(info=f)
-
-    def _is_correct_type(self, f):
+    def is_correct_type(self, f):
         return f.suffix in Config().image_suffixes
 
 
 class LabelLoader(Loader):
-
-    def _create(self, f):
+    """Loads :class:`Label`."""
+    def create(self, f):
         label_info = LabelInfo(self.file_searcher.label_file)
         return Label(info=f, label_info=label_info)
-
-    def _is_correct_type(self, f):
+    def is_correct_type(self, f):
         return f.suffix in Config().label_suffixes
 
 
 class MaskLoader(Loader):
-
-    def _create(self, f):
+    """Loads :class:`Mask`."""
+    def create(self, f):
         return Mask(info=f, cropping_shape=Config().crop_shape)
-
-    def _is_correct_type(self, f):
+    def is_correct_type(self, f):
         return f.suffix in Config().mask_suffixes
 
 
 class BoundingBoxLoader(Loader):
-
-    def _create(self, f):
+    """Loads :class:`BoundingBox`."""
+    def create(self, f):
         return BoundingBox(info=f)
-
-    def _is_correct_type(self, f):
+    def is_correct_type(self, f):
         return f.suffix in Config().bbox_suffixes
 
 
-# def __getitem__(self, key):
-#     if isinstance(key, int):
-#         key = list(self.images.keys())[key]
-#     return self.images[key]
-
-
 class Image:
-    """Image
+    """Handles an image.
 
     Attributes:
-        load_dtype (type): Data type of the internal storage
-        output_dtype (type): Data type of the output
-        filepath (str): The path to the file to load
-        data (numpy.array): The image data
-        on_the_fly (bool): If load the data on the fly
-        message (list of str): The message for printing
-        interp_order (int): The interpolation order of the image
-        _data (numpy.array): Internal reference to the data; used for on the fly
+        load_dtype (type): Data type of the internal storage.
+        output_dtype (type): Data type of the output.
+        info (FileInfo): The file information.
+        on_the_fly (bool): If to load the data on the fly.
+        message (list[str]): The message for printing.
+        interp_order (int): The interpolation order of the image.
          
     """
     load_dtype = np.float32
@@ -231,18 +324,17 @@ class Image:
         """Initialize
 
         Raises:
-            RuntimeError: filepath and data are both None. The class should load
-                from filepath or data
-            RuntimeError: filepath is not None, data is None, and on_the_fly is
-                True. If the class is initialized from data, on_the_fly should
-                be False
+            RuntimeError: ``info`` and ``data`` are both ``None``. The class
+                should load from either ``filepath`` or ``data``.
+            RuntimeError: ``filepath`` is not ``None``, ``data`` is ``None``,
+                and ``on_the_fly`` is ``True``. If the class is initialized from
+                ``data``, ``on_the_fly`` should be ``False``.
 
         """
         if info is None and data is None:
-            raise RuntimeError('"info" and "data" should not be both None')
-
+            raise RuntimeError('"info" and "data" should not be both None.')
         if data is not None and on_the_fly:
-            error = '"on_the_fly" should be False if initialize from data'
+            error = '"on_the_fly" should be False if initialize from data.'
             raise RuntimeError(error)
 
         self.info = info
@@ -253,12 +345,7 @@ class Image:
 
     @property
     def data(self):
-        """Get data
-
-        Returns:
-            result (numpy.array): The image data
-
-        """
+        """Returns data in :class:`numpy.array`."""
         if self.on_the_fly:
             return self._load()
         else:
@@ -274,13 +361,14 @@ class Image:
 
     @property
     def output(self):
-        """Get output
+        """Returns output.
 
-        self.output will be used by .datasets.Dataset to yield data. self.data
-        will mainly be used by .workers.Worker to process
+        The output is derived from :attr:`data`. This is mainly used by
+        :class:`Dataset` to yield data since the internally stored data can be
+        different from the desired output.
 
         Returns:
-            result (numpy.array): The output of the image
+            result (numpy.ndarray): The output of the image.
 
         """
         return self.data.astype(self.output_dtype)
@@ -290,23 +378,22 @@ class Image:
         return ' '.join(message)
 
     def update(self, data, message):
-        """Create a new instance with data"""
+        """Creates a new instance from ``data`` and ``message``."""
         message =  self.message + [message]
         new_image = self.__class__(self.info, data, False, message)
         return new_image
 
     @property
     def shape(self):
+        """Returns the shape of the data in :class:`tuple`."""
         return self.data.shape # TODO
 
 
 class Label(Image):
-    """Label Image
+    """Handles a label image.
 
     Attributes:
-        labels (dict): The key is the label value and the dict value is the name
-            of the label
-        pairs (list): Each is a pair of left/right corresponding labels
+        label_info (LabelInfo): The label description.
 
     """
     load_dtype = np.uint8
@@ -329,6 +416,7 @@ class Label(Image):
 
     @property
     def normalized_label_info(self):
+        """Returns the label info the the normalized label image."""
         label_values = self._get_label_values()
         norm_label_values = np.arange(len(label_values))
         mapping = {o: n for o, n in zip(label_values, norm_label_values)}
@@ -344,6 +432,16 @@ class Label(Image):
         return new_image
 
     def normalize(self):
+        """Normalizes the label image.
+        
+        Uses 0 to (the number of labels - 1) as the labels and reset the label
+        values in the ascent order. The :attr:`label_info` will also be updated
+        accordingly.
+
+        Returns:
+            LabelImage: The normalized label image.
+        
+        """
         label_values = self._get_label_values()
         data = np.digitize(self.data, label_values, right=True)
         label_info = self.normalized_label_info
@@ -355,10 +453,10 @@ class Label(Image):
 
 
 class Mask(Image):
-    """Mask
+    """Handles a mask image.
 
     Attributes:
-        cropping_shape (list of int): The shape of the cropped
+        cropping_shape (list[int]): The shape of the cropped.
 
     """
     load_dtype = np.uint8
@@ -372,20 +470,18 @@ class Mask(Image):
         self._bbox = None
         
     def calc_bbox(self):
-        """Calculate the bounding box
-
-        """
+        """Calculates the bounding box."""
         bbox = calc_bbox3d(self.data)
         self._bbox = resize_bbox3d(bbox, self.cropping_shape)
 
     def crop(self, image):
-        """Crop another image
+        """Crops another image using this mask.
 
         Args:
-            image (Image): The other image to crop
+            image (Image): The other image to crop.
 
         Returns
-            image (Image): The cropped image
+            Image: The cropped image.
 
         """
         if self._bbox is None:
@@ -406,13 +502,7 @@ class Mask(Image):
 
 
 class BoundingBox(Image):
-    """Bounding box of an image
-
-    A binary image will be kept for .workers.Worker to process. The output is
-    an array of start and stop along the x, y, and z axes
-    
-    TODO:
-        support loading from .csv file
+    """Handles a bounding box of an image.
 
     """
     load_dtype = np.uint8
@@ -424,6 +514,7 @@ class BoundingBox(Image):
 
     @property
     def output(self):
+        """Returns an array of starts and stops along the x, y, and z axes."""
         bbox = calc_bbox3d(self.data)
         output = list()
         for b in bbox:

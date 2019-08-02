@@ -14,27 +14,27 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
-from sphinx.ext.napoleon.docstring import GoogleDocstring
-def parse_keys_section(self, section):
-    return self._format_fields('Keys', self._consume_fields())
-GoogleDocstring._parse_keys_section = parse_keys_section
-
-def parse_attributes_section(self, section):
-    return self._format_fields('Attributes', self._consume_fields())
-GoogleDocstring._parse_attributes_section = parse_attributes_section
-
-def parse_class_attributes_section(self, section):
-    return self._format_fields('Class Attributes', self._consume_fields())
-GoogleDocstring._parse_class_attributes_section = parse_class_attributes_section
-
-# we now patch the parse method to guarantee that the the above methods are
-# assigned to the _section dict
-def patched_parse(self):
-    self._sections['keys'] = self._parse_keys_section
-    self._sections['class attributes'] = self._parse_class_attributes_section
-    self._unpatched_parse()
-GoogleDocstring._unpatched_parse = GoogleDocstring._parse
-GoogleDocstring._parse = patched_parse
+# from sphinx.ext.napoleon.docstring import GoogleDocstring
+# def parse_keys_section(self, section):
+#     return self._format_fields('Keys', self._consume_fields())
+# GoogleDocstring._parse_keys_section = parse_keys_section
+#  
+# def parse_attributes_section(self, section):
+#     return self._format_fields('Attributes', self._consume_fields())
+# GoogleDocstring._parse_attributes_section = parse_attributes_section
+# 
+# def parse_class_attributes_section(self, section):
+#     return self._format_fields('Class Attributes', self._consume_fields())
+# GoogleDocstring._parse_class_attributes_section = parse_attributes_section
+# 
+# # we now patch the parse method to guarantee that the the above methods are
+# # assigned to the _section dict
+# def patched_parse(self):
+#     self._sections['keys'] = self._parse_keys_section
+#     self._sections['class attributes'] = self._parse_class_attributes_section
+#     self._unpatched_parse()
+# GoogleDocstring._unpatched_parse = GoogleDocstring._parse
+# GoogleDocstring._parse = patched_parse
 
 
 # -- Project information -----------------------------------------------------
@@ -72,7 +72,9 @@ exclude_patterns = []
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-# html_theme = 'alabaster'
+# import sphinx_bootstrap_theme
+# html_theme = 'bootstrap'
+# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -80,6 +82,6 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 napoleon_use_rtype = False
-napoleon_use_ivar = False
+# napoleon_use_ivar = True
 autodoc_mock_imports = ['numpy', 'scipy', 'nibabel']
-
+autodoc_member_order = 'bysource'
