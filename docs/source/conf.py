@@ -81,7 +81,7 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-napoleon_use_rtype = False
-# napoleon_use_ivar = True
+napoleon_use_rtype = True
+napoleon_use_ivar = False
 autodoc_mock_imports = ['numpy', 'scipy', 'nibabel']
 autodoc_member_order = 'bysource'

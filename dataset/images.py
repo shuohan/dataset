@@ -19,8 +19,8 @@ IMAGE_EXT = '.nii*'
 class FileSearcher:
     """Searches files in a directory.
 
-    Call :meth:`search` to search the files, then use :attr:`files` and
-    :attr:`label_file` to get the resutls.
+    Call the method :meth:`search` to search the files, then use the attributes
+    :attr:`files` and :attr:`label_file` to get the resutls.
 
     Attributes:
         dirname (str): The name of the directory to search.
@@ -36,8 +36,8 @@ class FileSearcher:
     def search(self):
         """Searches the files.
 
-        Use :attr:`files` and :attr:`label_file` to access the searching
-        results.
+        Use the attributes :attr:`files` and :attr:`label_file` to access the
+        searching results.
 
         Returns:
             FileSearcher: The instance itself.
@@ -52,9 +52,10 @@ class FileSearcher:
 class FileInfo:
     """Stores the information of a file.
 
-    The image file should be Nifti (.nii or .nii.gz). The basename contains the
-    subject identifier (:attr:`name`) and image type (:attr:`suffix`) separated
-    by "_", for example, "subj1_image.nii.gz".
+    The image file should be Nifti (``".nii"`` or ``".nii.gz"``). The basename
+    contains the subject identifier (the attribute :attr:`name`) and image type
+    (the attribute :attr:`suffix`) separated by ``"_"``, for example,
+    ``"subj1_image.nii.gz"``.
 
     Attributes:
         filepath (str): The path to the file.
@@ -63,8 +64,8 @@ class FileInfo:
         ext (str): The extension of the file.
         name (str): The name identifying the file. :class:`FileInfo` of the same
             subject should be the same.
-        suffix (str): The suffix specifying the image type such as "mask",
-            "image", etc.
+        suffix (str): The suffix specifying the image type such as ``mask``,
+            ``image``, etc.
 
     """
     def __init__(self, filepath=''):
@@ -99,7 +100,7 @@ class LabelMapping(dict):
     """Maps label name to label value.
 
     This class is an immutable dict. It also supports accessing with a key via
-    "." like a class attribute if the key is in it. Initialize an instance as:
+    ``.`` like a class attribute if the key is in it. Initialize an instance as:
 
     >>> LabelMapping(**dict_contents)
     
@@ -115,13 +116,14 @@ class LabelInfo:
     """Handles label information.
 
     This class can be compared. Two instances of this class equal each other
-    when the :attr:`labels` and :attr:`pairs` are the same, respectively. This
-    class can also be used as a :class:`dict` key or in :class:`set`.
+    when the attributes :attr:`labels` and :attr:`pairs` are the same,
+    respectively. This class can also be used as a :class:`dict` key or in
+    :class:`set`.
 
-    This class can be iniatilzed by only :attr:`filepath` or the already loaded
-    ``labels`` and ``pairs``. Since the class performs type conversion,
-    ``labels`` and ``pairs`` can be :class:`dict` and any iterable of iterable
-    of :class:`int`, respectively.
+    This class can be iniatilzed by only the attribute :attr:`filepath` or the
+    already loaded variables ``labels`` and ``pairs``. Since the class performs
+    type conversion, ``labels`` can be :class:`dict` and ``pairs`` can be any
+    iterable of iterable of :class:`int`.
 
     Attributes:
         filepath (str): The path to the label description .json file.
@@ -189,10 +191,11 @@ class ImageCollection(dict):
     """Holds a collection of :class:`Image`.
 
     This class inherits from :class:`dict`. However, a key can only be
-    :class:`str`. Each value is a :class:`list` of :class:`Image` belonging to
-    the same subject. The images can also be accsessed by an integer index via
-    :meth:`at`.  Adding two instances of this class will concatenate the images
-    of the same key and join the the keys of the both instances.
+    :class:`str`. Each value is a :class:`list` of class :class:`Image`
+    belonging to the same subject. The images can also be accsessed by an
+    integer index via the method :meth:`at`. Adding two instances of this class
+    will concatenate the images of the same key and join the the keys of the
+    both instances.
 
     """
     def __getitem__(self, key):
@@ -226,8 +229,8 @@ class ImageCollection(dict):
 class Loader:
     """Abstract class loading :class:`Image`.
 
-    Rewrite :meth:`create` and :meth:`is_correct_type` to load different child
-    classes of :class:`Image`.
+    Rewrite methods :meth:`create` and :meth:`is_correct_type` to load different
+    child classes of :class:`Image`.
 
     Attributes:
         file_searcher (FileSearcher): Searches the files.
@@ -239,10 +242,10 @@ class Loader:
         self.images = ImageCollection()
 
     def load(self):
-        """Loads images found by :attr:`file_searcher`.
+        """Loads images found by the attribute :attr:`file_searcher`.
         
-        Use :attr:`images` to access the loaded images after calling this
-        method.
+        Use the attribute :attr:`images` to access the loaded images after
+        calling this method.
         
         Returns:
             Loader: The instance itself.
@@ -254,7 +257,7 @@ class Loader:
         return self
 
     def create(self, f):
-        """Implements how to create an instance of :class:`Image`.
+        """Implements how to create an instance of class :class:`Image`.
 
         Args:
             f (FileInfo): The file to load.
@@ -363,12 +366,12 @@ class Image:
     def output(self):
         """Returns output.
 
-        The output is derived from :attr:`data`. This is mainly used by
-        :class:`Dataset` to yield data since the internally stored data can be
-        different from the desired output.
+        The output is derived from the attribute :attr:`data`. This is mainly
+        used by the class :class:`Dataset` to yield data since the internally
+        stored data can be different from the desired output.
 
         Returns:
-            result (numpy.ndarray): The output of the image.
+            numpy.ndarray: The output of the image.
 
         """
         return self.data.astype(self.output_dtype)
@@ -391,6 +394,9 @@ class Image:
 
 class Label(Image):
     """Handles a label image.
+
+    This class can normalize itself so the label values will become a series of
+    consecutive numbers.
 
     Attributes:
         label_info (LabelInfo): The label description.
@@ -435,11 +441,11 @@ class Label(Image):
         """Normalizes the label image.
         
         Uses 0 to (the number of labels - 1) as the labels and reset the label
-        values in the ascent order. The :attr:`label_info` will also be updated
-        accordingly.
+        values in the ascent order. The atrribute :attr:`label_info` will also
+        be updated accordingly.
 
         Returns:
-            LabelImage: The normalized label image.
+            Label: The normalized label image.
         
         """
         label_values = self._get_label_values()
@@ -454,6 +460,8 @@ class Label(Image):
 
 class Mask(Image):
     """Handles a mask image.
+
+    This class can crop other instances of :class:`Image`.
 
     Attributes:
         cropping_shape (list[int]): The shape of the cropped.
@@ -503,6 +511,11 @@ class Mask(Image):
 
 class BoundingBox(Image):
     """Handles a bounding box of an image.
+
+    The bounding box is internally stored as a binary mask, and all
+    transformation will be applied to the mask image. The mask will be converted
+    to a bounding box described by corner coordinates only when calling the
+    property :attr:`output`.
 
     """
     load_dtype = np.uint8
