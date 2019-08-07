@@ -9,6 +9,20 @@ NAME_PREFIX = '- '
 STACK_DIM = 0
 
 
+def load_tree(filepath):
+    if os.path.isfile(filepath):
+        with open(filepath) as jfile:
+            tree = json.load(jfile)
+        return _create_tree(tree)
+
+def _create_tree(tree, level=0):
+    if 'subregions' in tree:
+        subtrees = {sub['name']: _create_tree(sub, level=level+1)
+                    for sub in tree['subregions']}
+        return Tree(subtrees, level=level)
+    else:
+        return Leaf(level=level)
+
 class Leaf:
     """
 

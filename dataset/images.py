@@ -10,10 +10,37 @@ from pathlib import Path
 from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
 
 from .config import Config
-from .loads import load
 
 
 IMAGE_EXT = '.nii*'
+
+
+def load(filepath, dtype):
+    """Loads an image from hard drive.
+
+    Args:
+        filepath (str): The path to the file to load.
+        dtype (type): The data type of the loaded data.
+
+    Returns:
+        numpy.ndarray: Loaded data.
+    
+    """
+    if filepath.endswith('.npy'):
+        return _load_npy(filepath, dtype)
+    elif filepath.endswith('.nii') or filepath.endswith('.nii.gz'):
+        return _load_nii(filepath, dtype)
+
+
+def _load_npy(filepath, dtype):
+    """Loads a ``".npy"`` file."""
+    return np.load(filepath).astype(dtype)
+
+
+def _load_nii(filepath, dtype):
+    """Load a ``".nii"`` or ``".nii.gz"`` file."""
+    import nibabel as nib
+    return nib.load(filepath).get_data().astype(dtype)
 
 
 class FileSearcher:
@@ -348,7 +375,7 @@ class Image:
 
     @property
     def data(self):
-        """Returns data in :class:`numpy.array`."""
+        """Returns data in :class:`numpy.ndarray`."""
         if self.on_the_fly:
             return self._load()
         else:
@@ -461,10 +488,15 @@ class Label(Image):
 class Mask(Image):
     """Handles a mask image.
 
-    This class can crop other instances of :class:`Image`.
+    This class can crop other instances of :class:`Image`. Call the method
+    :meth:`calc_bbox` to calculate the bounding box for cropping then access the
+    bounding box by the attribute :attr:`bbox`. However, the method :meth:`crop`
+    calls :meth:`calc_bbox` so it does not need to be called separately.
 
     Attributes:
         cropping_shape (list[int]): The shape of the cropped.
+        bbox (tuple[slice]): The bounding box specifying the starts and stops
+            along the x, y, and z axes around the mask.
 
     """
     load_dtype = np.uint8
@@ -475,12 +507,12 @@ class Mask(Image):
         super().__init__(info, data, on_the_fly, message)
         self.interp_order = 0
         self.cropping_shape = cropping_shape
-        self._bbox = None
+        self.bbox = None
         
     def calc_bbox(self):
         """Calculates the bounding box."""
         bbox = calc_bbox3d(self.data)
-        self._bbox = resize_bbox3d(bbox, self.cropping_shape)
+        self.bbox = resize_bbox3d(bbox, self.cropping_shape)
 
     def crop(self, image):
         """Crops another image using this mask.
@@ -492,9 +524,9 @@ class Mask(Image):
             Image: The cropped image.
 
         """
-        if self._bbox is None:
+        if self.bbox is None:
             self.calc_bbox()
-        cropped = crop3d(image.data, self._bbox)[0]
+        cropped = crop3d(image.data, self.bbox)[0]
         new_image = image.update(cropped, 'crop')
         return new_image
 
