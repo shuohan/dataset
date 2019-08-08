@@ -1,0 +1,3 @@
+numpy
+nibabel
+git+https://gitlab.com/shan-utils/image-processing-3d@0.4.1

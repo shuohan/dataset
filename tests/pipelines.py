@@ -4,102 +4,41 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage.morphology import binary_dilation
 
-from dataset import ImageLoader, Dataset, RandomPipeline, Config
+from dataset import Config
+from dataset.pipelines import RandomPipeline
+from dataset.images import Image, Label, Mask, FileInfo, LabelInfo
+from plot import imshow
 
-dirname = 'data'
-image_ind = 5
 
-def show(image, label, title, mask=None):
-    shape = image.shape[1:]
-    fig = plt.figure()
-    plt.subplot(1, 3, 1)
-    plt.imshow(image[0, shape[0]//2, :, :], cmap='gray')
-    plt.imshow(label[0, shape[0]//2, :, :], alpha=0.3)
-    if mask is not None:
-        plt.imshow(mask[0, shape[0]//2, :, :], alpha=0.3, cmap='autumn')
-    plt.subplot(1, 3, 2)
-    plt.imshow(image[0, :, shape[1]//2, :], cmap='gray')
-    plt.imshow(label[0, :, shape[1]//2, :], alpha=0.3)
-    if mask is not None:
-        plt.imshow(mask[0, :, shape[1]//2, :], alpha=0.3, cmap='autumn')
-    plt.subplot(1, 3, 3)
-    plt.imshow(image[0, :, :, shape[2]//2], cmap='gray')
-    plt.imshow(label[0, :, :, shape[2]//2], alpha=0.3)
-    if mask is not None:
-        plt.imshow(mask[0, :, :, shape[2]//2], alpha=0.3, cmap='autumn')
-    fig.suptitle(title)
+image_filepath = 'data/at1000_image.nii.gz'
+label_filepath = 'data/at1000_label.nii.gz'
+mask_filepath = 'data/at1000_mask.nii.gz'
+label_desc_filepath = 'data/labels.json'
 
-Config().verbose = True
+image = Image(FileInfo(image_filepath), on_the_fly=False)
+label = Label(FileInfo(label_filepath), on_the_fly=False,
+              label_info=LabelInfo(label_desc_filepath))
+mask = Mask(FileInfo(mask_filepath), on_the_fly=False)
 
-print('no cropping')
-loader = ImageLoader(dirname, id='tmc')
-loader.load('image', 'label', 'mask')
-dataset = Dataset(images=loader.images)
+Config.verbose = True
 
 pipeline = RandomPipeline()
-pipeline.register('resizing')
-dataset.add_pipeline(pipeline)
-
-image, label, mask = dataset[image_ind]
-print(image.shape)
-print(image.dtype, label.dtype, mask.dtype)
-show(image, label, 'no cropping')
-
-# ------------------------------------------------------------------------------ 
-
-print('bounding box')
-loader = ImageLoader(dirname, id='tmc')
-loader.load('image', 'label', 'bounding_box', 'mask')
-dataset = Dataset(loader.images)
+pipeline.register('resize')
+results = pipeline.process(image, label, mask)
+imshow((image, label, mask), results)
+plt.gcf().suptitle(results[0].__str__())
 
 pipeline = RandomPipeline()
-pipeline.register('resizing', 'scaling', 'rotation', 'deformation', 'cropping')
-dataset.add_pipeline(pipeline)
-
-image, label, bbox = dataset[image_ind]
-print(image.shape)
-print(image.dtype, label.dtype, bbox.dtype)
-bbox = bbox.astype(np.int)
-
-mask = np.zeros(image.shape, dtype=bool)
-mask[..., bbox[0]:bbox[1], bbox[2]:bbox[3], bbox[4]:bbox[5]] = 1
-mask = binary_dilation(mask) ^ mask
-
-show(image, label, 'bounding box', mask=mask)
-
-# ------------------------------------------------------------------------------ 
-
-print('flipping')
-loader = ImageLoader(dirname, id='tmc')
-loader.load('image', 'label', 'mask')
-dataset = Dataset(loader.images)
+pipeline.register('resize', 'scale', 'rotate', 'deform', 'crop')
+results = pipeline.process(image, label, mask)
+imshow((image, label, mask), results)
+plt.gcf().suptitle(results[0].__str__())
 
 pipeline = RandomPipeline()
-pipeline.register('flipping', 'cropping')
-dataset.add_pipeline(pipeline)
-
-image, label = dataset[image_ind]
-print(image.shape)
-show(image, label, 'flipping')
-
-augmentation = ['rotation', 'scaling', 'translation', 'deformation']
-for aug in augmentation:
-    print(aug)
-    loader = ImageLoader(dirname, id='tmc')
-    loader.load('image', 'label', 'mask')
-    dataset = Dataset(images=loader.images)
-
-    pipeline = RandomPipeline()
-    pipeline.register(aug)
-    if aug != 'translation':
-        pipeline.register('cropping')
-    pipeline.register('label_normalization')
-    dataset.add_pipeline(pipeline)
-
-    image, label = dataset[image_ind][:2]
-    print(image.shape)
-    show(image, label, aug)
+pipeline.register('flip', 'scale', 'rotate', 'deform', 'crop')
+results = pipeline.process(image, label, mask)
+imshow((image, label, mask), results)
+plt.gcf().suptitle(results[0].__str__())
 
 plt.show()

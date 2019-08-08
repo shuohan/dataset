@@ -1,115 +1,147 @@
 # -*- coding: utf-8 -*-
 
-"""Implement Worker to process Image
+"""Workers to process images.
 
 """
-import numpy as np
 from enum import Enum, auto
+import time
+import numpy as np
 from py_singleton import Singleton
-from image_processing_3d import rotate3d, scale3d, padcrop3d, crop3d
-from image_processing_3d import calc_random_deformation3d, deform3d
+from image_processing_3d import rotate3d, scale3d, padcrop3d, translate3d_int
+from image_processing_3d import calc_random_deformation3d, deform3d, crop3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
 
 from .config import Config
 from .images import Mask, Label, Image
 
 
-class WorkerName(Enum):
-    resizing = auto()
-    flipping = auto()
-    translation = auto()
-    rotation = auto()
-    scaling = auto()
-    deformation = auto()
-    sigmoid_intensity = auto()
-    cropping = auto()
-    label_normalization = auto()
-    patch = auto()
-
-
 class WorkerType(Enum):
-    aug = auto()
-    addon = auto()
-
-
-class WorkerTypeMapping(metaclass=Singleton):
-    """Map the worker name and its type
+    """The type of a worker.
 
     Attributes:
-        _mapping (dict): Internal strurcture keeping the mapping
+        AUG: For workers used in augmentation.
+        ADDON: For workers used in additional processing.
+
+    """
+    AUG = auto()
+    ADDON = auto()
+
+
+class WorkerCreator(metaclass=Singleton):
+    """Creates a concerete worker to process the images.
+
+    Call the method :meth:`register` to add a new :class:`Worker` into the pool
+    so when calling the method :meth:`create` with a worker name (:class:`str`)
+    to create an worker, it can find the corresponding implementation correctly.
+    This feature is primarily for adding new type of workers.
+
+    >>> print(WorkerCreator()) # print all registered workers.
+
+    Note:
+        This class is a singleton so calling :meth:`register` with any instances
+        will update all copies (actually all copies point to the same instance).
+
+        The worker type (AUG or ADDON) is changed via
+        :class:`dataset.config.Config` and take effect when calling the method
+        :meth:`register`.
 
     """
     def __init__(self):
-        config = Config()
-        if not set(config.total_addon).isdisjoint(config.total_aug):
-            raise RunTimeError('Addon and aug workers overlap in config')
-        self._mapping = {WorkerName[worker_name]: WorkerType.addon
-                         for worker_name in config.total_addon}
-        self._mapping.update({WorkerName[worker_name]: WorkerType.aug
-                              for worker_name in config.total_aug})
+        self._workers = dict()
+        self.register('resize', Resizer)
+        self.register('crop', Cropper)
+        self.register('norm_label', LabelNormalizer)
+        self.register('extract_mask', MaskExtractor)
+        self.register('extract_patches', PatchExtractor)
+        self.register('flip', Flipper)
+        self.register('rotate', Rotator)
+        self.register('deform', Deformer)
+        self.register('scale', Scaler)
+        self.register('translate', Translator)
 
-    def __getitem__(self, worker):
-        if type(worker) is str:
-            worker = WorkerName[worker]
-        return self._mapping[worker]
+    def create(self, name):
+        """Creates a worker.
 
-    def items(self):
-        return self._mapping.items()
+        Args:
+            name (str): The name of the worker. Call the method :meth:`register`
+                to register new workers.
+        
+        Returns:
+            :class:`Worker`: a concrete worker.
 
+        Raises:
+            KeyError: The name is not registered.
+            
+        """
+        if name in self._workers:
+            return self._workers[name]()
+        else:
+            raise KeyError('Worker "%s" is not registered.' % name)
 
-def create_worker(worker_name):
-    """Create concrete worker to process images
+    def register(self, name, worker):
+        """Registers a :class:`Worker` with a :class:`str`.
 
-    Args:
-        worker_name (enum .workers.WorkerName): The name of the worker
+        Args:
+            name (str): The name of the worker.
+            worker (type): The class :class:`Worker` to register.
 
-    Returns:
-        worker (.workers.Worker): The worker instance
+        Raises:
+            RuntimeError: Worker types are incorrect in config.
+        
+        """
+        if self._config_is_correct():
+            message = 'Addon and augmentation workers overlap in configurations'
+            raise RuntimeError(message)
+        if name in Config.worker_types['addon']:
+            worker.worker_type = WorkerType.ADDON
+        elif name in Config.worker_types['aug']:
+            worker.worker_type = WorkerType.AUG
+        else:
+            raise RuntimeError('Worker %s is not in the config.' % name)
+        self._workers[name] = worker
 
-    Raises:
-        ValueError: The worker_name is not in enum WorkerName
+    def _config_is_correct(self):
+        """Returns if aug and addon workers are correctly written in config."""
+        addon = Config.worker_types['addon']
+        aug = Config.worker_types['aug']
+        return not set(addon).isdisjoint(aug)
 
-    """
-    config = Config()
-    if worker_name is WorkerName.resizing:
-        return Resizer(shape=config.image_shape)
-    elif worker_name is WorkerName.flipping:
-        return Flipper(dim=config.flip_dim)
-    elif worker_name is WorkerName.cropping:
-        return Cropper()
-    elif worker_name is WorkerName.label_normalization:
-        return LabelNormalizer()
-    elif worker_name is WorkerName.patch:
-        return PatchExtractor(config.patch_shape)
-    elif worker_name is WorkerName.translation:
-        return Translator(max_trans=config.max_trans)
-    elif worker_name is WorkerName.rotation:
-        return Rotator(max_angle=config.max_rot_angle)
-    elif worker_name is WorkerName.scaling:
-        return Scaler(max_scale=config.max_scale)
-    elif worker_name is WorkerName.deformation:
-        return Deformer(sigma=config.def_sigma, scale=config.def_scale)
-    elif worker_name is WorkerName.sigmoid_intensity:
-        return SigIntChanger(klim=config.sig_int_klim, blim=config.sig_int_blim,
-                             num_sigmoid=config.sig_int_num)
-    else:
-        raise ValueError('Worker "%s" is not in WorkerName')
+    def unregister(self, name):
+        """Unregisters a worker."""
+        self._workers.pop(name)
+
+    def get_type(self, name):
+        """Returns the type (AUG or ADDON) of worker."""
+        return self._workers[name].worker_type
+
+    def __str__(self):
+        message = ['Registered workers:']
+        length = max([len(k) for k in self._workers.keys()])
+        for k, v in self._workers.items():
+            t = WorkerType(v.worker_type)
+            message.append(('    %%%ds: %%s, %%s' % length) % (k, v, t.name))
+        return '\n'.join(message)
 
 
 class Worker:
-    """Abstract class to process .images.Image
+    """Abstract class to process instances of :class:`dataset.images.Image`.
+    
+    Attributes:
+        message (str): The message to show when printing.
+        worker_type (WorkerType, enum): The type (AUG or ADDON) of the worker.
     
     """
     message = ''
+    worker_type = WorkerType.ADDON
 
     def process(self, *images):
-        """Process a set of .images.Image instances
+        """Processes instances of :class:`dataset.images.Image`.
 
         Args:
-            image (.images.Image): The image to process
+            image (dataset.images.Image): The image to process.
 
         Returns:
-            results (tuple of .images.Image): The processed images
+            tuple[dataset.images.Image]: The processed images.
         
         """
         results = list()
@@ -119,184 +151,163 @@ class Worker:
         return tuple(results)
 
     def _process(self, image):
-        """Abstract method to process an .image.Image instance
+        """Processes an :class:`dataset.image.Image` instance.
 
         Args:
-            image (.image.Image): The image to process
+            image (dataset.images.Image): The image to process.
 
         Returns:
-            result (numpy.array): The processed image data
+            numpy.ndarray: The processed image data.
         
         """
         raise NotImplementedError
 
 
-class Resizer(Worker):
-    """Resize images by padding or cropping
+class RandomWorker(Worker):
+    """Abstract class for a worker with operations sampled randomly.
+   
+    Attributes:
+        rand_state (numpy.random.RandomState): The random state.
+    
+    """
+    def __init__(self):
+        self.rand_state = np.random.RandomState(int(time.time()))
+
+
+class Resizer_(Worker):
+    """Resizes images by padding or cropping.
 
     Attributes:
-        shape (list/tuple of int): The target image shape
+        shape (iterable[int]): The target image shape.
 
     """
     message = 'resize'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, shape):
         self.shape = shape
-    
+
     def _process(self, image):
-        """Resize an image by padding or cropping
-
-        Args:
-            image (.images.Image): The image to resize
-
-        Returns:
-            result (numpy.array): The resized image data
-
-        """
         return padcrop3d(image.data, self.shape)[0]
 
 
-class Rotator(Worker):
-    """Rotate Image randomly
+class Resizer(Resizer_):
+    """Wrapper of :class:`Resizer_`."""
+    def __init__(self):
+        super().__init__(shape=Config.image_shape)
 
-    Call `image_processing_3d.rotate3d` to rotate the data. The rotation angles
-    are randomly sampled from a uniform distribution between `-self.max_angel`
-    and `self.max_angle`.
+
+class Rotator_(RandomWorker):
+    """Rotates images randomly.
+
+    The rotation angles are randomly sampled from a uniform distribution
+    :math:`[-\\alpha, \\alpha]`, :math:`\\alpha` is specified by the attribute
+    :attr:`max_angle`.
+    .
 
     Attributes:
-        max_angle (int): Specify the sampling uniform distribution in degrees
-        point (numpy.array): The 3D point to rotate around
-        _rand_state (numpy.random.RandomState): Specify random seed
-        _x (float): Rotation angle aroung the x axis in degrees
-        _y (float): Rotation angle aroung the y axis in degrees
-        _z (float): Rotation angle aroung the z axis in degrees
+        max_angle (int): Specifies the sampling uniform distribution in degrees.
+        point (numpy.ndarray): The 3D point to rotate around.
+        x (float): The sampled rotation angle around the x axis.
+        y (float): The sampled rotation angle around the y axis.
+        z (float): The sampled rotation angle around the z axis.
 
     """
     message = 'rotate'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_angle=5, point=None):
-        """Initialize
-
-        """
+        super().__init__()
         self.max_angle = max_angle
         self.point = point
-
-        self._rand_state = np.random.RandomState()
-        self._x = self._calc_rand_angle()
-        self._y = self._calc_rand_angle()
-        self._z = self._calc_rand_angle()
+        self.x = self._calc_rand_angle()
+        self.y = self._calc_rand_angle()
+        self.z = self._calc_rand_angle()
 
     def _calc_rand_angle(self):
-        """Calculate random angle from a uniform distribution
-        
-        Returns:
-            angle (float): The sampled rotation angle in degrees
-
-        """
-        angle = self._rand_state.rand(1)
+        """Returns a sampled angle in degrees."""
+        angle = self.rand_state.rand(1)
         angle = float(angle * 2 * self.max_angle - self.max_angle)
         return angle
 
     def _process(self, image):
-        """Rotate an image
-
-        Args:
-            image (.image.Image): The image to rotate
-
-        Returns:
-            result (numpy.array): The rotated image
-
-        """
-        return rotate3d(image.data, self._x, self._y, self._z,
-                        point=self.point, order=image.interp_order)
+        return rotate3d(image.data, self.x, self.y, self.z,
+                        pivot=self.point, order=image.interp_order)
 
 
-class Scaler(Worker):
-    """Scale Image randomly
+class Rotator(Rotator_):
+    """Wrapper of :class:`Rotator_`."""
+    def __init__(self):
+        super().__init__(max_angle=Config.max_rot_angle)
 
-    Call `image_processing_3d.scale3d` to scale the data. The scaling factors
-    are randomly sampled from a uniform distribution between 1
-    and `self.max_scale` and between -1 and -self.max_scale. If the sampled is
-    negative, convert to 1/abs(scale).
+
+class Scaler_(RandomWorker):
+    """Scales images randomly.
+
+    The scaling factors are randomly sampled from uniform distributions
+    :math:`[1, s]` and :math:`[-s, -1]`. :math:`s` is specified by the attribute
+    :attr:`max_scale`. If the sampled scaling factor :math:`v` is negative,
+    convert it to :math:`1/|v|`.
 
     Attributes:
-        max_scale (float): Specify the sampling uniform distribution.
-        point (numpy.array): The 3D point to scale around
-        _rand_state (numpy.random.RandomState): Specify random seed
-        _x (float): Scaling factor around the x axis
-        _y (float): Scaling factor around the y axis
-        _z (float): Scaling factor around the z axis
+        max_scale (float): Specifies the sampling uniform distribution.
+        point (numpy.ndarray): The 3D point to scale around.
+        x (float): The scaling factor around the x axis.
+        y (float): The scaling factor around the y axis.
+        z (float): The scaling factor around the z axis.
 
     """
     message  = 'scale'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_scale=2, point=None):
-        """Initialize
-
-        """
+        super().__init__()
         self.max_scale = max_scale
         self.point = point
-
-        self._rand_state = np.random.RandomState()
-        self._x = self._calc_rand_scale()
-        self._y = self._calc_rand_scale()
-        self._z = self._calc_rand_scale()
+        self.x = self._calc_rand_scale()
+        self.y = self._calc_rand_scale()
+        self.z = self._calc_rand_scale()
 
     def _calc_rand_scale(self):
-        """Calculate random scaling factor from a uniform distribution
-        
-        Returns:
-            scale (float): The sampled scaling factor
-
-        """
-        scale = self._rand_state.rand(1)
+        """Returns a random scaling factor from a uniform distribution."""
+        scale = self.rand_state.rand(1)
         scale = float(scale * (self.max_scale - 1) + 1)
-        if self._rand_state.choice([-1, 1]) < 0:
+        if self.rand_state.choice([-1, 1]) < 0:
             scale = 1 / scale
         return scale
 
     def _process(self, image):
-        """Scale an image
-
-        Args:
-            image (.images.Image): The image to scale
-
-        Returns:
-            result (numpy.array): The scaled image data
-        
-        """
-        return scale3d(image.data, self._x, self._y, self._z,
-                       point=self.point, order=image.interp_order)
+        return scale3d(image.data, self.x, self.y, self.z,
+                       pivot=self.point, order=image.interp_order)
 
 
-class Flipper(Worker):
-    """Flip the image along an dimension (axis)
+class Scaler(Scaler_):
+    """Wrapper of :class:`Scaler_`."""
+    def __init__(self):
+        super().__init__(max_scale=Config.max_scale)
+
+
+class Flipper_(Worker):
+    """Flips images along an dimension/axis.
+
+    Flip only the data if the image does NOT have the attribute ``pairs`` as
+    :attr:`dataset.Label.pairs`. Otherwise, the corresponding labels are
+    swapped after the flipping. For example, suppose 23 is a label on the left
+    side of brain, while 26 is on the right. After flipping the image, the
+    labels 23 and 26 should be swapped so they would appear on the correct
+    sides.
 
     Attributes:
-        dim (int): The dimension/axis that the image is flipped around
+        dim (int): The dimension/axis that the image is flipped around.
 
     """
     message = 'flip'
+    worker_type = WorkerType.ADDON
 
     def __init__(self, dim=0):
         self.dim = dim
 
     def _process(self, image):
-        """Flip the image
-
-        Only flip the data if image does not have `label_pairs`; otherwise, the
-        corresponding labels are swapped after the flipping. For example,
-        suppose 23 is a label on the left side of brain, while 26 on the right.
-        After flipping the image, the labels 23 and 26 should be swapped so they
-        are on the correct sides
-
-        Args:
-            image (.image.Image): The image to flip
-
-        Returns:
-            result (numpy.array): The flipped image data
-
-        """
         result = np.flip(image.data, self.dim).copy()
         if hasattr(image, 'pairs'):
             for (pair1, pair2) in image.pairs:
@@ -307,152 +318,105 @@ class Flipper(Worker):
         return result
 
 
-class Cropper(Worker):
-    """Crop .images.Image instances with .images.Mask
+class Flipper(Flipper_):
+    """Wrapper of :class:`Flipper_`."""
+    def __init__(self):
+        super().__init__(dim=Config.flip_dim)
 
-    TODO:
-        update results as an 2D array for multiple masks
+
+class Cropper(Worker):
+    """Crops images with a mask.
+
+    Note:
+        The last :class:`Mask` instance will be used to crop others, and all 
+        :class:`Mask` instances will be removed from the outputs.
 
     """
+    message = 'crop'
+    worker_type = WorkerType.ADDON
+
     def process(self, *images):
-        """Crop the images
-
-        If any images of class .images.Mask will be used to crop the rest of
-        images
-
-        Arags:
-            image (.images.Image): The image to crop or the mask
-
-        Returns:
-            results (tuple of .images.Image): The cropped images
-
-        """
-        masks = list()
         others = list()
         for image in images:
             if isinstance(image, Mask):
-                masks.append(image)
+                mask = image
             else:
                 others.append(image)
-
-        results = list()
-        for mask in masks:
-            cropped = list()
-            for image in others:
-                cropped.append(mask.crop(image))
-            # results.append(cropped) # TODO
-            results.extend(cropped)
-        return tuple(results)
+        results = tuple([mask.crop(image) for image in others])
+        return results
 
 
-class Translator(Worker):
-    """Translate images randomly along x, y, and z axes
+class Translator_(RandomWorker):
+    """Translates images randomly along x, y, and z axes by integers.
 
-    The translation is integer for simplicity
-    
+    The translations are randomly sampled from a uniform distribution
+    :math:`[-t, t]` where :math:`t` is specified by the attribute
+    attr:`max_trans`.
+
     Attributes:
-        max_trans (int): The translation will be uniformly sampled from
-            [-self.max_trans, self.max_trans]
-        _rand_state (numpy.random.RandomState): Random sampling
-        _x (int): Translation along x axis
-        _y (int): Translation along y axis
-        _z (int): Translation along z axis
+        max_trans (int): Specifies the distribution.
+        x (int): The translation along x axis.
+        y (int): The translation along y axis.
+        z (int): The translation along z axis.
 
     """
     message = 'translate'
+    worker_type = WorkerType.AUG
 
     def __init__(self, max_trans=30):
+        super().__init__()
         self.max_trans = max_trans
-        self._rand_state = np.random.RandomState()
-        self._x = self._calc_random_trans()
-        self._y = self._calc_random_trans()
-        self._z = self._calc_random_trans()
+        self.x = self._calc_random_trans()
+        self.y = self._calc_random_trans()
+        self.z = self._calc_random_trans()
 
     def _process(self, image):
-        """Translate an image
-        
-        Args:
-            image (.image.Image): The image to translate
-
-        Returns:
-            result (numpy.array): The translated image
-
-        """
-        data = image.data
-        result = np.zeros_like(data)
-        xs, xt = self._calc_index(self._x, result.shape[-3])
-        ys, yt = self._calc_index(self._y, result.shape[-2])
-        zs, zt = self._calc_index(self._z, result.shape[-1])
-        result[..., xt, yt, zt] = data[..., xs, ys, zs]
-        return result
-
-    def _calc_index(self, trans, size):
-        """Calculate target and source indexing slices from translation
-
-        Args:
-            trans (int): The translation of the data
-            size (int): The size of the data
-
-        Returns:
-            source (slice): The indexing slice in the source data
-            target (slice): The indexing slice in the target data
-
-        """
-        if trans > 0:
-            source = slice(0, size-1-trans, None)
-            target = slice(trans, size-1, None)
-        elif trans <= 0:
-            source = slice(-trans, size-1, None)
-            target = slice(0, size-1+trans, None)
-        return source, target
+        return translate3d_int(image.data, self.x, self.y, self.z)
 
     def _calc_random_trans(self):
-        """Randomly sample translation along an axis
-        
-        Returns:
-            trans (int): The translation along an axis
-
-        """
-        trans = self._rand_state.rand(1)
+        """Returns the sampled translation."""
+        trans = self.rand_state.rand(1)
         trans = int(np.round(trans * 2 * self.max_trans - self.max_trans))
         return trans
 
 
-class Deformer(Worker):
-    """Deform the images randomly
+class Translator(Translator_):
+    """Wrapper of :class:`Translator_`."""
+    def __init__(self):
+        super().__init__(max_trans=Config.max_trans)
+
+
+class Deformer_(RandomWorker):
+    """Deforms the images randomly.
     
-    Call external `image_processing_3d.deform3d` to perform the elastic
-    transform. It creates a random deformation field specified by `self.sigma`
-    (for deformation field smoothness) and `self.scale` (for displacement
-    maginitude). The dispacement scale is randomly sampled from a uniform
-    distribution [0, `self.scale`].
+    It creates a random deformation field specified by the attribute
+    :attr:`sigma`, for deformation field smoothness, and the attribute
+    :attr:`scale`, for displacement maginitude. See
+    :func:`image_processing_3d.deform3d` for more information.
+
+    Note:
+        The method :meth:`process` does not know the shape of the image in
+        advance, so it cannot sample the deformation fields during
+        initialization. This class also does not keep references to the
+        deformation fileds to save memory.
 
     Attributes:
-        sigma (float): Control the smoothness of the deformation field. The
+        sigma (float): Controls the smoothness of the deformation field. The
             larger the value, the smoother the field
-        scale (float): Control the magnitude of the displacement. In pixels,
-            i.e. the larget displacement at a pixel along a direction is
-            `self.scale`.
-        _rand_state (numpy.random.RandomState): Random sampler
-
+        scale (float): Controls the magnitude of the displacement in voxels,
+            i.e. this value is the larget displacement at a voxel along an axis.
+        rand_state (numpy.random.RandomState): The random state.
+        
     """
     message = 'deform'
+    worker_type = WorkerType.AUG
 
     def __init__(self, sigma, scale):
         self.sigma = sigma
         self.scale = scale
-        self._rand_state = np.random.RandomState()
+        self.rand_state = np.random.RandomState(int(time.time()))
 
     def process(self, *images):
-        """Deform of .images.Image instances
-
-        Args:
-            image (.images.Image): The image to process
-
-        Returns:
-            results (tuple of .images.Image): The processed images
-        
-        """
         shape = images[0].shape
         x_deform = self._calc_random_deform(shape)
         y_deform = self._calc_random_deform(shape)
@@ -465,36 +429,38 @@ class Deformer(Worker):
         return tuple(results)
 
     def _calc_random_deform(self, shape):
-        """Randomly sample deformation (single axis)
+        """Samples the deformation along a single axis.
 
         Args:
-            shape (tuple of int): The shape of the image to apply deformation to
+            shape (tuple): The shape of the image to apply the deformation to.
         
         Returns:
-            deform (numpy.array): The deformation field along a axis
+            numpy.ndarray: The deformation field along a axis.
 
         """
-        scale = self._rand_state.rand(1) * self.scale
+        scale = self.rand_state.rand(1) * self.scale
         deform = calc_random_deformation3d(shape, self.sigma, scale)
         return deform
 
 
+class Deformer(Deformer_):
+    """Wrapper of :class:`Deformer_`."""
+    def __init__(self):
+        super().__init__(sigma=Config.def_sigma, scale=Config.def_scale)
+
+
 class LabelNormalizer(Worker):
-    """Normalize label image to replace label values with 0 : num_labels
+    """Normalizes label images to replace label values with ``0 : num_labels``.
+
+    Note:
+        This operation are only applied to :class:`dataset.images.Label` by
+        calling its method :meth:`dataset.Images.Label.norm`.
 
     """
+    message = 'norm_label'
+    worker_type = WorkerType.ADDON
+
     def process(self, *images):
-        """Normalize the label images
-
-        Only affect .images.Label instances
-
-        Args:
-            image (.images.Image): The image to normalize
-
-        Returns:
-            results (tuple of .images.Image): The normalized images
-            
-        """
         results = list()
         for image in images:
             if isinstance(image, Label):
@@ -504,76 +470,91 @@ class LabelNormalizer(Worker):
         return tuple(results)
 
 
-class SigIntChanger(Worker):
-    """Use mixture of sigmoids to randomly change image intensity
+class MaskExtractor_(Worker):
+    """Extracts a mask from a label value.
 
-    Only affect .images.Image rather than label, mask, etc.
+    Note:
+        This class only affects instances of :class:`dataset.images.Label`.
 
-    Attributes:
-        klim (tuple): Check image_processing_3d.calc_random_intensity_transform
-        blim (tuple): Check image_processing_3d.calc_random_intensity_transform
-        num_sigmoid (int): Check image_processing_3d
+    Args:
+        label_value (int): The label value to extract the mask.
 
     """
-    message = 'sigmoid_int'
+    message = 'extract_mask'
+    worker_type = WorkerType.ADDON
 
-    def __init__(self, klim, blim, num_sigmoid):
-        self.klim = klim
-        self.blim = blim
-        self.num_sigmoid = num_sigmoid
+    def __init__(self, label_value):
+        self.label_value = label_value
 
-    def process(self, *images):
-        results = list()
-        for image in images:
-            if type(image) is Image:
-                transform = calc_int(klim=self.klim, blim=self.blim,
-                                     num_sigmoid=self.num_sigmoid)
-                data = transform(image.data)
-                results.append(image.update(data, self.message))
-            else:
-                results.append(image)
-        return tuple(results)
+    def _process(self, image):
+        data = image.data
+        if isinstance(image, Label):
+            return (data == self.label_value).astype(data.dtype)
+        else:
+            return data
 
 
-class PatchExtractor(Worker):
-    """Extract patch from image randomly
+class MaskExtractor(MaskExtractor_):
+    """Wrapper of :class:`MaskExtractor_`."""
+    def __init__(self):
+        super().__init__(Config.mask_label_val)
+
+
+class PatchExtractor_(RandomWorker):
+    """Extracts patches from an image randomly.
 
     The patch should be within the image; therefore, the smallest possible start
-    index is 0, and the largest possible start is image_shape - patch_shape. The
-    start is uniformly sampled.
+    index is 0, and the largest possible start is ``image_shape`` -
+    ``patch_shape``. The start is uniformly sampled.
 
+    Note:
+        **UNDER DEVELOPMENT**.
+        
+        The extracted pathces will be put into the output in series. For
+        example, suppose the input is (image1, image2), the output will be
+        (image1_patch1, image2_patch2, image2_patch1, image2_patch2) for 2
+        patches.
+
+        The class does not know the shape of the input images in advance.
+        
     Attributes:
-        shape (list/tuple of int): The shape of the patch
-        _rand_state (numpy.random.RandomState): Specify random seed
+        patch_shape (iterable[int]): The 3D spatial shape of the patch.
+        num_patches (int): The number of patches to extract.
 
     """
-    def __init__(self, shape):
-        self.shape = shape
-        self._rand_state = np.random.RandomState()
+    message = 'extract_patches'
+    worker_type = WorkerType.ADDON
+
+    def __init__(self, patch_shape=(10, 10, 10), num_patches=1):
+        super().__init__()
+        self.patch_shape = patch_shape
+        self.num_patches = num_patches
 
     def process(self, *images):
-        """Extract patch from the images
-
-        Args:
-            image (.images.Image): The image to extract patch from
-
-        Returns:
-            results (tuple of .images.Image): The patches
-
-        """
         results = list()
-        image_shape = images[0].shape[1:]
-        patch_bbox = self._calc_patch_bbox(image_shape)
-        results = list()
-        for image in images:
-            data = crop3d(image.data, patch_bbox)[0]
-            results.append(image.update(data, self.message))
+        image_shape = images[0].shape[-3:]
+        for i in range(self.num_patches):
+            # TODO: without replacement
+            patch_bbox = self._calc_patch_bbox(image_shape)
+            for image in images:
+                data = crop3d(image.data, patch_bbox)[0]
+                message = '%s_%d' % (self.message, i)
+                results.append(image.update(data, message))
         return results
 
     def _calc_patch_bbox(self, image_shape):
-        ind_starts = [0 for s in image_shape]
-        ind_stops = [im - p for im, p in zip(image_shape, self.shape)]
-        starts = [self._rand_state.choice(np.arange(start, stop))
-                  for start, stop in zip(ind_starts, ind_stops)]
-        bbox = [slice(start, start + s) for start, s in zip(starts, self.shape)]
-        return bbox
+        """Returns the bounding box of a patch."""
+        bbox = list()
+        for ims, ps in zip(image_shape, self.patch_shape):
+            lower_bound = 0
+            upper_bound = ims - ps
+            start = self.rand_state.choice(np.arange(lower_bound, upper_bound))
+            bbox.append(slice(start, start + ps))
+        return tuple(bbox)
+
+
+class PatchExtractor(PatchExtractor_):
+    """Wrapper of :class:`PatchExtractor_`."""
+    def __init__(self):
+        super().__init__(patch_shape=Config.patch_shape,
+                        num_patches=Config.num_patches)

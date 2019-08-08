@@ -1,0 +1,186 @@
+{
+    "name": "Root",
+    "subregions": [
+        {
+            "name": "Background"
+        },
+        {
+            "name": "Cerebellum",
+            "subregions": [
+                {
+                    "name": "Corpus Medullare"
+                },
+                {
+                    "name": "Gray Matter",
+                    "subregions": [
+                        {
+                            "name": "Anterior Lobe",
+                            "subregions": [
+                                {
+                                    "name": "Left Anterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Left I-III"
+                                        },
+                                        {
+                                            "name": "Left IV"
+                                        },
+                                        {
+                                            "name": "Left V"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Anterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Right I-III"
+                                        },
+                                        {
+                                            "name": "Right IV"
+                                        },
+                                        {
+                                            "name": "Right V"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Left Anterior Lobe KKI"
+                                },
+                                {
+                                    "name": "Right Anterior Lobe KKI"
+                                },
+                                {
+                                    "name": "Vermis Anterior KKI"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Superior Posterior Lobe",
+                            "subregions": [
+                                {
+                                    "name": "Left Superior Posterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Left VI"
+                                        },
+                                        {
+                                            "name": "Left Crus I"
+                                        },
+                                        {
+                                            "name": "Left Crus II / VIIB",
+                                            "subregions": [
+                                                {
+                                                    "name": "Left Crus II"
+                                                },
+                                                {
+                                                    "name": "Left VIIB"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Superior Posterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Right VI"
+                                        },
+                                        {
+                                            "name": "Right Crus I"
+                                        },
+                                        {
+                                            "name": "Right Crus II / VIIB",
+                                            "subregions": [
+                                                {
+                                                    "name": "Right Crus II"
+                                                },
+                                                {
+                                                    "name": "Right VIIB"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Vermis Superior Posterior",
+                                    "subregions": [
+                                        {
+                                            "name": "Vermis VI"
+                                        },
+                                        {
+                                            "name": "Vermis VII"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Inferior Posterior Lobe",
+                            "subregions": [
+                                {
+                                    "name": "Left Inferior Posterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Left VIII",
+                                            "subregions": [
+                                                {
+                                                    "name": "Left VIIIA"
+                                                },
+                                                {
+                                                    "name": "Left VIIIB"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "Left IX"
+                                        },
+                                        {
+                                            "name": "Left X"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Right Inferior Posterior Lobe",
+                                    "subregions": [
+                                        {
+                                            "name": "Right VIII",
+                                            "subregions": [
+                                                {
+                                                    "name": "Right VIIIA"
+                                                },
+                                                {
+                                                    "name": "Right VIIIB"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "Right IX"
+                                        },
+                                        {
+                                            "name": "Right X"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Vermis Inferior Posterior",
+                                    "subregions": [
+                                        {
+                                            "name": "Vermis VIII"
+                                        },
+                                        {
+                                            "name": "Vermis IX"
+                                        },
+                                        {
+                                            "name": "Vermis X"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
