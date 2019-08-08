@@ -7,19 +7,21 @@ import numpy as np
 
 from dataset import Config
 from dataset.pipelines import RandomPipeline
-from dataset.images import Image, Label, Mask
+from dataset.images import Image, Label, Mask, FileInfo, LabelInfo
 from plot import imshow
 
 
 image_filepath = 'data/at1000_image.nii.gz'
 label_filepath = 'data/at1000_label.nii.gz'
 mask_filepath = 'data/at1000_mask.nii.gz'
+label_desc_filepath = 'data/labels.json'
 
-image = Image(image_filepath, on_the_fly=False)
-label = Label(label_filepath, on_the_fly=False)
-mask = Mask(mask_filepath, on_the_fly=False)
+image = Image(FileInfo(image_filepath), on_the_fly=False)
+label = Label(FileInfo(label_filepath), on_the_fly=False,
+              label_info=LabelInfo(label_desc_filepath))
+mask = Mask(FileInfo(mask_filepath), on_the_fly=False)
 
-Config().verbose = True
+Config.verbose = True
 
 pipeline = RandomPipeline()
 pipeline.register('resize')

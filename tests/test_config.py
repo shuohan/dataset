@@ -3,9 +3,8 @@
 
 from dataset import Config
 
-config = Config()
-print(config)
-assert config.image_suffixes == ['image']
-config.load('input.json')
-assert config.image_suffixes == ['image', 'hello']
-config.save('output.json')
+Config.show()
+assert Config.image_suffixes == ['image']
+Config.load_json('input.json')
+assert Config.image_suffixes == ['image', 'hello']
+Config.save_json('output.json')
