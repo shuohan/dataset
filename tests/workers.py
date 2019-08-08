@@ -5,8 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from dataset import Config
-from dataset.loads import load_label_desc
-from dataset.images import Image, Label, Mask
+from dataset.images import Image, Label, Mask, LabelInfo, FileInfo
 from dataset.workers import WorkerCreator
 
 from plot import imshow
@@ -16,14 +15,13 @@ image1_filepath = 'data/at1000_image.nii.gz'
 image2_filepath = 'data/at1006_image.nii.gz'
 label_filepath = 'data/at1000_label.nii.gz'
 mask_filepath = 'data/at1000_mask.nii.gz'
+label_info = LabelInfo(filepath='data/labels.json')
 
-image1 = Image(image1_filepath, on_the_fly=False)
-image2 = Image(image2_filepath, on_the_fly=False)
-label = Label(label_filepath, on_the_fly=False)
-mask = Mask(mask_filepath, on_the_fly=False)
+image1 = Image(FileInfo(image1_filepath), on_the_fly=False)
+image2 = Image(FileInfo(image2_filepath), on_the_fly=False)
+label = Label(FileInfo(label_filepath), on_the_fly=False, label_info=label_info)
+mask = Mask(FileInfo(mask_filepath), on_the_fly=False)
 images = (image1, image2, label, mask)
-
-labels, pairs = load_label_desc('data/labels.json')
 
 creator = WorkerCreator()
 print(creator)
