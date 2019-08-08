@@ -1,6 +1,7 @@
 Configurations
 --------------
 .. automodule:: dataset.config
+   :inherited-members:
    :members:
 
 Images

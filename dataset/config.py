@@ -2,10 +2,10 @@
 
 import os
 import json
-from config import Config_
+from config import Config
 
 
-class Config(Config_):
+class Config(Config):
     """Global configurations.
 
     Update a configuration via
@@ -64,5 +64,5 @@ class Config(Config_):
     worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label',
                               'extract_mask', 'extract_patches'],
                     'aug': ['translate', 'rotate', 'scale', 'deform']}
-    """dict: "addon" (:class:`list`[:class:`str`]): Addon image operations.
-             "aug" (:class:`list`[:class:`str`]): Augmentation operations."""
+    """dict: * **addon** (*list[str]*) - Addon image operations.
+    * **aug** (*list[str]*) - Augmentation operations."""
