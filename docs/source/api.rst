@@ -1,12 +1,21 @@
+.. automodule:: dataset
+
 Configurations
 --------------
-.. automodule:: dataset.config
+.. autoclass:: Config
    :inherited-members:
    :members:
 
-Dataset
--------
+Dataset Creator
+---------------
+.. autoclass:: DatasetCreator
+   :members:
+
+Datasets
+--------
 .. automodule:: dataset.datasets
+
+.. autoclass:: Dataset
    :members:
 
 Images
