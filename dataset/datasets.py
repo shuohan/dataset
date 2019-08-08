@@ -99,7 +99,7 @@ class Dataset:
     """
     def __init__(self, images):
         self.images = images
-        self.verbose = Config().verbose
+        self.verbose = Config.verbose
         self.pipelines = list()
 
     @property

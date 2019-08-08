@@ -41,6 +41,10 @@ class WorkerCreator(metaclass=Singleton):
         This class is a singleton so calling :meth:`register` with any instances
         will update all copies (actually all copies point to the same instance).
 
+        The worker type (AUG or ADDON) is changed via
+        :class:`dataset.config.Config` and take effect when calling the method
+        :meth:`register`.
+
     """
     def __init__(self):
         self._workers = dict()
@@ -88,9 +92,9 @@ class WorkerCreator(metaclass=Singleton):
         if self._config_is_correct():
             message = 'Addon and augmentation workers overlap in configurations'
             raise RuntimeError(message)
-        if name in Config().worker_types['addon']:
+        if name in Config.worker_types['addon']:
             worker.worker_type = WorkerType.ADDON
-        elif name in Config().worker_types['aug']:
+        elif name in Config.worker_types['aug']:
             worker.worker_type = WorkerType.AUG
         else:
             raise RuntimeError('Worker %s is not in the config.' % name)
@@ -98,8 +102,8 @@ class WorkerCreator(metaclass=Singleton):
 
     def _config_is_correct(self):
         """Returns if aug and addon workers are correctly written in config."""
-        addon = Config().worker_types['addon']
-        aug = Config().worker_types['aug']
+        addon = Config.worker_types['addon']
+        aug = Config.worker_types['aug']
         return not set(addon).isdisjoint(aug)
 
     def unregister(self, name):
@@ -190,7 +194,7 @@ class Resizer_(Worker):
 class Resizer(Resizer_):
     """Wrapper of :class:`Resizer_`."""
     def __init__(self):
-        super().__init__(shape=Config().image_shape)
+        super().__init__(shape=Config.image_shape)
 
 
 class Rotator_(RandomWorker):
@@ -234,7 +238,7 @@ class Rotator_(RandomWorker):
 class Rotator(Rotator_):
     """Wrapper of :class:`Rotator_`."""
     def __init__(self):
-        super().__init__(max_angle=Config().max_rot_angle)
+        super().__init__(max_angle=Config.max_rot_angle)
 
 
 class Scaler_(RandomWorker):
@@ -280,7 +284,7 @@ class Scaler_(RandomWorker):
 class Scaler(Scaler_):
     """Wrapper of :class:`Scaler_`."""
     def __init__(self):
-        super().__init__(max_scale=Config().max_scale)
+        super().__init__(max_scale=Config.max_scale)
 
 
 class Flipper_(Worker):
@@ -317,7 +321,7 @@ class Flipper_(Worker):
 class Flipper(Flipper_):
     """Wrapper of :class:`Flipper_`."""
     def __init__(self):
-        super().__init__(dim=Config().flip_dim)
+        super().__init__(dim=Config.flip_dim)
 
 
 class Cropper(Worker):
@@ -379,7 +383,7 @@ class Translator_(RandomWorker):
 class Translator(Translator_):
     """Wrapper of :class:`Translator_`."""
     def __init__(self):
-        super().__init__(max_trans=Config().max_trans)
+        super().__init__(max_trans=Config.max_trans)
 
 
 class Deformer_(RandomWorker):
@@ -442,7 +446,7 @@ class Deformer_(RandomWorker):
 class Deformer(Deformer_):
     """Wrapper of :class:`Deformer_`."""
     def __init__(self):
-        super().__init__(sigma=Config().def_sigma, scale=Config().def_scale)
+        super().__init__(sigma=Config.def_sigma, scale=Config.def_scale)
 
 
 class LabelNormalizer(Worker):
@@ -493,7 +497,7 @@ class MaskExtractor_(Worker):
 class MaskExtractor(MaskExtractor_):
     """Wrapper of :class:`MaskExtractor_`."""
     def __init__(self):
-        super().__init__(Config().mask_label_val)
+        super().__init__(Config.mask_label_val)
 
 
 class PatchExtractor_(RandomWorker):
@@ -552,5 +556,5 @@ class PatchExtractor_(RandomWorker):
 class PatchExtractor(PatchExtractor_):
     """Wrapper of :class:`PatchExtractor_`."""
     def __init__(self):
-        super().__init__(patch_shape=Config().patch_shape,
-                        num_patches=Config().num_patches)
+        super().__init__(patch_shape=Config.patch_shape,
+                        num_patches=Config.num_patches)

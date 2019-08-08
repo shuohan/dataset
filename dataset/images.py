@@ -72,7 +72,7 @@ class FileSearcher:
         """
         filepaths = sorted(Path(self.dirname).glob('*' + IMAGE_EXT))
         self.files = [FileInfo(fp) for fp in filepaths]
-        self.label_file = os.path.join(self.dirname, Config().label_desc)
+        self.label_file = os.path.join(self.dirname, Config.label_desc)
         return self
 
 
@@ -307,7 +307,7 @@ class ImageLoader(Loader):
     def create(self, f):
         return Image(info=f)
     def is_correct_type(self, f):
-        return f.suffix in Config().image_suffixes
+        return f.suffix in Config.image_suffixes
 
 
 class LabelLoader(Loader):
@@ -316,15 +316,15 @@ class LabelLoader(Loader):
         label_info = LabelInfo(self.file_searcher.label_file)
         return Label(info=f, label_info=label_info)
     def is_correct_type(self, f):
-        return f.suffix in Config().label_suffixes
+        return f.suffix in Config.label_suffixes
 
 
 class MaskLoader(Loader):
     """Loads :class:`Mask`."""
     def create(self, f):
-        return Mask(info=f, cropping_shape=Config().crop_shape)
+        return Mask(info=f, cropping_shape=Config.crop_shape)
     def is_correct_type(self, f):
-        return f.suffix in Config().mask_suffixes
+        return f.suffix in Config.mask_suffixes
 
 
 class BoundingBoxLoader(Loader):
@@ -332,7 +332,7 @@ class BoundingBoxLoader(Loader):
     def create(self, f):
         return BoundingBox(info=f)
     def is_correct_type(self, f):
-        return f.suffix in Config().bbox_suffixes
+        return f.suffix in Config.bbox_suffixes
 
 
 class Image:

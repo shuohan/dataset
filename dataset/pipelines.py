@@ -41,7 +41,7 @@ class RandomPipeline(Worker):
     """
     def __init__(self):
         super().__init__()
-        self.random_prob = Config().aug_prob
+        self.random_prob = Config.aug_prob
         self.fixed_workers = list()
         self.random_workers = list()
         self._rand_state = np.random.RandomState()

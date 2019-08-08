@@ -1,3 +1,8 @@
+Configurations
+--------------
+.. automodule:: dataset.config
+   :members:
+
 Images
 ------
 .. automodule:: dataset.images

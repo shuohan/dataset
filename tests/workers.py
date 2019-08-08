@@ -41,50 +41,47 @@ imshow(images, cropped)
 plt.gcf().suptitle('crop')
 
 # rotate
-# rotator = creator.create('rotate')
-# results = cropper.process(*rotator.process(*images))
-# print(np.unique(results[2].data))
-# imshow(cropped, results)
-# plt.gcf().suptitle('rotate')
+rotator = creator.create('rotate')
+results = cropper.process(*rotator.process(*images))
+print(np.unique(results[2].data))
+imshow(cropped, results)
+plt.gcf().suptitle('rotate')
 
 # deform
-# config = Config()
-# config.def_scale = 10
-# deformer = creator.create('deform')
-# results = cropper.process(*deformer.process(*images))
-# imshow(cropped, results)
-# plt.gcf().suptitle('deform')
+Config.def_scale = 10
+deformer = creator.create('deform')
+results = cropper.process(*deformer.process(*images))
+imshow(cropped, results)
+plt.gcf().suptitle('deform')
 
 # scale
-# scaler = creator.create('scale')
-# results = cropper.process(*scaler.process(*images))
-# imshow(cropped, results)
-# plt.gcf().suptitle('scale')
+scaler = creator.create('scale')
+results = cropper.process(*scaler.process(*images))
+imshow(cropped, results)
+plt.gcf().suptitle('scale')
 
 # flip
-# flipper = creator.create('flip')
-# results = cropper.process(*flipper.process(*images))
-# imshow(cropped, results)
-# plt.gcf().suptitle('flip')
+flipper = creator.create('flip')
+results = cropper.process(*flipper.process(*images))
+imshow(cropped, results)
+plt.gcf().suptitle('flip')
 
 # translate
-# translator = creator.create('translate')
-# results = translator.process(*images)
-# imshow(images, results)
-# plt.gcf().suptitle('translate')
+translator = creator.create('translate')
+results = translator.process(*images)
+imshow(images, results)
+plt.gcf().suptitle('translate')
 
 # extract mask
-# config = Config()
-# config.mask_label_val = 12
-# extractor = creator.create('extract_mask')
-# results = cropper.process(*extractor.process(*images))
-# imshow(cropped, results)
-# plt.gcf().suptitle('extract mask')
+Config.mask_label_val = 12
+extractor = creator.create('extract_mask')
+results = cropper.process(*extractor.process(*images))
+imshow(cropped, results)
+plt.gcf().suptitle('extract mask')
 
 # extract patches
-config = Config()
-config.patch_shape = [100, 100, 100]
-config.num_patches = 3
+Config.patch_shape = [100, 100, 100]
+Config.num_patches = 3
 extractor = creator.create('extract_patches')
 results = extractor.process(*images)
 imshow(results)
