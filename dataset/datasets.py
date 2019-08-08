@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Implement Datasets to handel image iteration
+"""Datasets handeling image iteration.
 
 """
 from collections import defaultdict
@@ -11,7 +11,42 @@ from .pipelines import RandomPipeline
 
 
 class DatasetCreator:
+    """Creates an instance of :class:`Dataset`.
 
+    To create a dataset:
+
+    1. Call the method :meth:`register_loader` to add a class of
+       :class:`dataset.images.Loader` into the pool for selection. There are
+       several loadesr already registered. Use
+
+       >>> print(Dataset())
+
+       to check the registered loaders. This is primarily for adding new types
+       of loaders, so this class can find the correct implementation.
+
+    2. Call the method :meth:`add_image_type` to add new types of images to
+       load. The types should be a subset of registered loaders.
+
+    3. Call the method :meth:`add_dataset` to concatenate an additional
+       directory of data to load.
+       
+    4. Call the method :meth:`add_operation` to add a new type of operation, for
+       augmentation or add-on, to apply to the data.
+
+    5. Call the method :meth:`create` to create the dataset and access it via
+       the attribute :attr:`dataset`.
+    
+    Attributes:
+        image_types (list[str]): The types of images to load. Call the method
+            :meth:`add_image_type` to add a new type of images to load.
+        operations (list[str]): The operations to apply to the data. Call the
+            method :meth:`add_operation` to add a new operation.
+        loaders (list[dataset.images.Loader]): The registered loaders. Call the
+            method :meth:`register_loader` to register.
+        dataset (Dataset): The created dataset. ``None`` if the method
+            :meth:`create` has not been called.
+
+    """
     def __init__(self):
         self.image_types = list()
         self.operations = list()
@@ -25,9 +60,24 @@ class DatasetCreator:
         self.register_loader('bbox', BoundingBoxLoader)
 
     def add_image_type(self, *image_types):
+        """Adds a type of images to load.
+
+        Args:
+            image_types (str): The type of image to load. It should be in the
+                registered loaders.
+
+        """
         self.image_types.extend(image_types)
 
     def add_dataset(self, dirname, dataset_id='data'):
+        """Adds a directory to load.
+
+        Args:
+            dirname (str): The path to the directory.
+            dataset_id (str): Used to identify datasets loaded from different
+                direcories.
+
+        """
         file_searcher = FileSearcher(dirname).search()
         for image_type in self.image_types:
             Loader = self.loaders[image_type]
@@ -36,29 +86,48 @@ class DatasetCreator:
                                    'images': images})
 
     def register_loader(self, name, Loader):
+        """Registers a loader.
+
+        Args:
+            name (str): The name for the loader
+            Loader (dataset.images.Loader, class): The loader to register.
+        
+        """
         self.loaders[name] = Loader
 
     def remove_loader(self, name):
+        """Removes a loader from the pool.
+
+        Args:
+            name (str): The loader to remove.
+
+        """
         if name in self.loaders:
             self.loaders.pop(name)
 
     def add_operation(self, *operations):
-        """Add an operation to training dataset pipeline
+        """Adds an operation to the processing pipeline.
         
-        The order of operations are preserved
+        Note:
+            The order of added operations are preserved. The operations should
+            be registered in the class :class:`dataset.workers.WorkerCreator`.
 
-        operation (str): A add-on operation (such as cropping)
-            and augmentation
+        Args:
+            operations (str): The name of the operations to add.
 
         """
         self.operations.extend(operations)
 
     def create(self):
-        """Create training and validation datsets
+        """Creates a dataset.
+
+        Note:
+            This method does not return an instance of :class:`Dataset`.
+            Instead, it returns the instance of :class:`DatasetCreator` itself.
+            Use the attribute :attr:`dataset` to access the created dataset.
 
         Returns:
-            t_dataset (.datasets.Dataset_): The training dataset
-            v_dataset (.datasets.Dataset_): The validation dataset
+            DatasetCreator: The instance itself.
 
         """
         images = [v['images'] for v in self._datasets]
@@ -83,18 +152,32 @@ class DatasetCreator:
                         for k, v in self.loaders.items()])
         return '\n'.join(message)
 
+
 class Dataset:
-    """Dataset for yielding data
+    """Dataset for yielding data.
 
     The length of the dataset will be the number of pipelines times the number
-    of images. Hold multiple pipelines and each separately processes all the
-    images
+    of images. It can hold multiple pipelines to separately processes all the
+    images.
+
+    >>> print(dataset) # show all the loaded images.
+
+    The indices of the images are arranged as:
+
+    .. code-block::
+
+
+            pipeline 1           pipeline 2          pipeline 3      ...
+        _________________    _________________   _________________
+        |               |    |               |   |               |
+        image1 image2 ...    image1 image2 ...   image1 image2 ...
+
 
     Attributes:
-        images (.images.ImageCollection): The collection of images
-        verbose (bool): Print info
-        pipelines (list of .pipelines.RandomPipeline): Pipeines to process
-            images
+        images (dataset.images.ImageCollection): The collection of images.
+        verbose (bool): Print info if ``True``.
+        pipelines (list[dataset.pipelines.RandomPipeline]): Pipelines to process
+            the images.
 
     """
     def __init__(self, images):
@@ -104,6 +187,14 @@ class Dataset:
 
     @property
     def labels(self):
+        """Returns the labels of all data.
+
+        Returns:
+            collections.defaultdict: Each key is a unique
+            :class:`dataset.images.LabelInfo` and the value is all the images
+            that has this set of labels.
+        
+        """
         return self._get_labels(self.images)
 
     @property
@@ -119,10 +210,10 @@ class Dataset:
         return labels
 
     def add_pipeline(self, *pipelines):
-        """Add pipelines for image processing
+        """Adds pipelines to process the data.
 
         Args:
-            pipeline (.pipelines.RandomPipeline): A pipeline to process images
+            pipeline (dataset.pipelines.RandomPipeline): A processing pipeline.
 
         """
         self.pipelines.extend(pipelines)
@@ -141,23 +232,16 @@ class Dataset:
         return len(self.images) * len(self.pipelines)
 
     def __getitem__(self, key):
-        """Get item by key
-
-        Indices are arranged as:
-
-            pipeline 1           pipeline 2          pipeline 3      ...
-        _________________    _________________   _________________
-        |               |    |               |   |               |
-        image1 image2 ...    image1 image2 ...   image1 image2 ...
-
-        Args:
-            key (int): The index of the item to get
-
-        """
         processed = self.get_processed_image_group(key)
         return tuple(im.output for im in processed)
 
     def get_processed_image_group(self, key):
+        """Returns the processed images at ``key``.
+
+        Returns:
+            tuple[dataset.images.Image]: The procesesd images.
+
+        """
         self._check_key(key)
         pipeline_ind = key // len(self.images)
         image_ind = key % len(self.images)

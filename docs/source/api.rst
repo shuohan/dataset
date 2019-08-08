@@ -4,6 +4,11 @@ Configurations
    :inherited-members:
    :members:
 
+Dataset
+-------
+.. automodule:: dataset.datasets
+   :members:
+
 Images
 ------
 .. automodule:: dataset.images
