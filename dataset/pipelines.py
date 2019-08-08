@@ -2,12 +2,12 @@
 
 """Pipelines to process images.
 
-A pipeline assembles multiple :class:`.workers.Worker` in order to process
-instances of :class:`.images.Image`.
+A pipeline assembles multiple :class:`dataset.workers.Worker` in order to
+process instances of :class:`dataset.images.Image`.
 
 Todo:
     * Use a queue; only process images if the queue is empty otherwise pop.
-    * Add more pipelines.
+    * Add more types of pipelines.
 
 """
 import numpy as np
@@ -19,23 +19,23 @@ from .workers import Worker, WorkerType, WorkerCreator
 class RandomPipeline(Worker):
     """Selects one augmentation worker randomly to process the images.
 
-    The workers in the :attr:`fixed_workers` will be always used while only one
-    of the workers in :attr:`random_workers` will be selected with probability
-    :attr:`random_prob` (or none of the random workers will be selected). The
-    order of the workers are determined by the registration order, e.g. if
-    fixed1, random1, random2, fixed2 are inserted, the selected workers will be
-    fixed1, none/random1/random2, fixed2.
+    The workers in the attribute :attr:`fixed_workers` will be always used while
+    only one of the workers in the attribute :attr:`random_workers` will be
+    selected with probability :attr:`random_prob` (or none of the random workers
+    will be selected). The order of the workers are determined by the
+    registration order, e.g. if fixed1, random1, random2, fixed2 are inserted,
+    the selected workers will be fixed1, none/random1/random2, fixed2.
 
     Attributes:
         random_prob (float): The probability of selecting one of the random
-            workers in :attr:`random_workers`.
+            workers in the attribute :attr:`random_workers`.
         fixed_workers (list): The list of workers that will be always selected.
             Items are :class:`tuple` of (``priority`` (:class:`int`),
-            ``worker_name`` (:class:`str`). ``priority`` is used to determine
+            ``worker_name`` (:class:`str`)). ``priority`` is used to determine
             the processing order.
         random_workers (list): The list of workers selected randomly.
             Items are :class:`tuple` of (``priority`` (:class:`int`),
-            ``worker_name`` (:class:`str`). ``priority`` is not used here since
+            ``worker_name`` (:class:`str`)). ``priority`` is not used here since
             at most one random workers will be selected.
 
     """
@@ -51,11 +51,11 @@ class RandomPipeline(Worker):
 
         Args:
             worker_name (str): The name of the worker. It should be registered
-                in :class:`WorkerCreator`.
+                in the class :class:`dataset.workers.WorkerCreator`.
 
         Raises:
-            RuntimeError: The worker is not registered in
-                :class:`WorkerCreator`.
+            RuntimeError: The worker is not registered in the class
+                :class:`dataset.workers.WorkerCreator`.
 
         """
         creator = WorkerCreator()
@@ -69,13 +69,13 @@ class RandomPipeline(Worker):
                 raise RuntimeError('Worker "%s" does not exist.' % name)
 
     def process(self, *images):
-        """Processes a set of :class:`.images.Image` instances
+        """Processes multiple :class:`dataset.images.Image` instances.
 
         Args:
-            image (.images.Image): The image to process.
+            image (dataset.images.Image): The image to process.
 
         Returns:
-            results (tuple): The processed :class:`.images.Image`.
+            tuple[dataset.images.Image]: The processed images.
 
         """
         workers = self.fixed_workers.copy()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Implement Worker to process Image
+"""Workers to process images.
 
 """
 from enum import Enum, auto
@@ -16,12 +16,30 @@ from .images import Mask, Label, Image
 
 
 class WorkerType(Enum):
+    """The type of a worker.
+
+    Attributes:
+        AUG: For workers used in augmentation.
+        ADDON: For workers used in additional processing.
+
+    """
     AUG = auto()
     ADDON = auto()
 
 
 class WorkerCreator(metaclass=Singleton):
     """Creates a concerete worker to process the images.
+
+    Call the method :meth:`register` to add a new :class:`Worker` into the pool
+    so when calling the method :meth:`create` with a worker name (:class:`str`)
+    to create an worker, it can find the corresponding implementation correctly.
+    This feature is primarily for adding new type of workers.
+
+    >>> print(WorkerCreator()) # print all registered workers.
+
+    Note:
+        This class is a singleton so calling :meth:`register` with any instances
+        will update all copies (actually all copies point to the same instance).
 
     """
     def __init__(self):
@@ -41,8 +59,8 @@ class WorkerCreator(metaclass=Singleton):
         """Creates a worker.
 
         Args:
-            name (str): The name of the worker. Call :meth:`register` to
-                register a new type of workers.
+            name (str): The name of the worker. Call the method :meth:`register`
+                to register new workers.
         
         Returns:
             :class:`Worker`: a concrete worker.
@@ -61,7 +79,7 @@ class WorkerCreator(metaclass=Singleton):
 
         Args:
             name (str): The name of the worker.
-            worker (:class:`Worker`): The worker class to register.
+            worker (type): The class :class:`Worker` to register.
 
         Raises:
             RuntimeError: Worker types are incorrect in config.
@@ -89,7 +107,7 @@ class WorkerCreator(metaclass=Singleton):
         self._workers.pop(name)
 
     def get_type(self, name):
-        """Returns the type of worker."""
+        """Returns the type (AUG or ADDON) of worker."""
         return self._workers[name].worker_type
 
     def __str__(self):
@@ -102,23 +120,24 @@ class WorkerCreator(metaclass=Singleton):
 
 
 class Worker:
-    """Abstract class to process .images.Image
+    """Abstract class to process instances of :class:`dataset.images.Image`.
     
     Attributes:
         message (str): The message to show when printing.
+        worker_type (WorkerType, enum): The type (AUG or ADDON) of the worker.
     
     """
     message = ''
     worker_type = WorkerType.ADDON
 
     def process(self, *images):
-        """Processes a set of :class:`images.Image` instances.
+        """Processes instances of :class:`dataset.images.Image`.
 
         Args:
-            image (images.Image): The image to process.
+            image (dataset.images.Image): The image to process.
 
         Returns:
-            tuple: The processed :class:`image.Image`.
+            tuple[dataset.images.Image]: The processed images.
         
         """
         results = list()
@@ -128,20 +147,20 @@ class Worker:
         return tuple(results)
 
     def _process(self, image):
-        """Process an .image.Image instance.
+        """Processes an :class:`dataset.image.Image` instance.
 
         Args:
-            image (.image.Image): The image to process.
+            image (dataset.images.Image): The image to process.
 
         Returns:
-            result (numpy.ndarray): The processed image data.
+            numpy.ndarray: The processed image data.
         
         """
         raise NotImplementedError
 
 
 class RandomWorker(Worker):
-    """A worker with random operations.
+    """Abstract class for a worker with operations sampled randomly.
    
     Attributes:
         rand_state (numpy.random.RandomState): The random state.
@@ -154,8 +173,8 @@ class RandomWorker(Worker):
 class Resizer_(Worker):
     """Resizes images by padding or cropping.
 
-        Attributes:
-        shape (iterable): The :class:`int` target image shape.
+    Attributes:
+        shape (iterable[int]): The target image shape.
 
     """
     message = 'resize'
@@ -177,8 +196,10 @@ class Resizer(Resizer_):
 class Rotator_(RandomWorker):
     """Rotates images randomly.
 
-    The rotation angles are randomly sampled from a uniform distribution between
-    minus :attr:`max_angel` and :attr:`max_angle`.
+    The rotation angles are randomly sampled from a uniform distribution
+    :math:`[-\\alpha, \\alpha]`, :math:`\\alpha` is specified by the attribute
+    :attr:`max_angle`.
+    .
 
     Attributes:
         max_angle (int): Specifies the sampling uniform distribution in degrees.
@@ -192,9 +213,6 @@ class Rotator_(RandomWorker):
     worker_type = WorkerType.AUG
 
     def __init__(self, max_angle=5, point=None):
-        """Initialize
-
-        """
         super().__init__()
         self.max_angle = max_angle
         self.point = point
@@ -222,9 +240,10 @@ class Rotator(Rotator_):
 class Scaler_(RandomWorker):
     """Scales images randomly.
 
-    The scaling factors are randomly sampled from a uniform distribution between
-    1 and :attr:`max_scale` and between -1 and -:attr:`max_scale`. If the
-    sampled is negative, convert to 1/abs(scale).
+    The scaling factors are randomly sampled from uniform distributions
+    :math:`[1, s]` and :math:`[-s, -1]`. :math:`s` is specified by the attribute
+    :attr:`max_scale`. If the sampled scaling factor :math:`v` is negative,
+    convert it to :math:`1/|v|`.
 
     Attributes:
         max_scale (float): Specifies the sampling uniform distribution.
@@ -238,9 +257,6 @@ class Scaler_(RandomWorker):
     worker_type = WorkerType.AUG
 
     def __init__(self, max_scale=2, point=None):
-        """Initialize
-
-        """
         super().__init__()
         self.max_scale = max_scale
         self.point = point
@@ -249,7 +265,7 @@ class Scaler_(RandomWorker):
         self.z = self._calc_rand_scale()
 
     def _calc_rand_scale(self):
-        """Returns random scaling factor from a uniform distributionr."""
+        """Returns a random scaling factor from a uniform distribution."""
         scale = self.rand_state.rand(1)
         scale = float(scale * (self.max_scale - 1) + 1)
         if self.rand_state.choice([-1, 1]) < 0:
@@ -268,13 +284,14 @@ class Scaler(Scaler_):
 
 
 class Flipper_(Worker):
-    """Flips images along an dimension (axis).
+    """Flips images along an dimension/axis.
 
-    Flip only the data if the image does not have :attr:Image.pairs;
-    otherwise, the corresponding labels are swapped after the flipping. For
-    example, suppose 23 is a label on the left side of brain, while 26 is on the
-    right. After flipping the image, the labels 23 and 26 should be swapped so
-    they are on the correct sides.
+    Flip only the data if the image does NOT have the attribute ``pairs`` as
+    :attr:`dataset.Label.pairs`. Otherwise, the corresponding labels are
+    swapped after the flipping. For example, suppose 23 is a label on the left
+    side of brain, while 26 is on the right. After flipping the image, the
+    labels 23 and 26 should be swapped so they would appear on the correct
+    sides.
 
     Attributes:
         dim (int): The dimension/axis that the image is flipped around.
@@ -298,7 +315,7 @@ class Flipper_(Worker):
 
 
 class Flipper(Flipper_):
-    """Wrapper of Flipper_."""
+    """Wrapper of :class:`Flipper_`."""
     def __init__(self):
         super().__init__(dim=Config().flip_dim)
 
@@ -328,8 +345,9 @@ class Cropper(Worker):
 class Translator_(RandomWorker):
     """Translates images randomly along x, y, and z axes by integers.
 
-    The translations are randomly sampled from a uniform distribution from
-    minus :attr:`max_trans` to :attr:`max_trans`.
+    The translations are randomly sampled from a uniform distribution
+    :math:`[-t, t]` where :math:`t` is specified by the attribute
+    attr:`max_trans`.
 
     Attributes:
         max_trans (int): Specifies the distribution.
@@ -367,15 +385,16 @@ class Translator(Translator_):
 class Deformer_(RandomWorker):
     """Deforms the images randomly.
     
-    It creates a random deformation field specified by :attr:`sigma`,
-    for deformation field smoothness, and :attr:`scale`, for displacement
-    maginitude. See :func:`image_processing_3d.deform3d` for more information.
+    It creates a random deformation field specified by the attribute
+    :attr:`sigma`, for deformation field smoothness, and the attribute
+    :attr:`scale`, for displacement maginitude. See
+    :func:`image_processing_3d.deform3d` for more information.
 
     Note:
-        :meth:`process` does not know the shape of the image in advance, so it
-        cannot sample the deformation fields during initialization. This
-        class also does not keep references to the deformation fileds to save
-        memory.
+        The method :meth:`process` does not know the shape of the image in
+        advance, so it cannot sample the deformation fields during
+        initialization. This class also does not keep references to the
+        deformation fileds to save memory.
 
     Attributes:
         sigma (float): Controls the smoothness of the deformation field. The
@@ -406,7 +425,7 @@ class Deformer_(RandomWorker):
         return tuple(results)
 
     def _calc_random_deform(self, shape):
-        """Sample the deformation along a single axis.
+        """Samples the deformation along a single axis.
 
         Args:
             shape (tuple): The shape of the image to apply the deformation to.
@@ -427,10 +446,11 @@ class Deformer(Deformer_):
 
 
 class LabelNormalizer(Worker):
-    """Normalizes label images to replace the label values with 0 : num_labels.
+    """Normalizes label images to replace label values with ``0 : num_labels``.
 
     Note:
-        The operations are only applied to :class:`.images.Label`.
+        This operation are only applied to :class:`dataset.images.Label` by
+        calling its method :meth:`dataset.Images.Label.norm`.
 
     """
     message = 'norm_label'
@@ -450,7 +470,7 @@ class MaskExtractor_(Worker):
     """Extracts a mask from a label value.
 
     Note:
-        This class only affects :class:`Label`.
+        This class only affects instances of :class:`dataset.images.Label`.
 
     Args:
         label_value (int): The label value to extract the mask.
@@ -477,21 +497,24 @@ class MaskExtractor(MaskExtractor_):
 
 
 class PatchExtractor_(RandomWorker):
-    """Extracts patches from image randomly.
+    """Extracts patches from an image randomly.
+
     The patch should be within the image; therefore, the smallest possible start
-    index is 0, and the largest possible start is image_shape - patch_shape. The
-    start is uniformly sampled.
+    index is 0, and the largest possible start is ``image_shape`` -
+    ``patch_shape``. The start is uniformly sampled.
 
     Note:
-        The extract pathces will be put into the output in series. For example,
-        suppose the input is (image1, image2), the output will be
+        **UNDER DEVELOPMENT**.
+        
+        The extracted pathces will be put into the output in series. For
+        example, suppose the input is (image1, image2), the output will be
         (image1_patch1, image2_patch2, image2_patch1, image2_patch2) for 2
         patches.
 
         The class does not know the shape of the input images in advance.
         
     Attributes:
-        patch_shape (iterable): The 3D spatial shape of the patch.
+        patch_shape (iterable[int]): The 3D spatial shape of the patch.
         num_patches (int): The number of patches to extract.
 
     """

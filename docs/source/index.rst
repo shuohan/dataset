@@ -1,11 +1,11 @@
 Dataset
-===================================
+=======
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: API
 
-   documentation
+   api
 
 
 Indices and tables
