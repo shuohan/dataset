@@ -84,5 +84,5 @@ html_static_path = ['_static']
 
 napoleon_use_rtype = True
 napoleon_use_ivar = False
-autodoc_mock_imports = ['numpy', 'scipy', 'nibabel']
+autodoc_mock_imports = ['numpy', 'scipy', 'nibabel', 'image_processing_3d']
 autodoc_member_order = 'bysource'
