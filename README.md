@@ -16,7 +16,6 @@ The following **augmentation** methods are supported:
 * _Rotation_: Rotate the image around the x, y, and z axes.
 * _Scaling_: Scale the image along x, y, and z axes.
 * _Deformation_: Random elastic deformation. The transformation field is a spatially smoothed per-voxel translation.
-* _Sigmoid intensity_ : Apply a mixture of sigmoid functions to perturb the image intensities. Altough it seems does no postitive effects on the networks.
 
 The following **add-on** operations are supported:
 

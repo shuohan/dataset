@@ -1,3 +1,4 @@
+=======
 Dataset
 =======
 
@@ -26,7 +27,7 @@ pre-/post-processing and data augmentation and the augmentation is sampled
   transformation field is a spatially smoothed per-voxel translation.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents
 
    installation
