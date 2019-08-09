@@ -11,10 +11,10 @@ from dataset.images import Image, Label, Mask, FileInfo, LabelInfo
 from plot import imshow
 
 
-image_filepath = 'data/at1000_image.nii.gz'
-label_filepath = 'data/at1000_label.nii.gz'
-mask_filepath = 'data/at1000_mask.nii.gz'
-label_desc_filepath = 'data/labels.json'
+image_filepath = 'dataset1/at1000_image.nii.gz'
+label_filepath = 'dataset1/at1000_label.nii.gz'
+mask_filepath = 'dataset1/at1000_mask.nii.gz'
+label_desc_filepath = 'dataset1/labels.json'
 
 image = Image(FileInfo(image_filepath), on_the_fly=False)
 label = Label(FileInfo(label_filepath), on_the_fly=False,
