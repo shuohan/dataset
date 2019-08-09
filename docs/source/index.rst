@@ -27,16 +27,13 @@ pre-/post-processing and data augmentation and the augmentation is sampled
   transformation field is a spatially smoothed per-voxel translation.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents
 
-   installation
-   usage
-   api
+   api/api
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
