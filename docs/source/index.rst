@@ -30,6 +30,8 @@ pre-/post-processing and data augmentation and the augmentation is sampled
    :maxdepth: 2
    :caption: Contents
 
+   installation
+   usage
    api/api
 
 Indices and tables
