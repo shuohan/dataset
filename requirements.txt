@@ -1,3 +1,5 @@
 numpy
 nibabel
-git+https://gitlab.com/shan-utils/image-processing-3d@0.4.1
+git+https://gitlab.com/shan-utils/image-processing-3d
+git+https://gitlab.com/shan-utils/config.git
+git+https://gitlab.com/shan-utils/py-singleton.git
