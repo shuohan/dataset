@@ -2,8 +2,9 @@ image: alpine
 
 pages:
   script:
-  - apk --no-cache add py3-pip python-dev
+  - apk --no-cache add py3-pip python-dev git
   - pip3 install sphinx sphinx_rtd_theme
+  - pip3 install git+https://gitlab.com/shan-utils/config.git
   - apk --no-cache add make
   - cd docs/
   - make html

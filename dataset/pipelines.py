@@ -58,12 +58,11 @@ class RandomPipeline(Worker):
                 :class:`dataset.workers.WorkerCreator`.
 
         """
-        creator = WorkerCreator()
         for name in worker_names:
             priority = len(self.fixed_workers) + len(self.random_workers)
-            if creator.get_type(name) is WorkerType.AUG:
+            if WorkerCreator.get_type(name) is WorkerType.AUG:
                 self.random_workers.append((priority, name))
-            elif creator.get_type(name) is WorkerType.ADDON:
+            elif WorkerCreator.get_type(name) is WorkerType.ADDON:
                 self.fixed_workers.append((priority, name))
             else:
                 raise RuntimeError('Worker "%s" does not exist.' % name)
@@ -84,5 +83,5 @@ class RandomPipeline(Worker):
             ind = self._rand_state.choice(range(len(self.random_workers)))
             workers.append(self.random_workers[ind])
         for priority, worker_name in sorted(workers):
-            images = WorkerCreator().create(worker_name).process(*images)
+            images = WorkerCreator.create(worker_name).process(*images)
         return images

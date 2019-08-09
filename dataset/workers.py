@@ -6,7 +6,6 @@
 from enum import Enum, auto
 import time
 import numpy as np
-from py_singleton import Singleton
 from image_processing_3d import rotate3d, scale3d, padcrop3d, translate3d_int
 from image_processing_3d import calc_random_deformation3d, deform3d, crop3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
@@ -27,39 +26,29 @@ class WorkerType(Enum):
     ADDON = auto()
 
 
-class WorkerCreator(metaclass=Singleton):
+class WorkerCreator:
     """Creates a concerete worker to process the images.
 
     Call the method :meth:`register` to add a new :class:`Worker` into the pool
     so when calling the method :meth:`create` with a worker name (:class:`str`)
     to create an worker, it can find the corresponding implementation correctly.
-    This feature is primarily for adding new type of workers.
-
-    >>> print(WorkerCreator()) # print all registered workers.
+    This feature is primarily for adding new type of workers. Call the method
+    :meth:`show` to print out all registered workers.
 
     Note:
-        This class is a singleton so calling :meth:`register` with any instances
-        will update all copies (actually all copies point to the same instance).
+        The registered workers are stored as a class attribute and all methods
+        of this class are class methods. Use this class without initialization.
 
+    Note:
         The worker type (AUG or ADDON) is changed via
         :class:`dataset.config.Config` and take effect when calling the method
         :meth:`register`.
 
     """
-    def __init__(self):
-        self._workers = dict()
-        self.register('resize', Resizer)
-        self.register('crop', Cropper)
-        self.register('norm_label', LabelNormalizer)
-        self.register('extract_mask', MaskExtractor)
-        self.register('extract_patches', PatchExtractor)
-        self.register('flip', Flipper)
-        self.register('rotate', Rotator)
-        self.register('deform', Deformer)
-        self.register('scale', Scaler)
-        self.register('translate', Translator)
+    _workers = dict()
 
-    def create(self, name):
+    @classmethod
+    def create(cls, name):
         """Creates a worker.
 
         Args:
@@ -73,13 +62,14 @@ class WorkerCreator(metaclass=Singleton):
             KeyError: The name is not registered.
             
         """
-        if name in self._workers:
-            return self._workers[name]()
+        if name in cls._workers:
+            return cls._workers[name]()
         else:
             raise KeyError('Worker "%s" is not registered.' % name)
 
-    def register(self, name, worker):
-        """Registers a :class:`Worker` with a :class:`str`.
+    @classmethod
+    def register(cls, name, worker):
+        """Registers an instance of :class:`Worker` with a :class:`str`.
 
         Args:
             name (str): The name of the worker.
@@ -89,7 +79,7 @@ class WorkerCreator(metaclass=Singleton):
             RuntimeError: Worker types are incorrect in config.
         
         """
-        if self._config_is_correct():
+        if cls._config_is_correct():
             message = 'Addon and augmentation workers overlap in configurations'
             raise RuntimeError(message)
         if name in Config.worker_types['addon']:
@@ -98,26 +88,31 @@ class WorkerCreator(metaclass=Singleton):
             worker.worker_type = WorkerType.AUG
         else:
             raise RuntimeError('Worker %s is not in the config.' % name)
-        self._workers[name] = worker
+        cls._workers[name] = worker
 
-    def _config_is_correct(self):
+    @staticmethod
+    def _config_is_correct():
         """Returns if aug and addon workers are correctly written in config."""
         addon = Config.worker_types['addon']
         aug = Config.worker_types['aug']
         return not set(addon).isdisjoint(aug)
 
-    def unregister(self, name):
+    @classmethod
+    def unregister(cls, name):
         """Unregisters a worker."""
-        self._workers.pop(name)
+        cls._workers.pop(name)
 
-    def get_type(self, name):
+    @classmethod
+    def get_type(cls, name):
         """Returns the type (AUG or ADDON) of worker."""
-        return self._workers[name].worker_type
+        return cls._workers[name].worker_type
 
-    def __str__(self):
+    @classmethod
+    def show(cls):
+        """Prints out the registered workers."""
         message = ['Registered workers:']
-        length = max([len(k) for k in self._workers.keys()])
-        for k, v in self._workers.items():
+        length = max([len(k) for k in cls._workers.keys()])
+        for k, v in cls._workers.items():
             t = WorkerType(v.worker_type)
             message.append(('    %%%ds: %%s, %%s' % length) % (k, v, t.name))
         return '\n'.join(message)
@@ -558,3 +553,15 @@ class PatchExtractor(PatchExtractor_):
     def __init__(self):
         super().__init__(patch_shape=Config.patch_shape,
                         num_patches=Config.num_patches)
+
+
+WorkerCreator.register('resize', Resizer)
+WorkerCreator.register('crop', Cropper)
+WorkerCreator.register('norm_label', LabelNormalizer)
+WorkerCreator.register('extract_mask', MaskExtractor)
+WorkerCreator.register('extract_patches', PatchExtractor)
+WorkerCreator.register('flip', Flipper)
+WorkerCreator.register('rotate', Rotator)
+WorkerCreator.register('deform', Deformer)
+WorkerCreator.register('scale', Scaler)
+WorkerCreator.register('translate', Translator)
