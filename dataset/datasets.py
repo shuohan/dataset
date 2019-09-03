@@ -202,10 +202,12 @@ class Dataset:
         pass
 
     def _get_labels(self, images):
-        labels = defaultdict()
-        for image_group in images:
+        labels = dict()
+        for image_group in images.values():
             for image in image_group:
                 if type(image) is Label:
+                    if image.label_info not in labels:
+                        labels[image.label_info] = list()
                     labels[image.label_info].append(image)
         return labels
 
