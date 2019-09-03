@@ -65,9 +65,11 @@ class Config(Config):
     directory."""
     mask_label_val = 1
     """int: The value used to extract a mask from the label image."""
+    drop_ind = -1
+    """int: The index of images to drop."""
     verbose = False
     """bool: Print info if True."""
-    worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label',
+    worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label', 'drop',
                               'extract_mask', 'extract_patches', 'zero_out',
                               'extract_slices', 'convert_dim', 'zscore'],
                     'aug': ['translate', 'rotate', 'scale', 'deform']}

@@ -687,6 +687,29 @@ class ZeroOut(Worker):
         return image.update(data, self.message)
 
 
+class Dropper_(Worker):
+    """Drops an image.
+
+    Attributes:
+        drop_ind (int): The index of images to drop.
+    
+    """
+    def __init__(self, drop_ind):
+        super().__init__()
+        self.drop_ind = drop_ind
+
+    def process(self, *images):
+        images = list(images)
+        images.pop(self.drop_ind)
+        return tuple(images)
+
+
+class Dropper(Dropper_):
+    """Wrapper of :class:`Dropper_`."""
+    def __init__(self):
+        super().__init__(drop_ind=Config.drop_ind)
+
+
 WorkerCreator.register('resize', Resizer)
 WorkerCreator.register('crop', Cropper)
 WorkerCreator.register('norm_label', LabelNormalizer)
@@ -696,6 +719,7 @@ WorkerCreator.register('extract_slices', SliceExtractor)
 WorkerCreator.register('convert_dim', DimConverter)
 WorkerCreator.register('zscore', ZScore)
 WorkerCreator.register('zero_out', ZeroOut)
+WorkerCreator.register('drop', Dropper)
 WorkerCreator.register('flip', Flipper)
 WorkerCreator.register('rotate', Rotator)
 WorkerCreator.register('deform', Deformer)
