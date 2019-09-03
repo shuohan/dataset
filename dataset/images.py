@@ -40,7 +40,12 @@ def _load_npy(filepath, dtype):
 def _load_nii(filepath, dtype):
     """Load a ``".nii"`` or ``".nii.gz"`` file."""
     import nibabel as nib
-    return nib.load(filepath).get_data().astype(dtype)
+    data = nib.load(filepath).get_data()
+    if dtype in (np.int8, np.int16, np.int32, np.int64,
+                 np.uint8, np.uint16, np.uint32, np.uint64):
+        data = np.round(data)
+    data = data.astype(dtype)
+    return data
 
 
 class FileSearcher:
