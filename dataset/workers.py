@@ -641,6 +641,52 @@ class DimConverter(DimConverter_):
         super().__init__(slice_dim=Config.slice_dim)
 
 
+class ZScore(Worker):
+    """Applies z-score conversion to images within the mask.
+
+    """
+    message = 'zscore'
+    worker_type = WorkerType.ADDON
+
+    def process(self, *images):
+        for image in images:
+            if isinstance(image, Mask):
+                mask = image
+                break
+        results = tuple([self._zscore(image, mask) for image in images])
+        return results
+
+    def _zscore(self, image, mask):
+        if type(image) is Image:
+            sel = image.data[mask.data.astype(bool)]
+            mean = np.mean(sel)
+            data = (image.data - np.mean(sel)) / np.std(sel)
+            return image.update(data, self.message)
+        else:
+            return image
+
+
+class ZeroOut(Worker):
+    """Zeros-out images outside the mask.
+
+    """
+    message = 'zero_out'
+    worker_type = WorkerType.ADDON
+
+    def process(self, *images):
+        for image in images:
+            if isinstance(image, Mask):
+                mask = image
+                break
+        results = tuple([self._zeroout(image, mask) for image in images])
+        return results
+
+    def _zeroout(self, image, mask):
+        data = image.data.copy()
+        data[np.logical_not(mask.data.astype(bool))] = 0
+        return image.update(data, self.message)
+
+
 WorkerCreator.register('resize', Resizer)
 WorkerCreator.register('crop', Cropper)
 WorkerCreator.register('norm_label', LabelNormalizer)
@@ -648,6 +694,8 @@ WorkerCreator.register('extract_mask', MaskExtractor)
 WorkerCreator.register('extract_patches', PatchExtractor)
 WorkerCreator.register('extract_slices', SliceExtractor)
 WorkerCreator.register('convert_dim', DimConverter)
+WorkerCreator.register('zscore', ZScore)
+WorkerCreator.register('zero_out', ZeroOut)
 WorkerCreator.register('flip', Flipper)
 WorkerCreator.register('rotate', Rotator)
 WorkerCreator.register('deform', Deformer)
