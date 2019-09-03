@@ -503,15 +503,10 @@ class PatchExtractor_(RandomWorker):
     ``patch_shape``. The start is uniformly sampled.
 
     Note:
-        **UNDER DEVELOPMENT**.
-        
-        The extracted pathces will be put into the output in series. For
-        example, suppose the input is (image1, image2), the output will be
-        (image1_patch1, image2_patch2, image2_patch1, image2_patch2) for 2
-        patches.
+        This worker should normally be put into the end of the pipeline and
+        should use :func:`patch_collate` to collate the samples for
+        :class:`torch.utils.data.DataLoader`.
 
-        The class does not know the shape of the input images in advance.
-        
     Attributes:
         patch_shape (iterable[int]): The 3D spatial shape of the patch.
         num_patches (int): The number of patches to extract.
@@ -552,7 +547,84 @@ class PatchExtractor(PatchExtractor_):
     """Wrapper of :class:`PatchExtractor_`."""
     def __init__(self):
         super().__init__(patch_shape=Config.patch_shape,
-                        num_patches=Config.num_patches)
+                         num_patches=Config.num_patches)
+
+
+class SliceExtractor_(RandomWorker):
+    """Extracts slices from an image randomly.
+
+    Note:
+        This worker should normally be put into the end of the pipeline and
+        should use :func:`patch_collate` to collate the samples for
+        :class:`torch.utils.data.DataLoader`.
+
+    Attributes:
+        num_slices (int): The number of slices to extract.
+        slice_dim (int): The slice dimension. Counting from the last dimension
+            when negative.
+
+    """
+    message = 'extract_slices'
+    worker_type = WorkerType.ADDON
+
+    def __init__(self, num_slices=1, slice_dim=-1):
+        super().__init__()
+        self.num_slices = num_slices
+        self.slice_dim = slice_dim
+
+    def process(self, *images):
+        results = list()
+        shape = images[0].shape
+        axes = self._calc_transpose_axes(len(shape))
+        indices = self._calc_slicing_indices(shape)
+        for image in images:
+            slices = image.data[indices]
+            slices = np.transpose(slices, axes)
+            results.append(image.update(slices, self.message))
+        return results
+
+    def _calc_transpose_axes(self, num):
+        axes = list(range(num))
+        dim = axes.pop(self.slice_dim)
+        return [dim] + axes
+
+    def _calc_slicing_indices(self, image_shape):
+        total_slices = image_shape[self.slice_dim]
+        indices = self.rand_state.choice(total_slices, self.num_slices, False)
+        result = [slice(None)] * len(image_shape)
+        result[self.slice_dim] = indices
+        return tuple(result)
+
+
+class SliceExtractor(SliceExtractor_):
+    """Wrapper of :class:`SliceExtractor_`."""
+    def __init__(self):
+        super().__init__(num_slices=Config.num_slices,
+                         slice_dim=Config.slice_dim)
+
+
+def patch_collate(batch):
+    """Collate function for patches. Used with :class:`PatchExtractor`.
+
+    Suppose the input ``((image1, label1, mask1), (image2, label2, mask2))``,
+    this function will collate ``(image1, image2)``, ``(label1, label2)``, and
+    ``(mask1, mask2)``, respectively. Each data (such as ``image1``) has
+    multiple pathces of the same sample and are concatenated as a batch (the 0th
+    dimension is batch).
+
+    This function should be used as the attribute
+    :attr:`torch.utils.data.DataLoader.collate_fn` for :class:`PatchExtractor`
+    to work.
+
+    Args:
+        batch (iterable[iterable]): The batch to collate.
+
+    Returns:
+        iterable[torch.Tensor]: The collated batch.
+
+    """
+    import torch
+    return [torch.from_numpy(np.vstack(data)) for data in zip(*batch)]
 
 
 WorkerCreator.register('resize', Resizer)

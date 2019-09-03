@@ -43,6 +43,12 @@ class Config(Config):
     """tuple[int]: The cropping shape of ROI using mask."""
     patch_shape = (64, 64, 64)
     """tuple[int]: The shape of extracted patch."""
+    num_patches = 10
+    """int: The number of patches to extract per image."""
+    num_slices = 10
+    """int: The number of slices to extract per image."""
+    slice_dim = -1
+    """int: The slice dimension."""
     aug_prob = 0.5
     """float: The augmentation probability; 1 means always using augmentation, 0
     means not using at all."""
