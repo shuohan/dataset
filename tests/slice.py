@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from dataset import Config
-from dataset.workers import SliceExtractor, patch_collate, Cropper
+from dataset.workers import SliceExtractor, Cropper
+from dataset.funcs import patch_collate
 from dataset.images import FileInfo, Image, Label, Mask
 import matplotlib.pyplot as plt
 

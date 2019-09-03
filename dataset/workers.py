@@ -550,13 +550,19 @@ class PatchExtractor(PatchExtractor_):
                          num_patches=Config.num_patches)
 
 
+def _calc_transpose_axes(num_axes, slice_dim):
+    axes = list(range(num_axes))
+    dim = axes.pop(slice_dim)
+    return [dim] + axes
+
+
 class SliceExtractor_(RandomWorker):
     """Extracts slices from an image randomly.
 
     Note:
         This worker should normally be put into the end of the pipeline and
-        should use :func:`patch_collate` to collate the samples for
-        :class:`torch.utils.data.DataLoader`.
+        should use :func:`dataset.funcs.patch_collate` to collate the samples
+        for :class:`torch.utils.data.DataLoader`.
 
     Attributes:
         num_slices (int): The number of slices to extract.
@@ -575,7 +581,7 @@ class SliceExtractor_(RandomWorker):
     def process(self, *images):
         results = list()
         shape = images[0].shape
-        axes = self._calc_transpose_axes(len(shape))
+        axes = _calc_transpose_axes(len(shape), self.slice_dim)
         indices = self._calc_slicing_indices(shape)
         for image in images:
             slices = image.data[indices]
@@ -583,14 +589,10 @@ class SliceExtractor_(RandomWorker):
             results.append(image.update(slices, self.message))
         return results
 
-    def _calc_transpose_axes(self, num):
-        axes = list(range(num))
-        dim = axes.pop(self.slice_dim)
-        return [dim] + axes
-
     def _calc_slicing_indices(self, image_shape):
         total_slices = image_shape[self.slice_dim]
-        indices = self.rand_state.choice(total_slices, self.num_slices, False)
+        num = total_slices if self.num_slices is None else self.num_slices
+        indices = self.rand_state.choice(total_slices, num, replace=False)
         result = [slice(None)] * len(image_shape)
         result[self.slice_dim] = indices
         return tuple(result)
@@ -603,28 +605,40 @@ class SliceExtractor(SliceExtractor_):
                          slice_dim=Config.slice_dim)
 
 
-def patch_collate(batch):
-    """Collate function for patches. Used with :class:`PatchExtractor`.
+class DimConverter_(Worker):
+    """Converts a 3D image to multi-slice 2D images.
 
-    Suppose the input ``((image1, label1, mask1), (image2, label2, mask2))``,
-    this function will collate ``(image1, image2)``, ``(label1, label2)``, and
-    ``(mask1, mask2)``, respectively. Each data (such as ``image1``) has
-    multiple pathces of the same sample and are concatenated as a batch (the 0th
-    dimension is batch).
-
-    This function should be used as the attribute
-    :attr:`torch.utils.data.DataLoader.collate_fn` for :class:`PatchExtractor`
-    to work.
-
-    Args:
-        batch (iterable[iterable]): The batch to collate.
-
-    Returns:
-        iterable[torch.Tensor]: The collated batch.
+    Note:
+        This worker should normally be put into the end of the pipeline and
+        should use :func:`dataset.funcs.patch_collate` to collate the samples
+        for :class:`torch.utils.data.DataLoader`.
+    
+    Attributes:
+        slice_dim (int): The slice dimension. Counting from the last dimension
+            when negative.
 
     """
-    import torch
-    return [torch.from_numpy(np.vstack(data)) for data in zip(*batch)]
+    message = 'convert_dim'
+    worker_type = WorkerType.ADDON
+
+    def __init__(self, slice_dim):
+        super().__init__()
+        self.slice_dim = slice_dim
+
+    def process(self, *images):
+        results = list()
+        shape = images[0].shape
+        axes = _calc_transpose_axes(len(shape), self.slice_dim)
+        for image in images:
+            data = np.transpose(image.data, axes)
+            results.append(image.update(data, self.message))
+        return results
+
+
+class DimConverter(DimConverter_):
+    """Wrapper of :class:`DimConverter_`."""
+    def __init__(self):
+        super().__init__(slice_dim=Config.slice_dim)
 
 
 WorkerCreator.register('resize', Resizer)
@@ -632,6 +646,8 @@ WorkerCreator.register('crop', Cropper)
 WorkerCreator.register('norm_label', LabelNormalizer)
 WorkerCreator.register('extract_mask', MaskExtractor)
 WorkerCreator.register('extract_patches', PatchExtractor)
+WorkerCreator.register('extract_slices', SliceExtractor)
+WorkerCreator.register('convert_dim', DimConverter)
 WorkerCreator.register('flip', Flipper)
 WorkerCreator.register('rotate', Rotator)
 WorkerCreator.register('deform', Deformer)

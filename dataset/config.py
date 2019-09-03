@@ -68,7 +68,8 @@ class Config(Config):
     verbose = False
     """bool: Print info if True."""
     worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label',
-                              'extract_mask', 'extract_patches'],
+                              'extract_mask', 'extract_patches',
+                              'extract_slices', 'convert_dim'],
                     'aug': ['translate', 'rotate', 'scale', 'deform']}
     """dict: * **addon** (*list[str]*) - Addon image operations.
     * **aug** (*list[str]*) - Augmentation operations."""
