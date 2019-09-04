@@ -49,6 +49,9 @@ class Config(Config):
     """int: The number of slices to extract per image."""
     slice_dim = -1
     """int: The slice dimension."""
+    slice_prob = True
+    """bool: Sample slices with inverse areas as probabilites. Background slice
+    as probability zero."""
     aug_prob = 0.5
     """float: The augmentation probability; 1 means always using augmentation, 0
     means not using at all."""
@@ -69,6 +72,8 @@ class Config(Config):
     """int: The index of images to drop."""
     verbose = False
     """bool: Print info if True."""
+    eps = 1e-8
+    """float: A small number."""
     worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label', 'drop',
                               'extract_mask', 'extract_patches', 'zero_out',
                               'extract_slices', 'convert_dim', 'zscore'],

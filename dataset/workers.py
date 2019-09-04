@@ -568,41 +568,65 @@ class SliceExtractor_(RandomWorker):
         num_slices (int): The number of slices to extract.
         slice_dim (int): The slice dimension. Counting from the last dimension
             when negative.
+        prob (bool): If ``True``, use the inverse of areas as sampling
+            probability.
 
     """
     message = 'extract_slices'
     worker_type = WorkerType.ADDON
 
-    def __init__(self, num_slices=1, slice_dim=-1):
+    def __init__(self, num_slices=1, slice_dim=-1, prob=True):
         super().__init__()
         self.num_slices = num_slices
         self.slice_dim = slice_dim
+        self.prob = prob
 
     def process(self, *images):
         results = list()
         shape = images[0].shape
         axes = _calc_transpose_axes(len(shape), self.slice_dim)
-        indices = self._calc_slicing_indices(shape)
+        prob = self._calc_prob(images, len(shape)) if self.prob else None
+        indices = self._calc_slicing_indices(shape, prob=prob)
         for image in images:
             slices = image.data[indices]
             slices = np.transpose(slices, axes)
             results.append(image.update(slices, self.message))
         return results
 
-    def _calc_slicing_indices(self, image_shape):
+    def _calc_slicing_indices(self, image_shape, prob=True):
         total_slices = image_shape[self.slice_dim]
         num = total_slices if self.num_slices is None else self.num_slices
-        indices = self.rand_state.choice(total_slices, num, replace=False)
+        indices = self.rand_state.choice(total_slices, num, False, prob)
         result = [slice(None)] * len(image_shape)
         result[self.slice_dim] = indices
         return tuple(result)
+
+    def _calc_prob(self, images, num_axes):
+        label = None
+        for image in images:
+            if isinstance(image, Label):
+                label = image
+                break
+        if label is None:
+            return None
+        else:
+            mask = (label.data > 0).astype(float)
+            axes = list(range(num_axes))
+            axes.pop(self.slice_dim)
+            areas = np.sum(mask, axis=tuple(axes))
+            prob = np.zeros_like(areas)
+            ind = areas > 0
+            prob[ind] = 1 / areas[ind]
+            prob[~ind] = Config.eps
+            prob = prob / np.sum(prob)
+            return prob
 
 
 class SliceExtractor(SliceExtractor_):
     """Wrapper of :class:`SliceExtractor_`."""
     def __init__(self):
         super().__init__(num_slices=Config.num_slices,
-                         slice_dim=Config.slice_dim)
+                         slice_dim=Config.slice_dim, prob=Config.slice_prob)
 
 
 class DimConverter_(Worker):
