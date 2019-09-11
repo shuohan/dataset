@@ -6,6 +6,7 @@
 from enum import Enum, auto
 import time
 import numpy as np
+from scipy.ndimage import gaussian_filter
 from image_processing_3d import rotate3d, scale3d, padcrop3d, translate3d_int
 from image_processing_3d import calc_random_deformation3d, deform3d, crop3d
 from image_processing_3d import calc_random_intensity_transform as calc_int
@@ -809,6 +810,37 @@ class Dropper(Dropper_):
         super().__init__(drop_ind=Config.drop_ind)
 
 
+class Downsample_(Worker):
+    message = 'downsample'
+    worker_type = WorkerType.ADDON
+
+    def __init__(self, down_rate):
+        super().__init__()
+        self.down_rate = down_rate
+
+    def _process(self, image):
+        indices = (..., ) + (slice(None, None, self.down_rate), ) * 3
+        if isinstance(image, Label) or isinstance(image, Mask):
+            result = image.data
+        else:
+            result = list()
+            for i in range(image.shape[0]):
+                blurred = gaussian_filter(image.data[i], self._calc_sigma())
+                result.append(blurred)
+            result= np.hstack([d[None, ...] for d in result])
+        result = result[indices]
+        return result
+
+    def _calc_sigma(self):
+        return self.down_rate / np.pi
+
+
+class Downsample(Downsample_):
+
+    def __init__(self):
+        super().__init__(Config.down_rate)
+
+
 WorkerCreator.register('resize', Resizer)
 WorkerCreator.register('crop', Cropper)
 WorkerCreator.register('norm_label', LabelNormalizer)
@@ -820,6 +852,7 @@ WorkerCreator.register('convert_dim', DimConverter)
 WorkerCreator.register('zscore', ZScore)
 WorkerCreator.register('zero_out', ZeroOut)
 WorkerCreator.register('drop', Dropper)
+WorkerCreator.register('downsample', Downsample)
 WorkerCreator.register('flip', Flipper)
 WorkerCreator.register('rotate', Rotator)
 WorkerCreator.register('deform', Deformer)

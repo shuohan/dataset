@@ -72,11 +72,14 @@ class Config(Config):
     """int: The index of images to drop."""
     verbose = False
     """bool: Print info if True."""
+    down_rate = 2
+    """int: Downsampling rate."""
     eps = 1e-8
     """float: A small number."""
     worker_types = {'addon': ['resize', 'flip', 'crop', 'norm_label', 'drop',
                               'extract_mask', 'extract_patches', 'zero_out',
-                              'extract_slices', 'convert_dim', 'zscore'],
+                              'extract_slices', 'convert_dim', 'zscore',
+                              'downsample'],
                     'aug': ['translate', 'rotate', 'scale', 'deform']}
     """dict: * **addon** (*list[str]*) - Addon image operations.
     * **aug** (*list[str]*) - Augmentation operations."""
