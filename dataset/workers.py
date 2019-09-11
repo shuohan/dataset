@@ -550,6 +550,81 @@ class PatchExtractor(PatchExtractor_):
                          num_patches=Config.num_patches)
 
 
+class PatchExtractor2(PatchExtractor):
+
+    scale = 0.5
+    thres = 0
+    margin = 1/4
+
+    def process(self, *images):
+        image_shape = images[0].shape[-3:]
+        bboxes = self._calc_bboxes(image_shape)
+        prob = self._calc_prob(images, bboxes)
+        indices = self.rand_state.choice(np.arange(len(prob), dtype=int),
+                                         self.num_patches, False, prob)
+        results = list()
+        for image in images:
+            patches = [crop3d(image.data, bboxes[ind])[0][None, ...]
+                       for ind in indices]
+            patches = np.vstack(patches)
+            results.append(image.update(patches, self.message))
+        return results
+
+    def _calc_bboxes(self, image_shape):
+        steps = [ims // 8 for ims in self.patch_shape]
+        uppers = [ims - ps for ims, ps in zip(image_shape, self.patch_shape)]
+        residuals = [u % s > 0 for u, s in zip(uppers, steps)]
+        uppers = [u//s * s + r * s for u, s, r in zip(uppers, steps, residuals)]
+        starts = [np.arange(0, up+1, s) for up, s in zip(uppers, steps)]
+        starts = np.meshgrid(*starts, indexing='ij')
+        starts = np.hstack([s.flatten()[:, None] for s in starts])
+        return [tuple(slice(s, s+p) for s, p in zip(start, self.patch_shape))
+                for start in starts]
+
+    def _crop(self, label, bbox, offsets):
+        new_bbox = tuple(slice(s.start + int(self.margin * ps),
+                               s.stop - int(self.margin * ps))
+                         for s, ps in zip(bbox, self.patch_shape))
+        # new_bbox = tuple(slice(s.start + o, s.stop + o)
+        #                  for s, o in zip(bbox, offsets))
+        # new_bbox = bbox
+        return crop3d(label, new_bbox)[0]
+
+    def _calc_prob(self, images, bboxes):
+        label = None
+        for image in images:
+            if isinstance(image, Label):
+                label = image
+                break
+        if label is not None:
+            data = np.sum(label.data, axis=0) > 0
+            # label_center = [int(np.mean(x)) for x in np.where(data)]
+            # image_center = [s//2 for s in label.shape[-3:]]
+            # offsets = [l - i for l, i in zip(image_center, label_center)]
+            offsets = None
+            volumes = [np.sum(self._crop(data, bbox, offsets))
+                       for bbox in bboxes]
+            volumes = np.array(volumes)
+            max_vol = np.max(volumes)
+            prob = np.ones_like(volumes, dtype=float)
+            indices1 = volumes > self.thres * max_vol
+            indices2 = (volumes <= self.thres * max_vol) & (volumes > 0)
+            indices3 = np.logical_not(np.logical_or(indices1, indices2))
+            num1 = np.sum(indices1)
+            if num1 > 0:
+                prob[indices1] = 1 / num1
+            num2 = np.sum(indices2)
+            if num2 > 0:
+                prob[indices2] = self.scale * 1 / num2
+            num3 = np.sum(indices3)
+            if num3 > 0:
+                prob[indices3] = self.scale * 0.5 / num3
+            prob = prob / np.sum(prob)
+        else:
+            prob = None
+        return prob
+
+
 def _calc_transpose_axes(num_axes, slice_dim):
     axes = list(range(num_axes))
     dim = axes.pop(slice_dim)
@@ -738,7 +813,8 @@ WorkerCreator.register('resize', Resizer)
 WorkerCreator.register('crop', Cropper)
 WorkerCreator.register('norm_label', LabelNormalizer)
 WorkerCreator.register('extract_mask', MaskExtractor)
-WorkerCreator.register('extract_patches', PatchExtractor)
+# WorkerCreator.register('extract_patches', PatchExtractor)
+WorkerCreator.register('extract_patches', PatchExtractor2)
 WorkerCreator.register('extract_slices', SliceExtractor)
 WorkerCreator.register('convert_dim', DimConverter)
 WorkerCreator.register('zscore', ZScore)
