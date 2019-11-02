@@ -7,7 +7,7 @@ import os
 import json
 import numpy as np
 from pathlib import Path
-from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d
+from image_processing_3d import calc_bbox3d, resize_bbox3d, crop3d, padcrop3d
 
 from .config import Config
 
@@ -531,7 +531,10 @@ class Mask(Image):
         """
         if self.bbox is None:
             self.calc_bbox()
-        cropped = crop3d(image.data, self.bbox)[0]
+        if np.sum(image.data) == 0:
+            cropped = padcrop3d(image.data, self.cropping_shape)[0]
+        else:
+            cropped = crop3d(image.data, self.bbox)[0]
         new_image = image.update(cropped, 'crop')
         return new_image
 
