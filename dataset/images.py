@@ -75,7 +75,9 @@ class FileSearcher:
             FileSearcher: The instance itself.
 
         """
-        filepaths = sorted(Path(self.dirname).glob('*' + IMAGE_EXT))
+        filepaths = list(Path(self.dirname).glob('*' + IMAGE_EXT)) \
+                  + list(Path(self.dirname).glob('*.tag'))
+        filepaths = sorted(filepaths)
         self.files = [FileInfo(fp) for fp in filepaths]
         self.label_file = os.path.join(self.dirname, Config.label_desc)
         return self
@@ -307,6 +309,14 @@ class Loader:
         raise NotImplementedError
 
 
+class TagLoader(Loader):
+    """Loads :class:`Tag`."""
+    def create(self, f):
+        return Tag(f)
+    def is_correct_type(self, f):
+        return f.suffix in Config.tag_suffixes
+
+
 class ImageLoader(Loader):
     """Loads :class:`Image`."""
     def create(self, f):
@@ -338,6 +348,49 @@ class BoundingBoxLoader(Loader):
         return BoundingBox(info=f)
     def is_correct_type(self, f):
         return f.suffix in Config.bbox_suffixes
+
+
+class Tag:
+    """Handles a tag/class/label.
+
+    A tag is a single integer indicating the class of the whole image.
+
+    Attributes:
+        info (FileInfo): The file information.
+        message (list[str]): The message for printing.
+
+    """
+    def __init__(self, info=None, data=None, message=[]):
+        """Initialize
+
+        Raises:
+            RuntimeError: ``info`` and ``data`` are both ``None``. The class
+                should load from either ``filepath`` or ``data``.
+
+        """
+        if info is None and data is None:
+            raise RuntimeError('"info" and "data" should not be both None.')
+        self.info = info
+        self._data = data
+        self.message = message
+
+    @property
+    def data(self):
+        if self._data is None:
+            with open(self.info.filepath) as tfile:
+                self._data = np.float32(tfile.read().strip())
+        return self._data
+
+    @property
+    def output(self):
+        return self.data
+
+    def __str__(self):
+        return '%s %s %d' % (self.info.name, self.info.suffix, self.data)
+
+    def update(self, data, message):
+        new_image = self.__class__(self.info, self.data, self.message)
+        return new_image
 
 
 class Image:
@@ -534,6 +587,7 @@ class Mask(Image):
         if np.sum(image.data) == 0:
             cropped = padcrop3d(image.data, self.cropping_shape)[0]
         else:
+            print('mask size', np.sum(image.data))
             cropped = crop3d(image.data, self.bbox)[0]
         new_image = image.update(cropped, 'crop')
         return new_image

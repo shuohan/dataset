@@ -7,6 +7,7 @@ from collections import defaultdict
 from .config import Config
 from .images import Label, FileSearcher
 from .images import ImageLoader, LabelLoader, MaskLoader, BoundingBoxLoader
+from .images import TagLoader
 from .pipelines import RandomPipeline
 
 
@@ -54,6 +55,7 @@ class DatasetCreator:
         self.dataset = None
         self._datasets = list()
 
+        self.register_loader('tag', TagLoader)
         self.register_loader('image', ImageLoader)
         self.register_loader('label', LabelLoader)
         self.register_loader('mask', MaskLoader)

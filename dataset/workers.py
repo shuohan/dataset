@@ -184,7 +184,10 @@ class Resizer_(Worker):
         self.shape = shape
 
     def _process(self, image):
-        return padcrop3d(image.data, self.shape)[0]
+        if isinstance(image, Image):
+            return padcrop3d(image.data, self.shape)[0]
+        else:
+            return image
 
 
 class Resizer(Resizer_):
@@ -227,8 +230,11 @@ class Rotator_(RandomWorker):
         return angle
 
     def _process(self, image):
-        return rotate3d(image.data, self.x, self.y, self.z,
-                        pivot=self.point, order=image.interp_order)
+        if isinstance(image, Image):
+            return rotate3d(image.data, self.x, self.y, self.z,
+                            pivot=self.point, order=image.interp_order)
+        else:
+            return image
 
 
 class Rotator(Rotator_):
@@ -273,8 +279,11 @@ class Scaler_(RandomWorker):
         return scale
 
     def _process(self, image):
-        return scale3d(image.data, self.x, self.y, self.z,
-                       pivot=self.point, order=image.interp_order)
+        if isinstance(image, Image):
+            return scale3d(image.data, self.x, self.y, self.z,
+                           pivot=self.point, order=image.interp_order)
+        else:
+            return image
 
 
 class Scaler(Scaler_):
@@ -304,14 +313,17 @@ class Flipper_(Worker):
         self.dim = dim
 
     def _process(self, image):
-        result = np.flip(image.data, self.dim).copy()
-        if hasattr(image, 'pairs'):
-            for (pair1, pair2) in image.pairs:
-                mask1 = result==pair1
-                mask2 = result==pair2
-                result[mask1] = pair2
-                result[mask2] = pair1
-        return result
+        if isinstance(image, Image):
+            result = np.flip(image.data, self.dim).copy()
+            if hasattr(image, 'pairs'):
+                for (pair1, pair2) in image.pairs:
+                    mask1 = result==pair1
+                    mask2 = result==pair2
+                    result[mask1] = pair2
+                    result[mask2] = pair1
+            return result
+        else:
+            return image
 
 
 class Flipper(Flipper_):
@@ -338,7 +350,12 @@ class Cropper(Worker):
                 mask = image
             else:
                 others.append(image)
-        results = tuple([mask.crop(image) for image in others])
+        results = list()
+        for image in others:
+            if isinstance(image, Image):
+                results.append(mask.crop(image))
+            else:
+                results.append(image)
         return results
 
 
@@ -367,7 +384,10 @@ class Translator_(RandomWorker):
         self.z = self._calc_random_trans()
 
     def _process(self, image):
-        return translate3d_int(image.data, self.x, self.y, self.z)
+        if isinstance(image, Image):
+            return translate3d_int(image.data, self.x, self.y, self.z)
+        else:
+            return image
 
     def _calc_random_trans(self):
         """Returns the sampled translation."""
@@ -413,16 +433,19 @@ class Deformer_(RandomWorker):
         self.rand_state = np.random.RandomState(int(time.time()))
 
     def process(self, *images):
-        shape = images[0].shape
-        x_deform = self._calc_random_deform(shape)
-        y_deform = self._calc_random_deform(shape)
-        z_deform = self._calc_random_deform(shape)
-        results = list()
-        for image in images:
-            data = deform3d(image.data, x_deform, y_deform, z_deform,
-                            order=image.interp_order)
-            results.append(image.update(data, self.message))
-        return tuple(results)
+            shape = images[0].shape
+            x_deform = self._calc_random_deform(shape)
+            y_deform = self._calc_random_deform(shape)
+            z_deform = self._calc_random_deform(shape)
+            results = list()
+            for image in images:
+                if isinstance(image, Image):
+                    data = deform3d(image.data, x_deform, y_deform, z_deform,
+                                    order=image.interp_order)
+                    results.append(image.update(data, self.message))
+                else:
+                    results.append(image)
+            return tuple(results)
 
     def _calc_random_deform(self, shape):
         """Samples the deformation along a single axis.
@@ -528,9 +551,12 @@ class PatchExtractor_(RandomWorker):
             # TODO: without replacement
             patch_bbox = self._calc_patch_bbox(image_shape)
             for image in images:
-                data = crop3d(image.data, patch_bbox)[0]
-                message = '%s_%d' % (self.message, i)
-                results.append(image.update(data, message))
+                if isinstance(image, Image):
+                    data = crop3d(image.data, patch_bbox)[0]
+                    message = '%s_%d' % (self.message, i)
+                    results.append(image.update(data, message))
+                else:
+                    results.append(image)
         return results
 
     def _calc_patch_bbox(self, image_shape):
@@ -565,10 +591,13 @@ class PatchExtractor2(PatchExtractor):
                                          self.num_patches, False, prob)
         results = list()
         for image in images:
-            patches = [crop3d(image.data, bboxes[ind])[0][None, ...]
-                       for ind in indices]
-            patches = np.vstack(patches)
-            results.append(image.update(patches, self.message))
+            if isinstance(image, Image):
+                patches = [crop3d(image.data, bboxes[ind])[0][None, ...]
+                           for ind in indices]
+                patches = np.vstack(patches)
+                results.append(image.update(patches, self.message))
+            else:
+                results.append(image)
         return results
 
     def _calc_bboxes(self, image_shape):
@@ -664,9 +693,12 @@ class SliceExtractor_(RandomWorker):
         prob = self._calc_prob(images, len(shape)) if self.prob else None
         indices = self._calc_slicing_indices(shape, prob=prob)
         for image in images:
-            slices = image.data[indices]
-            slices = np.transpose(slices, axes)
-            results.append(image.update(slices, self.message))
+            if isinstance(image, Image):
+                slices = image.data[indices]
+                slices = np.transpose(slices, axes)
+                results.append(image.update(slices, self.message))
+            else:
+                results.append(image)
         return results
 
     def _calc_slicing_indices(self, image_shape, prob=True):
@@ -730,8 +762,11 @@ class DimConverter_(Worker):
         shape = images[0].shape
         axes = _calc_transpose_axes(len(shape), self.slice_dim)
         for image in images:
-            data = np.transpose(image.data, axes)
-            results.append(image.update(data, self.message))
+            if isinstance(image, Image):
+                data = np.transpose(image.data, axes)
+                results.append(image.update(data, self.message))
+            else:
+                results.append(image)
         return results
 
 
@@ -782,9 +817,12 @@ class ZeroOut(Worker):
         return results
 
     def _zeroout(self, image, mask):
-        data = image.data.copy()
-        data[np.logical_not(mask.data.astype(bool))] = 0
-        return image.update(data, self.message)
+        if isinstance(image):
+            data = image.data.copy()
+            data[np.logical_not(mask.data.astype(bool))] = 0
+            return image.update(data, self.message)
+        else:
+            return image
 
 
 class Dropper_(Worker):
@@ -819,17 +857,20 @@ class Downsample_(Worker):
         self.down_rate = down_rate
 
     def _process(self, image):
-        indices = (..., ) + (slice(None, None, self.down_rate), ) * 3
-        if isinstance(image, Label) or isinstance(image, Mask):
-            result = image.data
+        if isinstance(image, Image):
+            indices = (..., ) + (slice(None, None, self.down_rate), ) * 3
+            if isinstance(image, Label) or isinstance(image, Mask):
+                result = image.data
+            else:
+                result = list()
+                for i in range(image.shape[0]):
+                    blurred = gaussian_filter(image.data[i], self._calc_sigma())
+                    result.append(blurred)
+                result= np.hstack([d[None, ...] for d in result])
+            result = result[indices]
+            return result
         else:
-            result = list()
-            for i in range(image.shape[0]):
-                blurred = gaussian_filter(image.data[i], self._calc_sigma())
-                result.append(blurred)
-            result= np.hstack([d[None, ...] for d in result])
-        result = result[indices]
-        return result
+            return image
 
     def _calc_sigma(self):
         return self.down_rate / np.pi

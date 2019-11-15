@@ -55,6 +55,8 @@ class Config(Config):
     aug_prob = 0.5
     """float: The augmentation probability; 1 means always using augmentation, 0
     means not using at all."""
+    tag_suffixes = ['tag']
+    """list[str]: The suffixes of tag filenames."""
     image_suffixes = ['image']
     """list[str]: The suffixes of image filenames."""
     label_suffixes = ['label']
