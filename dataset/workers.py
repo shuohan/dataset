@@ -116,7 +116,7 @@ class WorkerCreator:
         for k, v in cls._workers.items():
             t = WorkerType(v.worker_type)
             message.append(('    %%%ds: %%s, %%s' % length) % (k, v, t.name))
-        return '\n'.join(message)
+        print('\n'.join(message))
 
 
 class Worker:
