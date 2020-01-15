@@ -587,7 +587,6 @@ class Mask(Image):
         if np.sum(image.data) == 0:
             cropped = padcrop3d(image.data, self.cropping_shape)[0]
         else:
-            print('mask size', np.sum(image.data))
             cropped = crop3d(image.data, self.bbox)[0]
         new_image = image.update(cropped, 'crop')
         return new_image
