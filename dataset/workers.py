@@ -315,8 +315,8 @@ class Flipper_(Worker):
     def _process(self, image):
         if isinstance(image, Image):
             result = np.flip(image.data, self.dim).copy()
-            if hasattr(image, 'pairs'):
-                for (pair1, pair2) in image.pairs:
+            if isinstance(image, Label):
+                for (pair1, pair2) in image.label_info.pairs:
                     mask1 = result==pair1
                     mask2 = result==pair2
                     result[mask1] = pair2
